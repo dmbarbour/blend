@@ -142,6 +142,10 @@ it alone taught. Add to this file what a new proof teaches.
   answer exists" is proved as "given an answer, succeeds", by induction
   on the answer given; for C3, the given order's first object that any
   list holds is a free head (`good_of`).
+- **A predicate on a record's field** sticks where the field is a
+  variable (`has_ers` on `Ms{ms, ers}`), though it reads that field
+  alone: a lemma relating two records with the same field matches the
+  field too (`set_ers`).
 - **A recursive call needing its branch's fact**: where the induction
   hypothesis holds only in one case of a step's split (`x` not `y`),
   the step lemma takes it as a function of that case's equation, and

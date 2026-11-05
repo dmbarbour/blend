@@ -246,3 +246,18 @@ def ctr.or(m: Maybe<&2, U32>) -> U32:
   match m:
     case None{}:
       0
+
+=== twice_unreported sharing.once
+an affine unit used twice not reported, its turn leaving it as it was
+--- blend.bend
+          ms.er(s, er.affine(obs, us, x, rs))
++++
+          s
+
+=== affine_numbered sharing.affine
+an affine unit used once by a copied user given the copied kind, its
+copies then numbered by its own counter rather than its user's
+--- blend.bend
+          when(Ms, U32.is_gt(mu.m(ms.mu(s, ru.user(rs))), 0), v => ms.set(s, x, Mu{mu.m(ms.mu(s, ru.user(rs))), 2}), v => s)
++++
+          when(Ms, U32.is_gt(mu.m(ms.mu(s, ru.user(rs))), 0), v => ms.set(s, x, Mu{mu.m(ms.mu(s, ru.user(rs))), 1}), v => s)
