@@ -192,3 +192,27 @@ a linearization merged without its object before it
       Lz{True{}, Con{id, ord}}
 +++
       Lz{True{}, ord}
+
+=== counter_by_two sharing.counts
+a numbered call counting two on its unit's counter, so that copies are
+skipped
+--- blend.bend
+      Tb{rev.onto(copy.name(unit.text(e, y), ctr.at(ctrs, y)), acc), um.put(U32, ctrs, y, (ctr.at(ctrs, y) + 1 : U32))}
++++
+      Tb{rev.onto(copy.name(unit.text(e, y), ctr.at(ctrs, y)), acc), um.put(U32, ctrs, y, (ctr.at(ctrs, y) + 2 : U32))}
+
+=== module_numbered sharing.counts
+a module's definition calling a copied unit by a numbered copy, an
+object's by its own name
+--- blend.bend
+      when(Tb, U32.is_eq(un.o(ec.un(e, x)), 0), u => tb.put(b, unit.text(e, y)), u => ref.next(e, y, b))
++++
+      when(Tb, U32.is_eq(un.o(ec.un(e, x)), 0), u => ref.next(e, y, b), u => tb.put(b, unit.text(e, y)))
+
+=== weight_numbered sharing.counts
+a use weighed by its user's numbered copies only, not by the copy by
+its own name
+--- blend.bend
+  when(U32, U32.is_eq(un.o(ut.un(ut, x)), 0), v => 0, v => (1 + mu.m(ms.mu(s, x)) : U32))
++++
+  when(U32, U32.is_eq(un.o(ut.un(ut, x)), 0), v => 0, v => mu.m(ms.mu(s, x)))

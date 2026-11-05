@@ -257,3 +257,18 @@ law c3.first:
   for +ps: List<&2, U32>
   for ss: Maybe<&2, List<&2, B.Sq>>
   {List.head(&2, U32, B.lz.ord(Some{B.lin.of(id, ps, ss)})) == Some{id} : Maybe<&2, U32>}
+
+# LAW: writing an order into the code's file, each copied unit's counter
+# of numbered calls rises by what its uses by the units written ask: at
+# each use, one for each of the user's copies, none from a module's
+# definition, as the dispositions weigh uses (`uses.m`), the uses those
+# the writer reads.
+# Record: blend-copies-keep-their-name
+law sharing.counts:
+  for +xs: List<&2, U32>
+  for +e: B.Ec
+  for +b: B.Tb
+  for +y: U32
+  for +hm: {B.ec.mode(e) == 0 : U32}
+  for +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}
+  {B.ctr.at(B.tb.ctrs(B.order.put(xs, e, b)), y) == U32.add(B.ctr.at(B.tb.ctrs(b), y), B.uses.m(B.uses.of.e(xs, e, y), B.ec.ut(e), B.ec.ms(e))) : U32}

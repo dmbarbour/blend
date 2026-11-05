@@ -84,8 +84,10 @@ it alone taught. Add to this file what a new proof teaches.
   the motive (`ers_some`), so that the `Con` need not be spelled out.
 - **A big constant is reasoned under a variable** `N` with
   `{N == Nat.pow(2n, 32n)}`, the power met only against a symbolic value
-  or where both forms match exactly (glam-in-bend's BendIssues.md, "Big constants in
-  proofs").
+  or where both forms match exactly (glam-in-bend's BendIssues.md, "Big
+  constants in proofs"): a recursive lemma stating
+  `Nat.mod(k, Nat.pow(2n, 32n))` overflowed Bend's checker, where one
+  over a variable (`wrap_m`) did not.
 - **A proof function is used once.** A function cannot be `+`-marked, so
   a lemma taking one (`@x:A -> P(x)`, Bend's dependent function) cannot
   both use it and pass it on. State a reusable fact as a `Bool`
@@ -151,6 +153,17 @@ it alone taught. Add to this file what a new proof teaches.
   first, then rewrite in each branch.
 - **Templates prove as code does**: a proof def may take `~p`, and
   template parameters come first.
+- **A traversal's effect on one projection**: where a writer threads
+  a large state, state each step's effect on the one part the law
+  reads (`cy`, a counter), for any state before it, so that steps
+  chain by one rewrite (`keep`); an operation that leaves that part
+  alone gets a lemma by matching the state alone, whatever else it
+  is given (`tbput_any`).
+- **U32 arithmetic**: through `U32.to_nat` and the hub's wrap laws
+  (`u32_add_wrap`), its sums mod 2^32, the hub's `add_mod_left` and
+  `mod_add_div` give associativity and commutativity (`u32_assoc`,
+  `u32_comm`). A hypothesis of function type cannot be marked `+`:
+  pass each instance needed as an equation of its own (`u32_assoc_n`).
 - **Lemmas on the hub**: the package `0x8ae61ec3a6615abd35f196c07232ad28`
   (bend-mathlib) proves lists, `U32`, `Nat`, `Bool` and equality
   (`list.bend`, `u32.bend`, `nat.bend`, `bool.bend`, `equal.bend`).
