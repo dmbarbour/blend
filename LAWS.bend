@@ -454,3 +454,22 @@ law markers.units:
   for +h: {B.trees.ok(trees) == True{} : Bool}
   {B.units.ok(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
     B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))) == True{} : Bool}
+
+# LAW: a unit's copy is written as where.sh reads it: after a newline,
+# the marker's line naming its definition's file and line; after
+# another, its header's line; then each of its body's lines, numbered on
+# from the header's line (`markers.units`), on the line as many below the
+# header's (the first on the header's own where numbered as it), its
+# text after a newline of its own, holding none; where what it reads
+# from its context holds none (`ec.inline`). So the line k below the
+# marker is the source's k below the line the marker names.
+# Record: blend-adds-no-bend-logic
+law markers.writer:
+  for +e: B.Ec
+  for +s: U32
+  for +x: U32
+  for +j: U32
+  for +b: B.Tb
+  for +hf: {B.ec.inline(e) == True{} : Bool}
+  for +hl: {B.rls.from(B.un.lines(B.ec.un(e, s)), B.node.no(B.un.node(B.ec.un(e, s)))) == True{} : Bool}
+  {B.wr.unit(e, s, x, j, b) == True{} : Bool}

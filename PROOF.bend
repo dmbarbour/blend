@@ -60,6 +60,13 @@
 # - The nodes (`nodes`): membership under a structural equality
 #   (`ndef.same`), a "within" invariant through the object walk, the made
 #   objects' rounds, the member tables and the copies' loop.
+# - The writer's lines (`markers.writer`): text kept reversed claimed by
+#   what lies from its last newline on (`from.nl`, `onto_from`), each
+#   piece within a line (`rts_from`), each line a newline first or a
+#   space (`line_from`); a walk calling the writer's own step and ending
+#   at its own result (`at_new`); a remainder below ten through the
+#   hub's division invariant (`mod10_lt`), a number and the next unequal
+#   past 2^32 (`u32_succ_ne`).
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -4371,28 +4378,21 @@ def rts_cy(ts: List<&2, B.Rt>, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +n
               cy_mark(mark, b, y), tbput_any(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest}), y)),
             rts_cy(r, e, x, j, B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest})), y, no, hm, hk))
 
-# rl.put's start of a line mirrored: a space, or a newline and the
+# rl.put's start of a line written: a space, or a newline and the
 # indentation, neither a call
-def wb_k(+c: Bool, +b: B.Tb, +ind: U32, +dind: U32) -> B.Tb:
-  B.when(B.Tb, c, u => B.tb.put(b, [32]),
-    u => B.tb.put(b, Con{10, B.spaces(U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0)))}))
-
-def cy_wb(c: Bool, +b: B.Tb, +ind: U32, +dind: U32, +y: U32) -> {cy(b, y) == cy(wb_k(c, b, ind, dind), y) : U32}:
-  match c:
-    case True{}:
-      tbput_any(b, [32], y)
-    case False{}:
-      tbput_any(b, Con{10, B.spaces(U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0)))}, y)
+def lw(+first: Bool, +no: U32, +ind: U32, +dind: U32, +e: B.Ec, +x: U32, +b: B.Tb) -> B.Tb:
+  B.tb.put(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), False{},
+    U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0))))
 
 def keep_l(+b1: B.Tb, +b: B.Tb, +t: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +y: U32, +w: U32, h: {cy(b, y) == cy(b1, y) : U32},
-    ih: {cy(B.rls.put(t, e, x, j, dind, b1), y) == U32.add(cy(b1, y), w) : U32}) -> {cy(B.rls.put(t, e, x, j, dind, b1), y) == U32.add(cy(b, y), w) : U32}:
-  %Equal.sym(U32, cy(b, y), cy(b1, y), h) : {cy(B.rls.put(t, e, x, j, dind, b1), y) == U32.add(_, w) : U32}
+    ih: {cy(B.rls.put(t, e, x, j, dind, False{}, b1), y) == U32.add(cy(b1, y), w) : U32}) -> {cy(B.rls.put(t, e, x, j, dind, False{}, b1), y) == U32.add(cy(b, y), w) : U32}:
+  %Equal.sym(U32, cy(b, y), cy(b1, y), h) : {cy(B.rls.put(t, e, x, j, dind, False{}, b1), y) == U32.add(_, w) : U32}
   ih
 
 # a body's lines written: y's counter up by their calls to it
-def rls_cy(ls: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32},
+def rls_cy(ls: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32},
     +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}) ->
-    {cy(B.rls.put(ls, e, x, j, dind, b), y) == U32.add(cy(b, y), wsum(B.uses.in(B.refs.rls(ls, B.ec.ux(e), x), x, y), wx(e, x))) : U32}:
+    {cy(B.rls.put(ls, e, x, j, dind, first, b), y) == U32.add(cy(b, y), wsum(B.uses.in(B.refs.rls(ls, B.ec.ux(e), x), x, y), wx(e, x))) : U32}:
   match ls:
     case Nil{}:
       Equal.sym(U32, U32.add(cy(b, y), 0), cy(b, y), u32_zero_r(cy(b, y)))
@@ -4401,24 +4401,28 @@ def rls_cy(ls: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +b: B.Tb,
         case B.Rl{+no, +ind, ts}:
           match ts:
             case Nil{}:
-              keep_l(B.tb.put(b, [10]), b, t, e, x, j, dind, y, wsum(B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x)), tbput_any(b, [10], y),
-                rls_cy(t, e, x, j, dind, B.tb.put(b, [10]), y, hm, hk))
+              +bl = B.tb.put(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), True{}, 0n))
+              keep_l(bl, b, t, e, x, j, dind, y, wsum(B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x)),
+                tbput_any(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), True{}, 0n), y),
+                rls_cy(t, e, x, j, dind, False{}, bl, y, hm, hk))
             case Con{+tk, +r}:
               %uses_in_app(B.refs.rts(Con{tk, r}, B.ec.ux(e), x, no), B.refs.rls(t, B.ec.ux(e), x), x, y) :
-                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) ==
+                {cy(B.rls.put(t, e, x, j, dind, False{}, B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b))), y) ==
                   U32.add(cy(b, y), wsum(_, wx(e, x))) : U32}
               %wsum_app(B.uses.in(B.refs.rts(Con{tk, r}, B.ec.ux(e), x, no), x, y), B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x)) :
-                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) ==
+                {cy(B.rls.put(t, e, x, j, dind, False{}, B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b))), y) ==
                   U32.add(cy(b, y), _) : U32}
               %u32_assoc(cy(b, y), wsum(B.uses.in(B.refs.rts(Con{tk, r}, B.ec.ux(e), x, no), x, y), wx(e, x)), wsum(B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x))) :
-                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) == _ : U32}
-              %Equal.sym(U32, cy(b, y), cy(wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind), y), cy_wb(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind, y)) :
-                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) ==
+                {cy(B.rls.put(t, e, x, j, dind, False{}, B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b))), y) == _ : U32}
+              %Equal.sym(U32, cy(b, y), cy(lw(first, no, ind, dind, e, x, b), y),
+                  tbput_any(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), False{},
+                    U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0))), y)) :
+                {cy(B.rls.put(t, e, x, j, dind, False{}, B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b))), y) ==
                   U32.add(U32.add(_, wsum(B.uses.in(B.refs.rts(Con{tk, r}, B.ec.ux(e), x, no), x, y), wx(e, x))), wsum(B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x))) : U32}
-              %rts_cy(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind), y, no, hm, hk) :
-                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) ==
+              %rts_cy(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b), y, no, hm, hk) :
+                {cy(B.rls.put(t, e, x, j, dind, False{}, B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b))), y) ==
                   U32.add(_, wsum(B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x))) : U32}
-              rls_cy(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind)), y, hm, hk)
+              rls_cy(t, e, x, j, dind, False{}, B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b)), y, hm, hk)
 
 # a unit's copy written, in its parts: the text before its body, its
 # header written, its lines
@@ -4429,7 +4433,7 @@ def hd_w(+e: B.Ec, +x: U32, +j: U32, +b: B.Tb) -> B.Tb:
   B.rts.put(B.un.hd(B.ec.un(e, x)), e, x, j, t0(e, x, j, b))
 
 def ln_w(+e: B.Ec, +x: U32, +j: U32, +b: B.Tb) -> B.Tb:
-  B.rls.put(B.un.lines(B.ec.un(e, x)), e, x, j, B.node.ind(B.un.node(B.ec.un(e, x))), hd_w(e, x, j, b))
+  B.rls.put(B.un.lines(B.ec.un(e, x)), e, x, j, B.node.ind(B.un.node(B.ec.un(e, x))), True{}, hd_w(e, x, j, b))
 
 def hd_u(+e: B.Ec, +x: U32, +y: U32) -> List<&2, B.Ru>:
   B.uses.in(B.refs.rts(B.un.hd(B.ec.un(e, x)), B.ec.ux(e), x, B.node.no(B.un.node(B.ec.un(e, x)))), x, y)
@@ -4452,7 +4456,7 @@ def unit_cy(+e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) ==
       U32.add(U32.add(_, wsum(hd_u(e, x, y), wx(e, x))), wsum(ln_u(e, x, y), wx(e, x))) : U32}
   %rts_cy(B.un.hd(B.ec.un(e, x)), e, x, j, t0(e, x, j, b), y, B.node.no(B.un.node(B.ec.un(e, x))), hm, hk) :
     {cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y) == U32.add(_, wsum(ln_u(e, x, y), wx(e, x))) : U32}
-  %rls_cy(B.un.lines(B.ec.un(e, x)), e, x, j, B.node.ind(B.un.node(B.ec.un(e, x))), hd_w(e, x, j, b), y, hm, hk) :
+  %rls_cy(B.un.lines(B.ec.un(e, x)), e, x, j, B.node.ind(B.un.node(B.ec.un(e, x))), True{}, hd_w(e, x, j, b), y, hm, hk) :
     {cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y) == _ : U32}
   Equal.sym(U32, cy(ln_w(e, x, j, b), y), cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y),
     tbput_any(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10]), y))
@@ -7184,3 +7188,824 @@ def units_ok(us: List<&2, B.Un>, +ds: List<&2, B.Node>, +hh: {B.units.held(us, d
 def Laws.markers.units(trees, als, ls, fs, als2, paths, pss, nxs, h):
   units_ok(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), B.trees.defs(trees), Laws.nodes(trees, als, ls, fs, als2, paths, pss, nxs), dsok_trees(trees, h),
     units_m(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), mcopies_m(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})))
+
+# The writer's lines
+# ------------------
+#
+# Text held within a line (`inline`) written after a text leaves it the
+# same from its last newline on (`onto_from`); a newline written starts
+# it over. Each piece the writer puts within a line is drawn from a
+# context whose texts hold no newline, or is a literal, or digits (a
+# remainder below ten, through the hub's division invariant, `digit_ne`):
+# a body's tokens keep the text from its last newline (`rts_from`); a
+# line starts with a newline, or a space on the header's line
+# (`line_from`); the walk follows the lines, a line further each, from
+# the header's line or the line after (`at_new`, `at_stay`), the second
+# because a line's number and the next differ, also past 2^32
+# (`u32_succ_ne`).
+
+# Text within a line
+
+def ne10(+h: U32, +t: List<&2, U32>, h1: {B.inline(Con{h, t}) == True{} : Bool}) -> {U32.is_eq(h, 10) == False{} : Bool}:
+  not_true(U32.is_eq(h, 10), and_l(Bool.not(U32.is_eq(h, 10)), B.inline(t), h1))
+
+def il_tail(+h: U32, +t: List<&2, U32>, h1: {B.inline(Con{h, t}) == True{} : Bool}) -> {B.inline(t) == True{} : Bool}:
+  and_r(Bool.not(U32.is_eq(h, 10)), B.inline(t), h1)
+
+def from_skip(c: Bool, +h: U32, +t: List<&2, U32>, e: {c == False{} : Bool}) -> {B.from.k(c, Con{h, t}, B.from.nl(t)) == B.from.nl(t) : List<&2, U32>}:
+  match c:
+    case True{}:
+      Empty.absurd({B.from.k(True{}, Con{h, t}, B.from.nl(t)) == B.from.nl(t) : List<&2, U32>}, MB.true_ne_false()(e))
+    case False{}:
+      {==}
+
+# text within a line written: the text from the last newline as before
+def onto_from(xs: List<&2, U32>, +acc: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.from.nl(B.rev.onto(xs, acc)) == B.from.nl(acc) : List<&2, U32>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      Equal.trans(List<&2, U32>, B.from.nl(B.rev.onto(t, Con{x, acc})), B.from.nl(Con{x, acc}), B.from.nl(acc),
+        onto_from(t, Con{x, acc}, il_tail(x, t, h)), from_skip(U32.is_eq(x, 10), x, acc, ne10(x, t, h)))
+
+def nf_k(c: Bool, +h: U32, +t: List<&2, U32>, e: {U32.is_eq(h, 10) == c : Bool}, ih: {B.nls(t) == B.nls(B.from.nl(t)) : Nat}) ->
+    {B.nl.k(c, B.nls(t)) == B.nls(B.from.k(c, Con{h, t}, B.from.nl(t))) : Nat}:
+  match c:
+    case True{}:
+      %Equal.sym(Bool, U32.is_eq(h, 10), True{}, e) : {1n+B.nls(t) == B.nl.k(_, B.nls(t)) : Nat}
+      {==}
+    case False{}:
+      ih
+
+# the newlines of a text, those before its last line's
+def nls_from(xs: List<&2, U32>) -> {B.nls(xs) == B.nls(B.from.nl(xs)) : Nat}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      nf_k(U32.is_eq(h, 10), h, t, {==}, nls_from(t))
+
+def put_from(b: B.Tb, +xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.tb.from(B.tb.put(b, xs)) == B.tb.from(b) : List<&2, U32>}:
+  match b:
+    case B.Tb{+acc, ctrs}:
+      onto_from(xs, acc, h)
+
+def il_app(a: List<&2, U32>, +b: List<&2, U32>, +ha: {B.inline(a) == True{} : Bool}, +hb: {B.inline(b) == True{} : Bool}) ->
+    {B.inline(List.append(&2, U32, a, b)) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{+x, +t}:
+      and_intro(Bool.not(U32.is_eq(x, 10)), B.inline(List.append(&2, U32, t, b)), and_l(Bool.not(U32.is_eq(x, 10)), B.inline(t), ha),
+        il_app(t, b, il_tail(x, t, ha), hb))
+
+def il_spaces(n: Nat) -> {B.inline(B.spaces(n)) == True{} : Bool}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+p:
+      il_spaces(p)
+
+# Digits: 48 and a remainder below ten (the hub's division invariant),
+# never a newline
+
+def ltb(+m: Nat, +em: {Nat.pow(2n, 32n) == m : Nat}) -> MNat.lt(58n, m):
+  %em : MNat.lt(58n, _)
+  MU.u32_to_nat_lt(58)
+
+def lt48(+r: U32, +m: Nat, +em: {Nat.pow(2n, 32n) == m : Nat}, h: MNat.lt(U32.to_nat(r), 10n)) -> MNat.lt(Nat.add(48n, U32.to_nat(r)), m):
+  MNat.lt_trans(Nat.add(48n, U32.to_nat(r)), 58n, m, h, ltb(m, em))
+
+def add48(+r: U32, +m: Nat, +em: {Nat.pow(2n, 32n) == m : Nat}, h: MNat.lt(U32.to_nat(r), 10n)) -> {U32.to_nat(U32.add(48, r)) == Nat.add(48n, U32.to_nat(r)) : Nat}:
+  MU.internal_u32_add_exact(m, 48, r, em, lt48(r, m, em, h))
+
+def ne_k(+a: Nat, +n: Nat, e: {a == Nat.add(48n, n) : Nat}) -> {Nat.is_eq(a, 10n) == False{} : Bool}:
+  %Equal.sym(Nat, a, Nat.add(48n, n), e) : {Nat.is_eq(_, 10n) == False{} : Bool}
+  {==}
+
+def dig_ne(+r: U32, +m: Nat, +em: {Nat.pow(2n, 32n) == m : Nat}, h: MNat.lt(U32.to_nat(r), 10n)) -> {U32.is_eq(U32.add(48, r), 10) == False{} : Bool}:
+  Equal.trans(Bool, U32.is_eq(U32.add(48, r), 10), Nat.is_eq(U32.to_nat(U32.add(48, r)), 10n), False{},
+    MU.u32_is_eq_to_nat(U32.add(48, r), 10), ne_k(U32.to_nat(U32.add(48, r)), U32.to_nat(r), add48(r, m, em, h)))
+
+def mod_fin_lt(qr: Word(32n) & U32, -a: Nat, inv: MU.internal_dm_inv(32n, 10n, a, qr)) -> MNat.lt(U32.to_nat(U32.mod.fin(qr)), 10n):
+  match qr:
+    case (q, r):
+      match inv:
+        case (e, h):
+          h
+
+def mod10_lt(n: U32) -> MNat.lt(U32.to_nat(U32.mod(n, 10)), 10n):
+  match n:
+    case U32{+aw}:
+      mod_fin_lt(U32.divmod.go(32n, aw, 10), Word.to_nat(32n, aw), MU.internal_dm_go(32n, aw, 10, {==}, Nat.pow(2n, 32n), {==}))
+
+def digit_ne(+n: U32) -> {U32.is_eq(U32.add(48, U32.mod(n, 10)), 10) == False{} : Bool}:
+  dig_ne(U32.mod(n, 10), Nat.pow(2n, 32n), {==}, mod10_lt(n))
+
+def show_fin(g: Nat, +acc: String, +n: U32, z: Bool, h: {B.inline(B.codes(acc)) == True{} : Bool},
+    ih: {B.inline(B.codes(U32.show.go(g, U32.div(n, 10), SCon{Chr{U32.add(48, U32.mod(n, 10))}, acc}))) == True{} : Bool}) ->
+    {B.inline(B.codes(U32.show.fin(g, acc, n, z))) == True{} : Bool}:
+  match z:
+    case True{}:
+      h
+    case False{}:
+      ih
+
+def show_go(f: Nat, +n: U32, +acc: String, +h: {B.inline(B.codes(acc)) == True{} : Bool}) -> {B.inline(B.codes(U32.show.go(f, n, acc))) == True{} : Bool}:
+  match f:
+    case 0n:
+      h
+    case 1n+(+g):
+      show_fin(g, acc, n, U32.is_zero(n), h,
+        show_go(g, U32.div(n, 10), SCon{Chr{U32.add(48, U32.mod(n, 10))}, acc},
+          and_intro(Bool.not(U32.is_eq(U32.add(48, U32.mod(n, 10)), 10)), B.inline(B.codes(acc)),
+            not_false(U32.is_eq(U32.add(48, U32.mod(n, 10)), 10), digit_ne(n)), h)))
+
+def show_if(+a: U32, z: Bool) -> {B.inline(B.codes(U32.show.if(a, z))) == True{} : Bool}:
+  match z:
+    case True{}:
+      {==}
+    case False{}:
+      show_go(10n, a, SNil{}, {==})
+
+def il_show(+n: U32) -> {B.inline(B.codes(U32.show(n))) == True{} : Bool}:
+  show_if(n, U32.is_zero(n))
+
+# Names and paths within a line, from objects' paths and names that are
+
+def il_dots(ps: List<&2, List<&2, U32>>, +h: {B.inlines(ps) == True{} : Bool}) -> {B.inline(B.dots(ps)) == True{} : Bool}:
+  match ps:
+    case Nil{}:
+      {==}
+    case Con{+p, +t}:
+      match t:
+        case Nil{}:
+          and_l(B.inline(p), True{}, h)
+        case Con{+q, +r}:
+          il_app(p, Con{46, B.dots(Con{q, r})}, and_l(B.inline(p), B.inlines(Con{q, r}), h),
+            il_dots(Con{q, r}, and_r(B.inline(p), B.inlines(Con{q, r}), h)))
+
+def il_path(+path: List<&2, List<&2, U32>>, +n: List<&2, U32>, +hp: {B.inlines(path) == True{} : Bool}, +hn: {B.inline(n) == True{} : Bool}) ->
+    {B.inline(B.path.name(path, n)) == True{} : Bool}:
+  match path:
+    case Nil{}:
+      hn
+    case Con{+h, +t}:
+      il_app(B.dots(Con{h, t}), Con{46, n}, il_dots(Con{h, t}, hp), hn)
+
+def il_take(xs: List<&2, U32>, n: Nat, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(List.take(&2, U32, xs, n)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      match n:
+        case 0n:
+          {==}
+        case 1n+(+p):
+          and_intro(Bool.not(U32.is_eq(x, 10)), B.inline(List.take(&2, U32, t, p)), and_l(Bool.not(U32.is_eq(x, 10)), B.inline(t), h),
+            il_take(t, p, il_tail(x, t, h)))
+
+# name.plain's and name.out's choices mirrored
+def np_k(+c: Bool, +n: List<&2, U32>) -> List<&2, U32>:
+  B.when(List<&2, U32>, c, u => List.take(&2, U32, n, Nat.sub(List.length(&2, U32, n), 1n)), u => n)
+
+def il_np(c: Bool, +n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B.inline(np_k(c, n)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_take(n, Nat.sub(List.length(&2, U32, n), 1n), h)
+    case False{}:
+      h
+
+def il_plain(+n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B.inline(B.name.plain(n)) == True{} : Bool}:
+  il_np(Bool.or(B.ends(n, [35]), B.ends(n, [33])), n, h)
+
+def no_k(+c: Bool, +n: List<&2, U32>) -> List<&2, U32>:
+  B.when(List<&2, U32>, c, u => List.append(&2, U32, B.name.plain(n), B.codes(".as_declared")), u => B.name.plain(n))
+
+def il_nok(c: Bool, +n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B.inline(no_k(c, n)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_app(B.name.plain(n), B.codes(".as_declared"), il_plain(n, h), {==})
+    case False{}:
+      il_plain(n, h)
+
+def il_out(+n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B.inline(B.name.out(n)) == True{} : Bool}:
+  il_nok(B.ends(n, [33]), n, h)
+
+def il_ob(o: B.Ob, h: {B.ob.inline(o) == True{} : Bool}) -> {B.inlines(B.ob.path(o)) == True{} : Bool}:
+  match o:
+    case B.Ob{+id, +host, +path, +abs, parents, mems, +no, +kind, +tpl}:
+      h
+
+def il_get(os: List<&2, B.Ob>, n: Nat, +h: {B.obs.inline(os) == True{} : Bool}) -> {B.inlines(B.ob.path(B.ob.or(List.get(&2, B.Ob, os, n)))) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{+o, +t}:
+      match n:
+        case 0n:
+          il_ob(o, and_l(B.ob.inline(o), B.obs.inline(t), h))
+        case 1n+k:
+          il_get(t, k, and_r(B.ob.inline(o), B.obs.inline(t), h))
+
+def il_at(+obs: List<&2, B.Ob>, +id: U32, +h: {B.obs.inline(obs) == True{} : Bool}) -> {B.inlines(B.ob.path(B.ob.at(obs, id))) == True{} : Bool}:
+  il_get(obs, U32.to_nat(id), h)
+
+# rf.text's choice mirrored
+def rt_k(+c: Bool, +obs: List<&2, B.Ob>, +obj: U32, +name: List<&2, U32>, +origin: U32) -> List<&2, U32>:
+  B.when(List<&2, U32>, c,
+    u => List.append(&2, U32, B.path.name(B.ob.path(B.ob.at(obs, obj)), B.name.out(name)), Con{46, B.dots(B.ob.path(B.ob.at(obs, origin)))}),
+    u => B.path.name(B.ob.path(B.ob.at(obs, obj)), B.name.out(name)))
+
+def il_rtk(c: Bool, +obs: List<&2, B.Ob>, +obj: U32, +name: List<&2, U32>, +origin: U32, +ho: {B.obs.inline(obs) == True{} : Bool},
+    +hn: {B.inline(name) == True{} : Bool}) -> {B.inline(rt_k(c, obs, obj, name, origin)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_app(B.path.name(B.ob.path(B.ob.at(obs, obj)), B.name.out(name)), Con{46, B.dots(B.ob.path(B.ob.at(obs, origin)))},
+        il_path(B.ob.path(B.ob.at(obs, obj)), B.name.out(name), il_at(obs, obj, ho), il_out(name, hn)),
+        il_dots(B.ob.path(B.ob.at(obs, origin)), il_at(obs, origin, ho)))
+    case False{}:
+      il_path(B.ob.path(B.ob.at(obs, obj)), B.name.out(name), il_at(obs, obj, ho), il_out(name, hn))
+
+def il_text(+obs: List<&2, B.Ob>, r: B.Rf, +ho: {B.obs.inline(obs) == True{} : Bool}, hn: {B.inline(B.rf.name(r)) == True{} : Bool}) ->
+    {B.inline(B.rf.text(obs, r)) == True{} : Bool}:
+  match r:
+    case B.Rf{+obj, +name, +prior, +origin}:
+      il_rtk(prior, obs, obj, name, origin, ho, hn)
+
+# The context's parts within a line
+
+def ec_files(e: B.Ec, h: {B.ec.inline(e) == True{} : Bool}) -> {B.inlines(B.ec.files(e)) == True{} : Bool}:
+  match e:
+    case B.Ec{+files, +obs, us, als, +own, res, paths, +mode, rtypes, ux, +ut, mt}:
+      and_l(B.inlines(files), B.obs.inline(obs), and_l(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own),
+        and_l(Bool.and(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own)), B.ht.inline(ut), h)))
+
+def ec_obs(e: B.Ec, h: {B.ec.inline(e) == True{} : Bool}) -> {B.obs.inline(B.ec.obs(e)) == True{} : Bool}:
+  match e:
+    case B.Ec{+files, +obs, us, als, +own, res, paths, +mode, rtypes, ux, +ut, mt}:
+      and_r(B.inlines(files), B.obs.inline(obs), and_l(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own),
+        and_l(Bool.and(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own)), B.ht.inline(ut), h)))
+
+def ec_own(e: B.Ec, h: {B.ec.inline(e) == True{} : Bool}) -> {B.cis.inline(B.ec.own(e)) == True{} : Bool}:
+  match e:
+    case B.Ec{+files, +obs, us, als, +own, res, paths, +mode, rtypes, ux, +ut, mt}:
+      and_r(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own),
+        and_l(Bool.and(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own)), B.ht.inline(ut), h))
+
+def il_pick(c: Bool, +z: B.Ht<B.Un>, +o: B.Ht<B.Un>, +h: {B.ht.inline(B.HNode{z, o}) == True{} : Bool}) -> {B.ht.inline(B.ht.pick(B.Un, c, z, o)) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_l(B.ht.inline(z), B.ht.inline(o), h)
+    case False{}:
+      and_r(B.ht.inline(z), B.ht.inline(o), h)
+
+def il_leaf(fuel: Nat, t: B.Ht<B.Un>, +b: U32, +h: U32, +ht: {B.ht.inline(t) == True{} : Bool}) -> {B.uns.inline(B.ht.leaf.go(B.Un, fuel, t, b, h)) == True{} : Bool}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          ht
+        case B.HNode{z, o}:
+          {==}
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          ht
+        case B.HNode{+z, +o}:
+          il_leaf(k, B.ht.pick(B.Un, U32.is_eq(b, 0), z, o), nb(h), nh(h), il_pick(U32.is_eq(b, 0), z, o, ht))
+
+def il_head(us: List<&2, B.Un>, h: {B.uns.inline(us) == True{} : Bool}) -> {B.un.inline(B.un.or(List.head(&2, B.Un, us))) == True{} : Bool}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      and_l(B.un.inline(u), B.uns.inline(t), h)
+
+# every unit the writer reads within a line
+def il_un(e: B.Ec, +i: U32, h: {B.ec.inline(e) == True{} : Bool}) -> {B.un.inline(B.ec.un(e, i)) == True{} : Bool}:
+  match e:
+    case B.Ec{+files, +obs, us, als, +own, res, paths, +mode, rtypes, ux, +ut, mt}:
+      il_head(B.ht.leaf(B.Un, ut, (i .&. 1 : U32), i), il_leaf(32n, ut, (i .&. 1 : U32), i,
+        and_r(Bool.and(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own)), B.ht.inline(ut), h)))
+
+def un_name(u: B.Un, h: {B.un.inline(u) == True{} : Bool}) -> {B.inline(B.rf.name(B.un.ref(u))) == True{} : Bool}:
+  match u:
+    case B.Un{+o, i, +nd, +hd, +ls}:
+      match i:
+        case B.In{+name, +q, +prior}:
+          and_l(B.inline(name), B.rts.inline(hd), and_l(Bool.and(B.inline(name), B.rts.inline(hd)), B.rls.inline(ls), h))
+
+def un_hd(u: B.Un, h: {B.un.inline(u) == True{} : Bool}) -> {B.rts.inline(B.un.hd(u)) == True{} : Bool}:
+  match u:
+    case B.Un{+o, i, +nd, +hd, +ls}:
+      match i:
+        case B.In{+name, +q, +prior}:
+          and_r(B.inline(name), B.rts.inline(hd), and_l(Bool.and(B.inline(name), B.rts.inline(hd)), B.rls.inline(ls), h))
+
+def un_ls(u: B.Un, h: {B.un.inline(u) == True{} : Bool}) -> {B.rls.inline(B.un.lines(u)) == True{} : Bool}:
+  match u:
+    case B.Un{+o, i, +nd, +hd, +ls}:
+      match i:
+        case B.In{+name, +q, +prior}:
+          and_r(Bool.and(B.inline(name), B.rts.inline(hd)), B.rls.inline(ls), h)
+
+def il_utext(+e: B.Ec, +y: U32, +hf: {B.ec.inline(e) == True{} : Bool}) -> {B.inline(B.unit.text(e, y)) == True{} : Bool}:
+  il_text(B.ec.obs(e), B.un.ref(B.ec.un(e, y)), ec_obs(e, hf), un_name(B.ec.un(e, y), il_un(e, y, hf)))
+
+def il_copy(+base: List<&2, U32>, +j: U32, +h: {B.inline(base) == True{} : Bool}) -> {B.inline(B.copy.name(base, j)) == True{} : Bool}:
+  il_app(base, List.append(&2, U32, B.codes(".c"), B.codes(U32.show(j))), h, il_app(B.codes(".c"), B.codes(U32.show(j)), {==}, il_show(j)))
+
+# own.name's choice mirrored
+def on_k(+c: Bool, +e: B.Ec, +x: U32, +j: U32) -> List<&2, U32>:
+  B.when(List<&2, U32>, c, u => B.unit.text(e, x), u => B.copy.name(B.unit.text(e, x), j))
+
+def il_onk(c: Bool, +e: B.Ec, +x: U32, +j: U32, +hf: {B.ec.inline(e) == True{} : Bool}) -> {B.inline(on_k(c, e, x, j)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_utext(e, x, hf)
+    case False{}:
+      il_copy(B.unit.text(e, x), j, il_utext(e, x, hf))
+
+def il_own(+e: B.Ec, +x: U32, +j: U32, +hf: {B.ec.inline(e) == True{} : Bool}) -> {B.inline(B.own.name(e, x, j)) == True{} : Bool}:
+  il_onk(U32.is_eq(j, 0), e, x, j, hf)
+
+# an alias: an import's, or Blend's own `Blend_k`
+def al_k(m: Maybe<&2, List<&2, U32>>, +k: U32) -> List<&2, U32>:
+  B.on.maybe(List<&2, U32>, List<&2, U32>, m, u => B.res.alias(k), x => x)
+
+def cf_k(+c: Bool, +alias: List<&2, U32>, +t: List<&2, B.Ci>, +p: List<&2, U32>) -> Maybe<&2, List<&2, U32>>:
+  B.when(Maybe<&2, List<&2, U32>>, c, u => Some{alias}, u => B.ci.path.find(t, p))
+
+def il_res(+k: U32) -> {B.inline(B.res.alias(k)) == True{} : Bool}:
+  il_app(B.codes("Blend_"), B.codes(U32.show(k)), {==}, il_show(k))
+
+def il_cfk(c: Bool, +alias: List<&2, U32>, +t: List<&2, B.Ci>, +p: List<&2, U32>, +k: U32, ha: {B.inline(alias) == True{} : Bool},
+    ih: {B.inline(al_k(B.ci.path.find(t, p), k)) == True{} : Bool}) -> {B.inline(al_k(cf_k(c, alias, t, p), k)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ha
+    case False{}:
+      ih
+
+def il_find(cs: List<&2, B.Ci>, +p: List<&2, U32>, +k: U32, +h: {B.cis.inline(cs) == True{} : Bool}) -> {B.inline(al_k(B.ci.path.find(cs, p), k)) == True{} : Bool}:
+  match cs:
+    case Nil{}:
+      il_res(k)
+    case Con{c, +t}:
+      match c:
+        case B.Ci{+alias, +path, +no}:
+          il_cfk(B.same(path, p), alias, t, p, k, and_l(B.inline(alias), B.cis.inline(t), h), il_find(t, p, k, and_r(B.inline(alias), B.cis.inline(t), h)))
+
+def il_alias(+e: B.Ec, +p: List<&2, U32>, +hf: {B.ec.inline(e) == True{} : Bool}) -> {B.inline(B.alias.of(e, p)) == True{} : Bool}:
+  il_find(B.ec.own(e), p, U32.add(B.res.index(B.ec.res(e), p, 0), 1), ec_own(e, hf))
+
+# A body's tokens written: the text from the last newline kept
+
+def tp_k(+c: Bool, +x: List<&2, U32>) -> List<&2, U32>:
+  B.when(List<&2, U32>, c, u => List.append(&2, U32, B.codes("Blend_0."), x), u => x)
+
+def il_tpk(c: Bool, +x: List<&2, U32>, +h: {B.inline(x) == True{} : Bool}) -> {B.inline(tp_k(c, x)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_app(B.codes("Blend_0."), x, {==}, h)
+    case False{}:
+      h
+
+def il_tok(+e: B.Ec, t: B.Tok, h: {B.inline(B.tok.bytes(t)) == True{} : Bool}) -> {B.inline(B.tok.in.proof(e, t)) == True{} : Bool}:
+  match t:
+    case B.TName{+x}:
+      il_tpk(Bool.and(U32.is_gt(B.ec.mode(e), 0), B.names.has(B.ec.rtypes(e), x)), x, h)
+    case B.TNum{+x}:
+      h
+    case B.TStr{+x}:
+      h
+    case B.TCom{+x}:
+      h
+    case B.TSp{+x}:
+      h
+    case B.TSym{+c}:
+      h
+
+def mark_from(c: Bool, +b: B.Tb) -> {B.tb.from(B.mark.put.k(c, b)) == B.tb.from(b) : List<&2, U32>}:
+  match c:
+    case True{}:
+      put_from(b, [126], {==})
+    case False{}:
+      {==}
+
+# text within a line put after a mark
+def after_mark(+mark: U32, +b: B.Tb, +xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) ->
+    {B.tb.from(B.tb.put(B.mark.put(mark, b), xs)) == B.tb.from(b) : List<&2, U32>}:
+  Equal.trans(List<&2, U32>, B.tb.from(B.tb.put(B.mark.put(mark, b), xs)), B.tb.from(B.mark.put(mark, b)), B.tb.from(b),
+    put_from(B.mark.put(mark, b), xs, h), mark_from(U32.is_eq(mark, 126), b))
+
+def next_from(+e: B.Ec, +y: U32, b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool}) -> {B.tb.from(B.ref.next(e, y, b)) == B.tb.from(b) : List<&2, U32>}:
+  match b:
+    case B.Tb{+acc, +ctrs}:
+      onto_from(B.copy.name(B.unit.text(e, y), B.ctr.at(ctrs, y)), acc, il_copy(B.unit.text(e, y), B.ctr.at(ctrs, y), il_utext(e, y, hf)))
+
+def rk_from(o0: Bool, +e: B.Ec, +y: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool}) -> {B.tb.from(rk_k(o0, e, y, b)) == B.tb.from(b) : List<&2, U32>}:
+  match o0:
+    case True{}:
+      put_from(b, B.unit.text(e, y), il_utext(e, y, hf))
+    case False{}:
+      next_from(e, y, b, hf)
+
+def kind_from(p0: Bool, p1: Bool, +e: B.Ec, +x: U32, +y: U32, +j: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool}) ->
+    {B.tb.from(B.ref.kind.k(p0, p1, e, x, y, j, b)) == B.tb.from(b) : List<&2, U32>}:
+  match p0 p1:
+    case True{} _:
+      put_from(b, B.unit.text(e, y), il_utext(e, y, hf))
+    case False{} True{}:
+      rk_from(U32.is_eq(B.un.o(B.ec.un(e, x)), 0), e, y, b, hf)
+    case False{} False{}:
+      put_from(b, B.own.name(e, y, j), il_own(e, y, j, hf))
+
+def self_from(c: Bool, +e: B.Ec, +x: U32, +j: U32, +y: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool}) ->
+    {B.tb.from(B.ref.self(c, e, x, j, y, b)) == B.tb.from(b) : List<&2, U32>}:
+  match c:
+    case True{}:
+      put_from(b, B.own.name(e, x, j), il_own(e, x, j, hf))
+    case False{}:
+      kind_from(U32.is_eq(B.mu.kind(B.ec.mu(e, y)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, y)), 1), e, x, y, j, b, hf)
+
+def rpk_from(c1: Bool, c2: Bool, +e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +y: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool},
+    +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) -> {B.tb.from(rp_k(c1, c2, e, x, j, mark, r, y, b)) == B.tb.from(b) : List<&2, U32>}:
+  match c1 c2:
+    case True{} _:
+      after_mark(mark, b, List.append(&2, U32, B.codes("Blend_Laws."), B.own.name(e, x, j)), il_app(B.codes("Blend_Laws."), B.own.name(e, x, j), {==}, il_own(e, x, j, hf)))
+    case False{} True{}:
+      after_mark(mark, b, List.append(&2, U32, B.codes("Blend_Laws."), B.rf.text(B.ec.obs(e), r)),
+        il_app(B.codes("Blend_Laws."), B.rf.text(B.ec.obs(e), r), {==}, il_text(B.ec.obs(e), r, ec_obs(e, hf), hr)))
+    case False{} False{}:
+      Equal.trans(List<&2, U32>, B.tb.from(B.ref.self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b))), B.tb.from(B.mark.put(mark, b)), B.tb.from(b),
+        self_from(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b), hf), mark_from(U32.is_eq(mark, 126), b))
+
+# ref.put's choices for a reference outside the writer's units mirrored
+def rx_k(+c: Bool, +e: B.Ec, +r: B.Rf) -> List<&2, U32>:
+  B.when(List<&2, U32>, c, u => B.rf.text(B.ec.obs(e), r),
+    u => List.append(&2, U32, B.alias.of(e, B.mod.bend(B.ec.paths(e), B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))))),
+      Con{46, B.rf.text(B.ec.obs(e), r)}))
+
+def il_rxk(c: Bool, +e: B.Ec, +r: B.Rf, +hf: {B.ec.inline(e) == True{} : Bool}, +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) ->
+    {B.inline(rx_k(c, e, r)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_text(B.ec.obs(e), r, ec_obs(e, hf), hr)
+    case False{}:
+      il_app(B.alias.of(e, B.mod.bend(B.ec.paths(e), B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))))), Con{46, B.rf.text(B.ec.obs(e), r)},
+        il_alias(e, B.mod.bend(B.ec.paths(e), B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r))))), hf), il_text(B.ec.obs(e), r, ec_obs(e, hf), hr))
+
+def rn_k(+c: Bool, +e: B.Ec, +r: B.Rf) -> List<&2, U32>:
+  B.when(List<&2, U32>, c, u => List.append(&2, U32, B.codes("Blend_0."), B.rf.text(B.ec.obs(e), r)), u => B.rf.ext(e, r))
+
+def il_rnk(c: Bool, +e: B.Ec, +r: B.Rf, +hf: {B.ec.inline(e) == True{} : Bool}, +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) ->
+    {B.inline(rn_k(c, e, r)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_app(B.codes("Blend_0."), B.rf.text(B.ec.obs(e), r), {==}, il_text(B.ec.obs(e), r, ec_obs(e, hf), hr))
+    case False{}:
+      il_rxk(U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0), e, r, hf, hr)
+
+def rput_from(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, m: Maybe<&2, U32>, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool},
+    +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) -> {B.tb.from(B.ref.put(e, x, j, mark, r, m, b)) == B.tb.from(b) : List<&2, U32>}:
+  match m:
+    case None{}:
+      after_mark(mark, b, rn_k(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r),
+        il_rnk(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r, hf, hr))
+    case Some{+y}:
+      rpk_from(Bool.and(U32.is_eq(B.ec.mode(e), 2), B.proves.own(B.ec.ut(e), x, y)),
+        Bool.and(U32.is_eq(B.ec.mode(e), 2), Bool.or(U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 1), U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 2))),
+        e, x, j, mark, r, y, b, hf, hr)
+
+# a body's tokens, each within a line, written after b: b's text from
+# its last newline kept
+def rts_from(ts: List<&2, B.Rt>, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool}, +ht: {B.rts.inline(ts) == True{} : Bool}) ->
+    {B.tb.from(B.rts.put(ts, e, x, j, b)) == B.tb.from(b) : List<&2, U32>}:
+  match ts:
+    case Nil{}:
+      {==}
+    case Con{t, +r}:
+      match t:
+        case B.RT{+tk}:
+          Equal.trans(List<&2, U32>, B.tb.from(B.rts.put(r, e, x, j, B.tb.put(b, B.tok.in.proof(e, tk)))), B.tb.from(B.tb.put(b, B.tok.in.proof(e, tk))), B.tb.from(b),
+            rts_from(r, e, x, j, B.tb.put(b, B.tok.in.proof(e, tk)), hf, and_r(B.rt.inline(B.RT{tk}), B.rts.inline(r), ht)),
+            put_from(b, B.tok.in.proof(e, tk), il_tok(e, tk, and_l(B.rt.inline(B.RT{tk}), B.rts.inline(r), ht))))
+        case B.RR{+mark, +ref}:
+          Equal.trans(List<&2, U32>, B.tb.from(B.rts.put(r, e, x, j, B.ref.put(e, x, j, mark, ref, B.ux.find(B.ec.ux(e), ref), b))),
+            B.tb.from(B.ref.put(e, x, j, mark, ref, B.ux.find(B.ec.ux(e), ref), b)), B.tb.from(b),
+            rts_from(r, e, x, j, B.ref.put(e, x, j, mark, ref, B.ux.find(B.ec.ux(e), ref), b), hf, and_r(B.rt.inline(B.RR{mark, ref}), B.rts.inline(r), ht)),
+            rput_from(e, x, j, mark, ref, B.ux.find(B.ec.ux(e), ref), b, hf, and_l(B.rt.inline(B.RR{mark, ref}), B.rts.inline(r), ht)))
+        case B.RX{+mark, +path, +rest}:
+          Equal.trans(List<&2, U32>, B.tb.from(B.rts.put(r, e, x, j, B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest})))),
+            B.tb.from(B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest}))), B.tb.from(b),
+            rts_from(r, e, x, j, B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest})), hf,
+              and_r(B.rt.inline(B.RX{mark, path, rest}), B.rts.inline(r), ht)),
+            after_mark(mark, b, List.append(&2, U32, B.alias.of(e, path), Con{46, rest}),
+              il_app(B.alias.of(e, path), Con{46, rest}, il_alias(e, path, hf), and_l(B.rt.inline(B.RX{mark, path, rest}), B.rts.inline(r), ht))))
+
+# A line's number and the next differ, also past 2^32
+
+def nat_succ_ne(n: Nat) -> {Nat.is_eq(1n+n, n) == False{} : Bool}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+p:
+      nat_succ_ne(p)
+
+def zero_ne(n: Nat, +m: Nat, e: {1n+n == m : Nat}, h58: MNat.lt(58n, m)) -> {Nat.is_eq(0n, n) == False{} : Bool}:
+  match n:
+    case 0n:
+      Empty.absurd({Nat.is_eq(0n, 0n) == False{} : Bool},
+        MB.false_ne_true()(Equal.trans(Bool, Nat.is_lt(58n, 1n), Nat.is_lt(58n, m), True{}, Equal.cong(Nat, Bool, z => Nat.is_lt(58n, z), 1n, m, e), h58)))
+    case 1n+p:
+      {==}
+
+def sne_k(c: Bool, +n: Nat, +m: Nat, ec: {Nat.is_lt(1n+n, m) == c : Bool}, +hn: MNat.lt(n, m), +h58: MNat.lt(58n, m)) -> {Nat.is_eq(Nat.mod(1n+n, m), n) == False{} : Bool}:
+  match c:
+    case True{}:
+      %Equal.sym(Nat, Nat.mod(1n+n, m), 1n+n, MNat.mod_eq_of_lt(1n+n, m, ec)) : {Nat.is_eq(_, n) == False{} : Bool}
+      nat_succ_ne(n)
+    case False{}:
+      +e = MNat.le_antisymm(1n+n, m, MNat.succ_le_of_lt(n, m, hn), MNat.le_of_not_lt(1n+n, m, ec))
+      %Equal.sym(Nat, 1n+n, m, e) : {Nat.is_eq(Nat.mod(_, m), n) == False{} : Bool}
+      %Equal.sym(Nat, Nat.mod(m, m), 0n, MNat.mod_self(m)) : {Nat.is_eq(_, n) == False{} : Bool}
+      zero_ne(n, m, e, h58)
+
+def u32_succ_ne_m(+a: U32, +m: Nat, +em: {Nat.pow(2n, 32n) == m : Nat}) -> {U32.is_eq(U32.add(a, 1), a) == False{} : Bool}:
+  %MU.u32_is_eq_to_nat_sym(U32.add(a, 1), a) : {_ == False{} : Bool}
+  %Equal.sym(Nat, U32.to_nat(U32.add(a, 1)), Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(1)), m), wrap_m(m, em, a, 1)) :
+    {Nat.is_eq(_, U32.to_nat(a)) == False{} : Bool}
+  %MNat.add_comm(1n, U32.to_nat(a)) : {Nat.is_eq(Nat.mod(_, m), U32.to_nat(a)) == False{} : Bool}
+  sne_k(Nat.is_lt(1n+U32.to_nat(a), m), U32.to_nat(a), m, {==}, MU.internal_u32_to_nat_lt(m, a, em), ltb(m, em))
+
+def u32_succ_ne(+a: U32) -> {U32.is_eq(U32.add(a, 1), a) == False{} : Bool}:
+  u32_succ_ne_m(a, Nat.pow(2n, 32n), {==})
+
+# A body's lines: where each starts, and the walk over them
+
+# what a line leaves of the text from its last newline: as before, on
+# the header's line (a space), or a newline after the text before it
+def lx(c: Bool, +b: B.Tb) -> List<&2, U32>:
+  match c:
+    case True{}:
+      B.tb.from(b)
+    case False{}:
+      Con{10, B.tb.acc(b)}
+
+def lnls(c: Bool, +b: B.Tb) -> Nat:
+  match c:
+    case True{}:
+      B.tb.nls(b)
+    case False{}:
+      1n+B.tb.nls(b)
+
+def lead_from(c: Bool, blank: Bool, +n: Nat, +b: B.Tb) -> {B.tb.from(B.tb.put(b, B.rl.lead(c, blank, n))) == lx(c, b) : List<&2, U32>}:
+  match c blank:
+    case True{} _:
+      put_from(b, [32], {==})
+    case False{} True{}:
+      match b:
+        case B.Tb{+acc, ctrs}:
+          {==}
+    case False{} False{}:
+      match b:
+        case B.Tb{+acc, ctrs}:
+          onto_from(B.spaces(n), Con{10, acc}, il_spaces(n))
+
+# a line written: where it starts, its tokens within it
+def line_from(+no: U32, +ind: U32, ts: List<&2, B.Rt>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: B.Tb,
+    +hf: {B.ec.inline(e) == True{} : Bool}, +ht: {B.rts.inline(ts) == True{} : Bool}) ->
+    {B.tb.from(B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, first, b)) == lx(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), b) : List<&2, U32>}:
+  match ts:
+    case Nil{}:
+      lead_from(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), True{}, 0n, b)
+    case Con{+t, +r}:
+      Equal.trans(List<&2, U32>,
+        B.tb.from(B.rts.put(Con{t, r}, e, x, j, B.tb.put(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), False{},
+          U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0)))))),
+        B.tb.from(B.tb.put(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), False{},
+          U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0))))),
+        lx(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), b),
+        rts_from(Con{t, r}, e, x, j, B.tb.put(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), False{},
+          U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0)))), hf, ht),
+        lead_from(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), False{},
+          U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0)), b))
+
+def lx_nls(c: Bool, +b: B.Tb) -> {B.nls(lx(c, b)) == lnls(c, b) : Nat}:
+  match c:
+    case True{}:
+      Equal.sym(Nat, B.nls(B.tb.acc(b)), B.nls(B.from.nl(B.tb.acc(b))), nls_from(B.tb.acc(b)))
+    case False{}:
+      {==}
+
+# a line's newlines, by where it starts
+def line_nls(+a: B.Tb, +c: Bool, +b: B.Tb, h: {B.tb.from(a) == lx(c, b) : List<&2, U32>}) -> {B.tb.nls(a) == lnls(c, b) : Nat}:
+  Equal.trans(Nat, B.tb.nls(a), B.nls(B.tb.from(a)), lnls(c, b), nls_from(B.tb.acc(a)),
+    Equal.trans(Nat, B.nls(B.tb.from(a)), B.nls(lx(c, b)), lnls(c, b), Equal.cong(List<&2, U32>, Nat, z => B.nls(z), B.tb.from(a), lx(c, b), h), lx_nls(c, b)))
+
+def same_at(+a: List<&2, U32>, +b: List<&2, U32>, h: {a == b : List<&2, U32>}) -> {B.same(a, b) == True{} : Bool}:
+  %Equal.sym(List<&2, U32>, a, b, h) : {B.same(_, b) == True{} : Bool}
+  Laws.names.same_refl(b)
+
+def nat_at(+a: Nat, +k: Nat, h: {a == k : Nat}) -> {Nat.is_eq(a, k) == True{} : Bool}:
+  %Equal.sym(Nat, a, k, h) : {Nat.is_eq(_, k) == True{} : Bool}
+  MNat.is_eq_refl(k)
+
+def wl_or(c: Bool, +a: B.Tb, +b: B.Tb, h: {B.tb.from(a) == lx(c, b) : List<&2, U32>}) ->
+    {Bool.or(B.same(B.tb.from(a), Con{10, B.tb.acc(b)}), B.same(B.tb.from(a), B.tb.from(b))) == True{} : Bool}:
+  match c:
+    case True{}:
+      or_r_true(B.same(B.tb.from(a), Con{10, B.tb.acc(b)}), B.same(B.tb.from(a), B.tb.from(b)), same_at(B.tb.from(a), B.tb.from(b), h))
+    case False{}:
+      or_l_true(B.same(B.tb.from(a), Con{10, B.tb.acc(b)}), B.same(B.tb.from(a), B.tb.from(b)), same_at(B.tb.from(a), Con{10, B.tb.acc(b)}, h))
+
+# a line written where the walk has it: numbered n, on line k
+def wl_ok(+c: Bool, +a: B.Tb, +b: B.Tb, +no: U32, +n: U32, +k: Nat, hn: {U32.is_eq(no, n) == True{} : Bool}, +h: {B.tb.from(a) == lx(c, b) : List<&2, U32>},
+    hk: {lnls(c, b) == k : Nat}) ->
+    {Bool.and(Bool.and(U32.is_eq(no, n), Nat.is_eq(B.tb.nls(a), k)), Bool.or(B.same(B.tb.from(a), Con{10, B.tb.acc(b)}), B.same(B.tb.from(a), B.tb.from(b)))) == True{} : Bool}:
+  and_intro(Bool.and(U32.is_eq(no, n), Nat.is_eq(B.tb.nls(a), k)), Bool.or(B.same(B.tb.from(a), Con{10, B.tb.acc(b)}), B.same(B.tb.from(a), B.tb.from(b))),
+    and_intro(U32.is_eq(no, n), Nat.is_eq(B.tb.nls(a), k), hn, nat_at(B.tb.nls(a), k, Equal.trans(Nat, B.tb.nls(a), lnls(c, b), k, line_nls(a, c, b, h), hk))),
+    wl_or(c, a, b, h))
+
+def on_at(+first: Bool, +no: U32, +n: U32, +hno: U32, heq: {no == n : U32}, h: {Bool.and(first, U32.is_eq(n, hno)) == False{} : Bool}) ->
+    {Bool.and(first, U32.is_eq(no, hno)) == False{} : Bool}:
+  %Equal.sym(U32, no, n, heq) : {Bool.and(first, U32.is_eq(_, hno)) == False{} : Bool}
+  h
+
+# the walk on from a line, its line's newlines as the walk counts them
+def at_k(t: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +a: B.Tb, +n: U32, +k: Nat, +fin: List<&2, U32>,
+    ih: {B.wr.at(t, e, x, j, dind, False{}, a, 1n+B.tb.nls(a), n, fin) == True{} : Bool}, h: {B.tb.nls(a) == k : Nat}) ->
+    {B.wr.at(t, e, x, j, dind, False{}, a, 1n+k, n, fin) == True{} : Bool}:
+  %h : {B.wr.at(t, e, x, j, dind, False{}, a, 1n+_, n, fin) == True{} : Bool}
+  ih
+
+# a line starting one of its own, numbered n: where the walk has it,
+# and the walk on from it
+def an_k(+no: U32, +ind: U32, +ts: List<&2, B.Rt>, +t: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: B.Tb, +n: U32,
+    +hf: {B.ec.inline(e) == True{} : Bool}, +hi: {B.rls.inline(Con{B.Rl{no, ind, ts}, t}) == True{} : Bool},
+    +hn: {B.rl.from(Con{B.Rl{no, ind, ts}, t}, n) == True{} : Bool},
+    +hon: {Bool.and(first, U32.is_eq(n, B.node.no(B.un.node(B.ec.un(e, x))))) == False{} : Bool},
+    ih: {B.wr.at(t, e, x, j, dind, False{}, B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, first, b), 1n+B.tb.nls(B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, first, b)),
+      U32.add(n, 1), B.tb.acc(B.rls.put(t, e, x, j, dind, False{}, B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, first, b)))) == True{} : Bool}) ->
+    {B.wr.at(Con{B.Rl{no, ind, ts}, t}, e, x, j, dind, first, b, 1n+B.tb.nls(b), n, B.tb.acc(B.rls.put(Con{B.Rl{no, ind, ts}, t}, e, x, j, dind, first, b))) == True{} : Bool}:
+  +a = B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, first, b)
+  +on = Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))))
+  +hn0 = and_l(U32.is_eq(no, n), B.rl.from(t, U32.add(n, 1)), hn)
+  +hfa = Equal.trans(List<&2, U32>, B.tb.from(a), lx(on, b), lx(False{}, b),
+    line_from(no, ind, ts, e, x, j, dind, first, b, hf, and_l(B.rts.inline(ts), B.rls.inline(t), hi)),
+    Equal.cong(Bool, List<&2, U32>, z => lx(z, b), on, False{}, on_at(first, no, n, B.node.no(B.un.node(B.ec.un(e, x))), u32_eq_of_is_eq(no, n, hn0), hon)))
+  and_intro(B.wr.line(B.Rl{no, ind, ts}, e, x, j, dind, first, b, 1n+B.tb.nls(b), n),
+    B.wr.at(t, e, x, j, dind, False{}, a, 1n+(1n+B.tb.nls(b)), U32.add(n, 1), B.tb.acc(B.rls.put(t, e, x, j, dind, False{}, a))),
+    wl_ok(False{}, a, b, no, n, 1n+B.tb.nls(b), hn0, hfa, {==}),
+    at_k(t, e, x, j, dind, a, U32.add(n, 1), 1n+B.tb.nls(b), B.tb.acc(B.rls.put(t, e, x, j, dind, False{}, a)), ih, line_nls(a, False{}, b, hfa)))
+
+# from a line starting one of its own, numbered n: each line after a
+# newline of its own, a line further each
+def at_new(ls: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: B.Tb, +n: U32,
+    +hf: {B.ec.inline(e) == True{} : Bool}, +hi: {B.rls.inline(ls) == True{} : Bool}, +hn: {B.rl.from(ls, n) == True{} : Bool},
+    +hon: {Bool.and(first, U32.is_eq(n, B.node.no(B.un.node(B.ec.un(e, x))))) == False{} : Bool}) ->
+    {B.wr.at(ls, e, x, j, dind, first, b, 1n+B.tb.nls(b), n, B.tb.acc(B.rls.put(ls, e, x, j, dind, first, b))) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      Laws.names.same_refl(B.tb.acc(b))
+    case Con{l, +t}:
+      match l:
+        case B.Rl{+no, +ind, +ts}:
+          an_k(no, ind, ts, t, e, x, j, dind, first, b, n, hf, hi, hn, hon,
+            at_new(t, e, x, j, dind, False{}, B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, first, b), U32.add(n, 1), hf,
+              and_r(B.rts.inline(ts), B.rls.inline(t), hi), and_r(U32.is_eq(no, n), B.rl.from(t, U32.add(n, 1)), hn), {==}))
+
+# a first line on the header's line, numbered as it: on that line, the
+# walk on from it
+def as_k(+no: U32, +ind: U32, +ts: List<&2, B.Rt>, +t: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +b: B.Tb,
+    +hf: {B.ec.inline(e) == True{} : Bool}, +hi: {B.rls.inline(Con{B.Rl{no, ind, ts}, t}) == True{} : Bool},
+    +hn: {B.rl.from(Con{B.Rl{no, ind, ts}, t}, B.node.no(B.un.node(B.ec.un(e, x)))) == True{} : Bool},
+    ih: {B.wr.at(t, e, x, j, dind, False{}, B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, True{}, b), 1n+B.tb.nls(B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, True{}, b)),
+      U32.add(B.node.no(B.un.node(B.ec.un(e, x))), 1), B.tb.acc(B.rls.put(t, e, x, j, dind, False{}, B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, True{}, b)))) == True{} : Bool}) ->
+    {B.wr.at(Con{B.Rl{no, ind, ts}, t}, e, x, j, dind, True{}, b, B.tb.nls(b), B.node.no(B.un.node(B.ec.un(e, x))),
+      B.tb.acc(B.rls.put(Con{B.Rl{no, ind, ts}, t}, e, x, j, dind, True{}, b))) == True{} : Bool}:
+  +a = B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, True{}, b)
+  +hno = B.node.no(B.un.node(B.ec.un(e, x)))
+  +hn0 = and_l(U32.is_eq(no, hno), B.rl.from(t, U32.add(hno, 1)), hn)
+  +hfa = Equal.trans(List<&2, U32>, B.tb.from(a), lx(U32.is_eq(no, hno), b), lx(True{}, b),
+    line_from(no, ind, ts, e, x, j, dind, True{}, b, hf, and_l(B.rts.inline(ts), B.rls.inline(t), hi)),
+    Equal.cong(Bool, List<&2, U32>, z => lx(z, b), U32.is_eq(no, hno), True{}, hn0))
+  and_intro(B.wr.line(B.Rl{no, ind, ts}, e, x, j, dind, True{}, b, B.tb.nls(b), hno),
+    B.wr.at(t, e, x, j, dind, False{}, a, 1n+B.tb.nls(b), U32.add(hno, 1), B.tb.acc(B.rls.put(t, e, x, j, dind, False{}, a))),
+    wl_ok(True{}, a, b, no, hno, B.tb.nls(b), hn0, hfa, {==}),
+    at_k(t, e, x, j, dind, a, U32.add(hno, 1), B.tb.nls(b), B.tb.acc(B.rls.put(t, e, x, j, dind, False{}, a)), ih, line_nls(a, True{}, b, hfa)))
+
+def at_stay(ls: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +b: B.Tb,
+    +hf: {B.ec.inline(e) == True{} : Bool}, +hi: {B.rls.inline(ls) == True{} : Bool}, +hn: {B.rl.from(ls, B.node.no(B.un.node(B.ec.un(e, x)))) == True{} : Bool}) ->
+    {B.wr.at(ls, e, x, j, dind, True{}, b, B.tb.nls(b), B.node.no(B.un.node(B.ec.un(e, x))), B.tb.acc(B.rls.put(ls, e, x, j, dind, True{}, b))) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      Laws.names.same_refl(B.tb.acc(b))
+    case Con{l, +t}:
+      match l:
+        case B.Rl{+no, +ind, +ts}:
+          as_k(no, ind, ts, t, e, x, j, dind, b, hf, hi, hn,
+            at_new(t, e, x, j, dind, False{}, B.rl.put(B.Rl{no, ind, ts}, e, x, j, dind, True{}, b), U32.add(B.node.no(B.un.node(B.ec.un(e, x))), 1), hf,
+              and_r(B.rts.inline(ts), B.rls.inline(t), hi), and_r(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), B.rl.from(t, U32.add(B.node.no(B.un.node(B.ec.un(e, x))), 1)), hn), {==}))
+
+# A unit's head: a newline, the marker's line, a newline, the header
+
+def onto_app(xs: List<&2, U32>, +ys: List<&2, U32>, +acc: List<&2, U32>) ->
+    {B.rev.onto(List.append(&2, U32, xs, ys), acc) == B.rev.onto(ys, B.rev.onto(xs, acc)) : List<&2, U32>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      onto_app(t, ys, Con{x, acc})
+
+# unit.kw's choice mirrored: each a newline, then text within a line
+def kw_k(+c1: Bool, +c2: Bool) -> List<&2, U32>:
+  B.when(List<&2, U32>, c1, u => B.codes("\nlaw "), u => B.when(List<&2, U32>, c2, v => B.codes("\ndef Blend_Laws."), v => B.codes("\ndef ")))
+
+def kw_from(c1: Bool, c2: Bool, +nm: List<&2, U32>, +xs: List<&2, U32>, +h: {B.inline(nm) == True{} : Bool}) ->
+    {B.from.nl(B.rev.onto(List.append(&2, U32, kw_k(c1, c2), nm), xs)) == Con{10, xs} : List<&2, U32>}:
+  match c1 c2:
+    case True{} _:
+      onto_from(List.append(&2, U32, B.codes("law "), nm), Con{10, xs}, il_app(B.codes("law "), nm, {==}, h))
+    case False{} True{}:
+      onto_from(List.append(&2, U32, B.codes("def Blend_Laws."), nm), Con{10, xs}, il_app(B.codes("def Blend_Laws."), nm, {==}, h))
+    case False{} False{}:
+      onto_from(List.append(&2, U32, B.codes("def "), nm), Con{10, xs}, il_app(B.codes("def "), nm, {==}, h))
+
+def head_put(b: B.Tb, +ml: List<&2, U32>, +c1: Bool, +c2: Bool, +nm: List<&2, U32>, +h: {B.inline(nm) == True{} : Bool}) ->
+    {B.tb.from(B.tb.put(b, List.append(&2, U32, Con{10, ml}, List.append(&2, U32, kw_k(c1, c2), nm)))) == Con{10, B.rev.onto(ml, Con{10, B.tb.acc(b)})} : List<&2, U32>}:
+  match b:
+    case B.Tb{+acc, ctrs}:
+      %Equal.sym(List<&2, U32>, B.rev.onto(List.append(&2, U32, Con{10, ml}, List.append(&2, U32, kw_k(c1, c2), nm)), acc),
+          B.rev.onto(List.append(&2, U32, kw_k(c1, c2), nm), B.rev.onto(Con{10, ml}, acc)), onto_app(Con{10, ml}, List.append(&2, U32, kw_k(c1, c2), nm), acc)) :
+        {B.from.nl(_) == Con{10, B.rev.onto(ml, Con{10, acc})} : List<&2, U32>}
+      kw_from(c1, c2, nm, B.rev.onto(ml, Con{10, acc}), h)
+
+def head_from(+e: B.Ec, +s: U32, +x: U32, +j: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool}) ->
+    {B.tb.from(B.unit.head(e, s, x, j, b)) == Con{10, B.rev.onto(B.marker.line(B.ec.files(e), B.node.no(B.un.node(B.ec.un(e, s)))), Con{10, B.tb.acc(b)})} : List<&2, U32>}:
+  Equal.trans(List<&2, U32>, B.tb.from(B.unit.head(e, s, x, j, b)),
+    B.tb.from(B.tb.put(b, List.append(&2, U32, B.marker(e, s), List.append(&2, U32, B.unit.kw(e, s), B.own.name(e, x, j))))),
+    Con{10, B.rev.onto(B.marker.line(B.ec.files(e), B.node.no(B.un.node(B.ec.un(e, s)))), Con{10, B.tb.acc(b)})},
+    rts_from(B.un.hd(B.ec.un(e, s)), e, s, j, B.tb.put(b, List.append(&2, U32, B.marker(e, s), List.append(&2, U32, B.unit.kw(e, s), B.own.name(e, x, j)))),
+      hf, un_hd(B.ec.un(e, s), il_un(e, s, hf))),
+    head_put(b, B.marker.line(B.ec.files(e), B.node.no(B.un.node(B.ec.un(e, s)))),
+      U32.is_eq(B.node.what(B.un.node(B.ec.un(e, s))), 1), U32.is_eq(B.node.what(B.un.node(B.ec.un(e, s))), 2), B.own.name(e, x, j), il_own(e, x, j, hf)))
+
+# a file's path, or `blend`
+def lfile_k(m: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
+  B.on.maybe(List<&2, U32>, List<&2, U32>, m, u => B.codes("blend"), x => x)
+
+def il_lf(fs: List<&2, List<&2, U32>>, n: Nat, +h: {B.inlines(fs) == True{} : Bool}) -> {B.inline(lfile_k(List.get(&2, List<&2, U32>, fs, n))) == True{} : Bool}:
+  match fs:
+    case Nil{}:
+      {==}
+    case Con{+f, +t}:
+      match n:
+        case 0n:
+          and_l(B.inline(f), B.inlines(t), h)
+        case 1n+k:
+          il_lf(t, k, and_r(B.inline(f), B.inlines(t), h))
+
+def il_marker(+files: List<&2, List<&2, U32>>, +no: U32, +h: {B.inlines(files) == True{} : Bool}) -> {B.inline(B.marker.line(files, no)) == True{} : Bool}:
+  il_app(B.codes("# blend: "), List.append(&2, U32, B.loc.file(files, no), Con{58, B.codes(U32.show(B.loc.line(no)))}), {==},
+    il_app(B.loc.file(files, no), Con{58, B.codes(U32.show(B.loc.line(no)))}, il_lf(files, U32.to_nat(B.loc.mod(no)), h), il_show(B.loc.line(no))))
+
+def head_same(+e: B.Ec, +s: U32, +x: U32, +j: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool}) ->
+    {B.same(B.tb.from(B.unit.head(e, s, x, j, b)), Con{10, B.rev.onto(B.marker.line(B.ec.files(e), B.node.no(B.un.node(B.ec.un(e, s)))), Con{10, B.tb.acc(b)})}) == True{} : Bool}:
+  same_at(B.tb.from(B.unit.head(e, s, x, j, b)), Con{10, B.rev.onto(B.marker.line(B.ec.files(e), B.node.no(B.un.node(B.ec.un(e, s)))), Con{10, B.tb.acc(b)})},
+    head_from(e, s, x, j, b, hf))
+
+def wh_ok(+e: B.Ec, +s: U32, +x: U32, +j: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool}) -> {B.wr.head(e, s, x, j, b) == True{} : Bool}:
+  and_intro(B.inline(B.marker.line(B.ec.files(e), B.node.no(B.un.node(B.ec.un(e, s))))),
+    B.same(B.tb.from(B.unit.head(e, s, x, j, b)), Con{10, B.rev.onto(B.marker.line(B.ec.files(e), B.node.no(B.un.node(B.ec.un(e, s)))), Con{10, B.tb.acc(b)})}),
+    il_marker(B.ec.files(e), B.node.no(B.un.node(B.ec.un(e, s))), ec_files(e, hf)), head_same(e, s, x, j, b, hf))
+
+# the body's lines from the header's line, or from the line after
+def ul_k(c1: Bool, +c2: Bool, +ls: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +b: B.Tb,
+    +hf: {B.ec.inline(e) == True{} : Bool}, +hi: {B.rls.inline(ls) == True{} : Bool}, h: {Bool.or(c1, c2) == True{} : Bool},
+    e1: {B.rl.from(ls, B.node.no(B.un.node(B.ec.un(e, x)))) == c1 : Bool}, e2: {B.rl.from(ls, U32.add(B.node.no(B.un.node(B.ec.un(e, x))), 1)) == c2 : Bool}) ->
+    {Bool.or(B.wr.at(ls, e, x, j, dind, True{}, b, B.tb.nls(b), B.node.no(B.un.node(B.ec.un(e, x))), B.tb.acc(B.rls.put(ls, e, x, j, dind, True{}, b))),
+      B.wr.at(ls, e, x, j, dind, True{}, b, 1n+B.tb.nls(b), U32.add(B.node.no(B.un.node(B.ec.un(e, x))), 1), B.tb.acc(B.rls.put(ls, e, x, j, dind, True{}, b)))) == True{} : Bool}:
+  match c1:
+    case True{}:
+      or_l_true(B.wr.at(ls, e, x, j, dind, True{}, b, B.tb.nls(b), B.node.no(B.un.node(B.ec.un(e, x))), B.tb.acc(B.rls.put(ls, e, x, j, dind, True{}, b))),
+        B.wr.at(ls, e, x, j, dind, True{}, b, 1n+B.tb.nls(b), U32.add(B.node.no(B.un.node(B.ec.un(e, x))), 1), B.tb.acc(B.rls.put(ls, e, x, j, dind, True{}, b))),
+        at_stay(ls, e, x, j, dind, b, hf, hi, e1))
+    case False{}:
+      or_r_true(B.wr.at(ls, e, x, j, dind, True{}, b, B.tb.nls(b), B.node.no(B.un.node(B.ec.un(e, x))), B.tb.acc(B.rls.put(ls, e, x, j, dind, True{}, b))),
+        B.wr.at(ls, e, x, j, dind, True{}, b, 1n+B.tb.nls(b), U32.add(B.node.no(B.un.node(B.ec.un(e, x))), 1), B.tb.acc(B.rls.put(ls, e, x, j, dind, True{}, b))),
+        at_new(ls, e, x, j, dind, True{}, b, U32.add(B.node.no(B.un.node(B.ec.un(e, x))), 1), hf, hi,
+          Equal.trans(Bool, B.rl.from(ls, U32.add(B.node.no(B.un.node(B.ec.un(e, x))), 1)), c2, True{}, e2, h),
+          u32_succ_ne(B.node.no(B.un.node(B.ec.un(e, x))))))
+
+def Laws.markers.writer(e, s, x, j, b, hf, hl):
+  and_intro(B.wr.head(e, s, x, j, b),
+    Bool.or(B.wr.at(B.un.lines(B.ec.un(e, s)), e, s, j, B.node.ind(B.un.node(B.ec.un(e, s))), True{}, B.unit.head(e, s, x, j, b),
+        B.tb.nls(B.unit.head(e, s, x, j, b)), B.node.no(B.un.node(B.ec.un(e, s))), B.tb.acc(B.unit.body(e, s, x, j, b))),
+      B.wr.at(B.un.lines(B.ec.un(e, s)), e, s, j, B.node.ind(B.un.node(B.ec.un(e, s))), True{}, B.unit.head(e, s, x, j, b),
+        1n+B.tb.nls(B.unit.head(e, s, x, j, b)), U32.add(B.node.no(B.un.node(B.ec.un(e, s))), 1), B.tb.acc(B.unit.body(e, s, x, j, b)))),
+    wh_ok(e, s, x, j, b, hf),
+    ul_k(B.rl.from(B.un.lines(B.ec.un(e, s)), B.node.no(B.un.node(B.ec.un(e, s)))), B.rl.from(B.un.lines(B.ec.un(e, s)), U32.add(B.node.no(B.un.node(B.ec.un(e, s))), 1)),
+      B.un.lines(B.ec.un(e, s)), e, s, j, B.node.ind(B.un.node(B.ec.un(e, s))), B.unit.head(e, s, x, j, b), hf, un_ls(B.ec.un(e, s), il_un(e, s, hf)), hl, {==}, {==}))
