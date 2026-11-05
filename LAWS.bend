@@ -186,6 +186,15 @@ law emit.names:
   for +e: B.Ec
   {B.names.all(xs, e) == B.defs.names(B.defs.of(xs, e), e) : List<&2, B.Nm>}
 
+# LAW: and where that check reports none, the names of the definitions
+# written are distinct, so that each is Bend's by a name of its own.
+# Record: blend-namespaces-as-bends, blend-copies-keep-their-name
+law emit.unique:
+  for +xs: List<&2, U32>
+  for +e: B.Ec
+  for +h: {B.er.names.of(B.names.all(xs, e)) == Nil{} : List<&2, B.Er>}
+  {B.nms.distinct(B.defs.names(B.defs.of(xs, e), e)) == True{} : Bool}
+
 # LAW: mults, which hands each unit's uses on to the units it uses as it
 # goes, gives each unit the copies its uses by all the units emitted ask
 # for, as a search of them gathers them (mults.spec), where the order is
