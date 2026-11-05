@@ -3987,6 +3987,67 @@ def units.held(us: List<&2, Un>, +ds: List<&2, Node>) -> Bool:
     case Con{u, t}:
       node.held(un.node(u), ds) && units.held(t, ds)
 
+# The markers' terms for the tree and the units (LAWS.bend,
+# `markers.tree`, `markers.units`): a body's lines numbered on from k
+
+def bl.from(bs: List<&2, Bl>, +k: U32) -> Bool:
+  match bs:
+    case Nil{}:
+      True{}
+    case Con{b, +t}:
+      match b:
+        case Bl{+no, +ind, ts}:
+          U32.is_eq(no, k) && bl.from(t, (k + 1 : U32))
+
+def rl.from(ls: List<&2, Rl>, +k: U32) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{l, +t}:
+      match l:
+        case Rl{+no, +ind, ts}:
+          U32.is_eq(no, k) && rl.from(t, (k + 1 : U32))
+
+# every definition of a tree, its objects' members' included, its body
+# numbered on from its header's line, or from the line after
+def defs.ok(ns: List<&2, Node>) -> Bool:
+  match ns:
+    case Nil{}:
+      True{}
+    case Con{nd, t}:
+      match nd:
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          defs.ok(kids) && defs.ok(t)
+        case NDef{+share, +upd, name, rest, params, +body, +no, +ind, +what}:
+          (bl.from(body, no) || bl.from(body, (no + 1 : U32))) && defs.ok(t)
+        case _:
+          defs.ok(t)
+
+def trees.ok(ts: List<&2, List<&2, Node>>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{tr, t}:
+      defs.ok(tr) && trees.ok(t)
+
+# a unit's lines numbered on from its definition's line, or the line
+# after, where it is a definition
+def un.ok(u: Un) -> Bool:
+  match u:
+    case Un{+o, i, nd, hd, +ls}:
+      match nd:
+        case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          rl.from(ls, no) || rl.from(ls, (no + 1 : U32))
+        case _:
+          True{}
+
+def units.ok(us: List<&2, Un>) -> Bool:
+  match us:
+    case Nil{}:
+      True{}
+    case Con{u, t}:
+      un.ok(u) && units.ok(t)
+
 # the units of one file: the code's (what 0) or the laws' and proofs'
 def units.of(us: List<&2, Un>, +laws: Bool) -> List<&2, Un>:
   match us:

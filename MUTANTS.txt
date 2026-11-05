@@ -298,3 +298,17 @@ a made object given a definition of its own, one no tree holds
         u => syn.x(t, x, obs, Con{Ob{next, x, List.append(&2, List<&2, U32>, ob.path(ob.at(obs, x)), [n]), ob.abs(ob.at(obs, x)), Nil{}, Nil{},
 +++
         u => syn.x(t, x, obs, Con{Ob{next, x, List.append(&2, List<&2, U32>, ob.path(ob.at(obs, x)), [n]), ob.abs(ob.at(obs, x)), Nil{}, [NDef{0, False{}, Nil{}, Nil{}, Nil{}, Nil{}, 0, 0, 0}],
+
+=== tree_drops markers.tree markers.read
+a definition's node made without its body's first line
+--- blend.bend
+      close.into(st, NDef{share, upd, name, rest, params, toks.lines(body), no, ind, what})
++++
+      close.into(st, NDef{share, upd, name, rest, params, toks.lines(List.tail(&2, Ln, body)), no, ind, what})
+
+=== resolved_shifted markers.units
+a line resolved numbered one more than the line it resolves
+--- blend.bend
+      Rb{[Rl{no, ind, rl.join(ls)}], es, more}
++++
+      Rb{[Rl{(no + 1 : U32), ind, rl.join(ls)}], es, more}
