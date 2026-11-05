@@ -152,6 +152,16 @@ it alone taught. Add to this file what a new proof teaches.
   pair's eta law, a match on the pair (`pair_eta`, `case (a, b):`),
   rather than pass the lambda's property in as a function, which the
   recursion would need twice.
+- **Provenance, by membership**: "every unit's definition is one the
+  tree holds" is stated as `Bool` membership under a structural `Bool`
+  equality (`ndef.same`), with a "within" invariant kept by every
+  builder on the way (`defs.within`, `objs.within`, a table's leaves
+  `hw`). A generic form over any property is out of reach: a property
+  is a function, which a recursion cannot both use and pass on.
+- **Name a function's locals to state them**: a law cannot name a
+  `+x = ...` inside a definition; making the local a definition of its
+  own (`syn.of`, `obs.made`) lets the law say what it computes, the
+  code unchanged in behaviour.
 - **A recursive call needing its branch's fact**: where the induction
   hypothesis holds only in one case of a step's split (`x` not `y`),
   the step lemma takes it as a function of that case's equation, and

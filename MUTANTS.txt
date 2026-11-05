@@ -283,3 +283,18 @@ a body read from the second line after its header's
                 u => on.pair(List<&2, Ln>, List<&2, Ln>, List<&2, Item>, body.go(t, ind, Nil{}),
 +++
                 u => on.pair(List<&2, Ln>, List<&2, Ln>, List<&2, Item>, body.go(List.tail(&2, Ln, t), ind, Nil{}),
+
+=== found_shifted nodes.copies nodes
+a definition found among an object's members given back a line after
+its own, a definition no tree holds
+--- blend.bend
+          when(Maybe<&2, Node>, same(name, n), u => Some{NDef{share, upd, name, rest, params, body, no, ind, what}}, u => mem.find(t, n))
++++
+          when(Maybe<&2, Node>, same(name, n), u => Some{NDef{share, upd, name, rest, params, body, (no + 1 : U32), ind, what}}, u => mem.find(t, n))
+
+=== made_invents nodes.objects nodes
+a made object given a definition of its own, one no tree holds
+--- blend.bend
+        u => syn.x(t, x, obs, Con{Ob{next, x, List.append(&2, List<&2, U32>, ob.path(ob.at(obs, x)), [n]), ob.abs(ob.at(obs, x)), Nil{}, Nil{},
++++
+        u => syn.x(t, x, obs, Con{Ob{next, x, List.append(&2, List<&2, U32>, ob.path(ob.at(obs, x)), [n]), ob.abs(ob.at(obs, x)), Nil{}, [NDef{0, False{}, Nil{}, Nil{}, Nil{}, Nil{}, 0, 0, 0}],
