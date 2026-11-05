@@ -40,6 +40,10 @@
 #   (`leaf_put.k`, `mono.k`) and the code pays a little, where a `when`'s
 #   closures cost a fifth; the check's step mirrored (`ers_k`) with its
 #   error's text, a `Con` against `Nil` refuted through the mirror.
+# - C3 (`c3.sound`, `c3.complete`): the merge's accumulator peeled off
+#   by a twin without it (`mrest`, `merge_acc`); completeness by
+#   induction on a witness order, never a cycle (`good_of`); a lemma's
+#   mutually recursive partner taken as a function (`sub_weak`).
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -3027,3 +3031,877 @@ def distinct_of(ns: List<&2, B.Nm>, +s: B.Ht<B.Nm>, +hn: {B.er.names(ns, s) == N
 def Laws.emit.unique(xs, e, h):
   %Laws.emit.names(xs, e) : {B.nms.distinct(_) == True{} : Bool}
   distinct_of(B.names.all(xs, e), B.ht.for(B.Nm, List.length(&2, B.Nm, B.names.all(xs, e))), h)
+
+# C3
+# --
+#
+# The merge, run with an accumulator, is its direct recursion
+# (`mrest`) with the order taken so far before it (`merge_acc`). A
+# merge that succeeds keeps every list, as each turn takes heads, and
+# holds each object once, as one taken is in no tail and leaves every
+# list (`mrest_sound`). Given an order keeping every list and holding
+# each object once, a free head exists, the order's first object any
+# list holds being in no tail (`good_of`), so that the merge never fails
+# before its fuel, the lists' lengths, is spent (`merge_ok`).
+
+def first_mg(+id: U32, m: B.Mg) -> {List.head(&2, U32, B.lz.ord(Some{B.lin.mg(id, m)})) == Some{id} : Maybe<&2, U32>}:
+  match m:
+    case B.MOk{ord}:
+      {==}
+    case B.MFail{ss}:
+      {==}
+
+def Laws.c3.first(id, ps, ss):
+  match ss:
+    case None{}:
+      {==}
+    case Some{+seqs}:
+      first_mg(id, B.c3.merge(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), Nil{}))
+
+# the merge without its accumulator, an object taken put before the rest
+def mcons(+g: U32, m: B.Mg) -> B.Mg:
+  match m:
+    case B.MOk{ord}:
+      B.MOk{Con{g, ord}}
+    case B.MFail{ss}:
+      B.MFail{ss}
+
+def mrest(n: Nat, +seqs: List<&2, B.Sq>) -> B.Mg:
+  match n:
+    case 0n:
+      B.MFail{seqs}
+    case 1n+k:
+      match seqs:
+        case Nil{}:
+          B.MOk{Nil{}}
+        case Con{+s, +t}:
+          B.on.maybe(U32, B.Mg, B.c3.good(Con{s, t}, Con{s, t}), u => B.MFail{Con{s, t}}, +h => mcons(h, mrest(k, B.c3.take(Con{s, t}, h))))
+
+def mrest_k(+mb: Maybe<&2, U32>, +k: Nat, +s: B.Sq, +t: List<&2, B.Sq>) -> B.Mg:
+  B.on.maybe(U32, B.Mg, mb, u => B.MFail{Con{s, t}}, +h => mcons(h, mrest(k, B.c3.take(Con{s, t}, h))))
+
+def merge_k(+mb: Maybe<&2, U32>, +k: Nat, +s: B.Sq, +t: List<&2, B.Sq>, +out: List<&2, U32>) -> B.Mg:
+  B.on.maybe(U32, B.Mg, mb, u => B.MFail{Con{s, t}}, +h => B.c3.merge(k, B.c3.take(Con{s, t}, h), Con{h, out}))
+
+# an order with a prefix before it
+def mpre(+p: List<&2, U32>, m: B.Mg) -> B.Mg:
+  match m:
+    case B.MOk{ord}:
+      B.MOk{List.append(&2, U32, p, ord)}
+    case B.MFail{ss}:
+      B.MFail{ss}
+
+def mpre_nil(m: B.Mg) -> {m == mpre(Nil{}, m) : B.Mg}:
+  match m:
+    case B.MOk{ord}:
+      {==}
+    case B.MFail{ss}:
+      {==}
+
+def pre_cons(+p: List<&2, U32>, +h: U32, m: B.Mg) -> {mpre(p, mcons(h, m)) == mpre(List.append(&2, U32, p, [h]), m) : B.Mg}:
+  match m:
+    case B.MOk{+o}:
+      %assoc_r(p, [h], o) : {B.MOk{List.append(&2, U32, p, Con{h, o})} == B.MOk{_} : B.Mg}
+      {==}
+    case B.MFail{ss}:
+      {==}
+
+def acc_k(mb: Maybe<&2, U32>, +k: Nat, +s: B.Sq, +t: List<&2, B.Sq>, +out: List<&2, U32>,
+    ih: @h:U32 -> {mpre(List.reverse(&2, U32, Con{h, out}), mrest(k, B.c3.take(Con{s, t}, h))) == B.c3.merge(k, B.c3.take(Con{s, t}, h), Con{h, out}) : B.Mg}) ->
+    {mpre(List.reverse(&2, U32, out), mrest_k(mb, k, s, t)) == merge_k(mb, k, s, t, out) : B.Mg}:
+  match mb:
+    case None{}:
+      {==}
+    case Some{+h}:
+      %ih(h) : {mpre(List.reverse(&2, U32, out), mcons(h, mrest(k, B.c3.take(Con{s, t}, h)))) == _ : B.Mg}
+      %rev_snoc(out, h) : {mpre(List.reverse(&2, U32, out), mcons(h, mrest(k, B.c3.take(Con{s, t}, h)))) == mpre(_, mrest(k, B.c3.take(Con{s, t}, h))) : B.Mg}
+      pre_cons(List.reverse(&2, U32, out), h, mrest(k, B.c3.take(Con{s, t}, h)))
+
+# the merge is its direct recursion after the order taken so far
+def merge_acc(n: Nat, +seqs: List<&2, B.Sq>, +out: List<&2, U32>) ->
+    {mpre(List.reverse(&2, U32, out), mrest(n, seqs)) == B.c3.merge(n, seqs, out) : B.Mg}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+(+k):
+      match seqs:
+        case Nil{}:
+          %ML.append_nil_sym(&2, U32, List.reverse(&2, U32, out)) : {B.MOk{_} == B.MOk{List.reverse(&2, U32, out)} : B.Mg}
+          {==}
+        case Con{+s, +t}:
+          acc_k(B.c3.good(Con{s, t}, Con{s, t}), k, s, t, out, +h => merge_acc(k, B.c3.take(Con{s, t}, h), Con{h, out}))
+
+# Bools
+def and_l(+a: Bool, +b: Bool, h: {Bool.and(a, b) == True{} : Bool}) -> {a == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({False{} == True{} : Bool}, MB.false_ne_true()(h))
+
+def and_r(+a: Bool, +b: Bool, h: {Bool.and(a, b) == True{} : Bool}) -> {b == True{} : Bool}:
+  match a:
+    case True{}:
+      h
+    case False{}:
+      Empty.absurd({b == True{} : Bool}, MB.false_ne_true()(h))
+
+def or_l_true(+a: Bool, +b: Bool, h: {a == True{} : Bool}) -> {Bool.or(a, b) == True{} : Bool}:
+  %Equal.sym(Bool, a, True{}, h) : {Bool.or(_, b) == True{} : Bool}
+  {==}
+
+def or_r_true(+a: Bool, +b: Bool, h: {b == True{} : Bool}) -> {Bool.or(a, b) == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      h
+
+def not_false(+b: Bool, h: {b == False{} : Bool}) -> {Bool.not(b) == True{} : Bool}:
+  match b:
+    case True{}:
+      Empty.absurd({False{} == True{} : Bool}, MB.true_ne_false()(h))
+    case False{}:
+      {==}
+
+# a Bool both: none
+def both(+b: Bool, ht: {b == True{} : Bool}, hf: {b == False{} : Bool}) -> Empty:
+  MB.false_ne_true()(Equal.trans(Bool, False{}, b, True{}, Equal.sym(Bool, b, False{}, hf), ht))
+
+def mget(m: Maybe<&2, U32>) -> U32:
+  match m:
+    case None{}:
+      0
+    case Some{+x}:
+      x
+
+def some_inj(+g: U32, +h: U32, e: {Some{g} == Some{h} : Maybe<&2, U32>}) -> {g == h : U32}:
+  %e : {g == mget(_) : U32}
+  {==}
+
+def maybe_disc(m: Maybe<&2, U32>) -> Type:
+  match m:
+    case None{}:
+      Unit
+    case Some{x}:
+      Empty
+
+def some_none(+g: U32, e: {Some{g} == None{} : Maybe<&2, U32>}) -> Empty:
+  %Equal.sym(Maybe<&2, U32>, Some{g}, None{}, e) : maybe_disc(_)
+  Unit{}
+
+# the lists' objects; each of xs among them; a head of one
+def sqs.has(ss: List<&2, B.Sq>, +x: U32) -> Bool:
+  match ss:
+    case Nil{}:
+      False{}
+    case Con{s, t}:
+      match s:
+        case B.Sq{+o, xs}:
+          Bool.or(B.has(xs, x), sqs.has(t, x))
+
+def sqs.all(xs: List<&2, U32>, +ss: List<&2, B.Sq>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{+x, t}:
+      Bool.and(sqs.has(ss, x), sqs.all(t, ss))
+
+def is.head(ss: List<&2, B.Sq>, +y: U32) -> Bool:
+  match ss:
+    case Nil{}:
+      False{}
+    case Con{s, t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              is.head(t, y)
+            case Con{+x, r}:
+              Bool.or(U32.is_eq(x, y), is.head(t, y))
+
+# a merge's order keeps every list, holds each object once, and only
+# objects the lists hold
+def minv(m: B.Mg, +ss: List<&2, B.Sq>) -> Bool:
+  match m:
+    case B.MOk{+ord}:
+      Bool.and(B.sqs.kept(ss, ord), Bool.and(B.distinct(ord), sqs.all(ord, ss)))
+    case B.MFail{x}:
+      True{}
+
+# c3.head.drop's and subseq's steps mirrored
+def dk(+b: Bool, +x: U32, +r: List<&2, U32>) -> List<&2, U32>:
+  B.when(List<&2, U32>, b, u => r, u => Con{x, r})
+
+def sub_k(+b: Bool, +yr: List<&2, U32>, +x: U32, +r: List<&2, U32>) -> Bool:
+  B.when(Bool, b, u => B.subseq(yr, r), u => B.subseq(yr, Con{x, r}))
+
+def sub_nil(ys: List<&2, U32>) -> {B.subseq(ys, Nil{}) == True{} : Bool}:
+  match ys:
+    case Nil{}:
+      {==}
+    case Con{y, yr}:
+      {==}
+
+def drop_sub.k(b: Bool, +x: U32, +r: List<&2, U32>, +g: U32, +o: List<&2, U32>, eq: {b == U32.is_eq(x, g) : Bool},
+    hk: {B.subseq(o, dk(b, x, r)) == True{} : Bool}) -> {B.subseq(Con{g, o}, Con{x, r}) == True{} : Bool}:
+  match b:
+    case True{}:
+      %eq : {sub_k(_, o, x, r) == True{} : Bool}
+      hk
+    case False{}:
+      %eq : {sub_k(_, o, x, r) == True{} : Bool}
+      hk
+
+# a list whose rest an order keeps, the object taken before that order
+def drop_sub(xs: List<&2, U32>, +g: U32, +o: List<&2, U32>, hk: {B.subseq(o, B.c3.head.drop(xs, g)) == True{} : Bool}) ->
+    {B.subseq(Con{g, o}, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +r}:
+      drop_sub.k(U32.is_eq(x, g), x, r, g, o, {==}, hk)
+
+def keep_kept(+o: U32, d: List<&2, U32>, +t: List<&2, B.Sq>, +ys: List<&2, U32>, hk: {B.sqs.kept(B.c3.keep(o, d, t), ys) == True{} : Bool}) ->
+    {B.subseq(ys, d) == True{} : Bool}:
+  match d:
+    case Nil{}:
+      sub_nil(ys)
+    case Con{+x, +r}:
+      and_l(B.subseq(ys, Con{x, r}), B.sqs.kept(t, ys), hk)
+
+def keep_kept_t(+o: U32, d: List<&2, U32>, +t: List<&2, B.Sq>, +ys: List<&2, U32>, hk: {B.sqs.kept(B.c3.keep(o, d, t), ys) == True{} : Bool}) ->
+    {B.sqs.kept(t, ys) == True{} : Bool}:
+  match d:
+    case Nil{}:
+      hk
+    case Con{+x, +r}:
+      and_r(B.subseq(ys, Con{x, r}), B.sqs.kept(t, ys), hk)
+
+# the lists kept by the order after an object, the object taken from
+# their heads: they are kept by the object then that order
+def kept_cons(ss: List<&2, B.Sq>, +g: U32, +o: List<&2, U32>, +hk: {B.sqs.kept(B.c3.take(ss, g), o) == True{} : Bool}) ->
+    {B.sqs.kept(ss, Con{g, o}) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+so, +xs}:
+          and_intro(B.subseq(Con{g, o}, xs), B.sqs.kept(t, Con{g, o}),
+            drop_sub(xs, g, o, keep_kept(so, B.c3.head.drop(xs, g), B.c3.take(t, g), o, hk)),
+            kept_cons(t, g, o, keep_kept_t(so, B.c3.head.drop(xs, g), B.c3.take(t, g), o, hk)))
+
+# a disjunction's sides each implying another's
+def or_map(+a: Bool, +b: Bool, +c: Bool, +d: Bool, h: {Bool.or(a, b) == True{} : Bool},
+    f: {a == True{} : Bool} -> {c == True{} : Bool}, g: {b == True{} : Bool} -> {d == True{} : Bool}) -> {Bool.or(c, d) == True{} : Bool}:
+  match a:
+    case True{}:
+      or_l_true(c, d, f({==}))
+    case False{}:
+      or_r_true(c, d, g(h))
+
+def drop_has.k(b: Bool, +y: U32, +r: List<&2, U32>, +x: U32, h: {B.has(dk(b, y, r), x) == True{} : Bool}) ->
+    {B.has(Con{y, r}, x) == True{} : Bool}:
+  match b:
+    case True{}:
+      or_r_true(U32.is_eq(y, x), B.has(r, x), h)
+    case False{}:
+      h
+
+def drop_has(xs: List<&2, U32>, +g: U32, +x: U32, h: {B.has(B.c3.head.drop(xs, g), x) == True{} : Bool}) -> {B.has(xs, x) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h
+    case Con{+y, +r}:
+      drop_has.k(U32.is_eq(y, g), y, r, x, h)
+
+def keep_has(+o: U32, d: List<&2, U32>, +t: List<&2, B.Sq>, +x: U32, h: {sqs.has(B.c3.keep(o, d, t), x) == True{} : Bool}) ->
+    {Bool.or(B.has(d, x), sqs.has(t, x)) == True{} : Bool}:
+  match d:
+    case Nil{}:
+      h
+    case Con{+y, +r}:
+      h
+
+# an object the lists hold after a take, they held before
+def take_has(ss: List<&2, B.Sq>, +g: U32, +x: U32, h: {sqs.has(B.c3.take(ss, g), x) == True{} : Bool}) -> {sqs.has(ss, x) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      h
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, +xs}:
+          or_map(B.has(B.c3.head.drop(xs, g), x), sqs.has(B.c3.take(t, g), x), B.has(xs, x), sqs.has(t, x),
+            keep_has(o, B.c3.head.drop(xs, g), B.c3.take(t, g), x, h),
+            p => drop_has(xs, g, x, p), q => take_has(t, g, x, q))
+
+def keep_has_f(+o: U32, d: List<&2, U32>, +t: List<&2, B.Sq>, +x: U32, hd: {B.has(d, x) == False{} : Bool}, ht: {sqs.has(t, x) == False{} : Bool}) ->
+    {sqs.has(B.c3.keep(o, d, t), x) == False{} : Bool}:
+  match d:
+    case Nil{}:
+      ht
+    case Con{+y, +r}:
+      %Equal.sym(Bool, B.has(Con{y, r}, x), False{}, hd) : {Bool.or(_, sqs.has(t, x)) == False{} : Bool}
+      ht
+
+def gone_k(b: Bool, +x: U32, +r: List<&2, U32>, +g: U32, eq: {b == U32.is_eq(x, g) : Bool}, hr: {B.has(r, g) == False{} : Bool}) ->
+    {B.has(dk(b, x, r), g) == False{} : Bool}:
+  match b:
+    case True{}:
+      hr
+    case False{}:
+      %eq : {Bool.or(_, B.has(r, g)) == False{} : Bool}
+      hr
+
+# an object in no tail, taken from the heads, is in no list
+def take_gone(ss: List<&2, B.Sq>, +g: U32, +ht: {B.in_tails(ss, g) == False{} : Bool}) -> {sqs.has(B.c3.take(ss, g), g) == False{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              take_gone(t, g, ht)
+            case Con{+x, +r}:
+              keep_has_f(o, dk(U32.is_eq(x, g), x, r), B.c3.take(t, g), g,
+                gone_k(U32.is_eq(x, g), x, r, g, {==}, or_false_l(B.has(r, g), B.in_tails(t, g), ht)),
+                take_gone(t, g, or_false_r(B.has(r, g), B.in_tails(t, g), ht)))
+
+def has_eq(+t: List<&2, B.Sq>, +x: U32, +g: U32, e: {x == g : U32}, hn: {sqs.has(t, g) == False{} : Bool}) -> {sqs.has(t, x) == False{} : Bool}:
+  %Equal.sym(U32, x, g, e) : {sqs.has(t, _) == False{} : Bool}
+  hn
+
+def all_not.k(b: Bool, +x: U32, +r: List<&2, U32>, +g: U32, +t: List<&2, B.Sq>, eq: {b == U32.is_eq(x, g) : Bool},
+    hx: {sqs.has(t, x) == True{} : Bool}, hn: {sqs.has(t, g) == False{} : Bool}, ih: {B.has(r, g) == False{} : Bool}) ->
+    {Bool.or(U32.is_eq(x, g), B.has(r, g)) == False{} : Bool}:
+  match b:
+    case True{}:
+      Empty.absurd({Bool.or(U32.is_eq(x, g), B.has(r, g)) == False{} : Bool},
+        both(sqs.has(t, x), hx, has_eq(t, x, g, u32_eq_of_is_eq(x, g, Equal.sym(Bool, True{}, U32.is_eq(x, g), eq)), hn)))
+    case False{}:
+      %eq : {Bool.or(_, B.has(r, g)) == False{} : Bool}
+      ih
+
+# an order of objects the lists hold has none they lack
+def all_not(o: List<&2, U32>, +t: List<&2, B.Sq>, +g: U32, +ha: {sqs.all(o, t) == True{} : Bool}, +hn: {sqs.has(t, g) == False{} : Bool}) ->
+    {B.has(o, g) == False{} : Bool}:
+  match o:
+    case Nil{}:
+      {==}
+    case Con{+x, +r}:
+      all_not.k(U32.is_eq(x, g), x, r, g, t, {==}, and_l(sqs.has(t, x), sqs.all(r, t), ha), hn,
+        all_not(r, t, g, and_r(sqs.has(t, x), sqs.all(r, t), ha), hn))
+
+def all_take(o: List<&2, U32>, +ss: List<&2, B.Sq>, +g: U32, +h: {sqs.all(o, B.c3.take(ss, g)) == True{} : Bool}) -> {sqs.all(o, ss) == True{} : Bool}:
+  match o:
+    case Nil{}:
+      {==}
+    case Con{+x, +r}:
+      and_intro(sqs.has(ss, x), sqs.all(r, ss), take_has(ss, g, x, and_l(sqs.has(B.c3.take(ss, g), x), sqs.all(r, B.c3.take(ss, g)), h)),
+        all_take(r, ss, g, and_r(sqs.has(B.c3.take(ss, g), x), sqs.all(r, B.c3.take(ss, g)), h)))
+
+def head_has(ss: List<&2, B.Sq>, +g: U32, +h: {is.head(ss, g) == True{} : Bool}) -> {sqs.has(ss, g) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      h
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              head_has(t, g, h)
+            case Con{+x, +r}:
+              or_map(U32.is_eq(x, g), is.head(t, g), B.has(Con{x, r}, g), sqs.has(t, g), h,
+                p => or_l_true(U32.is_eq(x, g), B.has(r, g), p), q => head_has(t, g, q))
+
+# c3.good's step mirrored: the head found is a head, and in no tail
+def gk(+b: Bool, +h: U32, +t: List<&2, B.Sq>, +all: List<&2, B.Sq>) -> Maybe<&2, U32>:
+  B.when(Maybe<&2, U32>, b, u => B.c3.good(t, all), u => Some{h})
+
+def good_head.k(b: Bool, +h: U32, +t: List<&2, B.Sq>, +all: List<&2, B.Sq>, +g: U32, e: {Some{g} == gk(b, h, t, all) : Maybe<&2, U32>},
+    ih: {Some{g} == B.c3.good(t, all) : Maybe<&2, U32>} -> {is.head(t, g) == True{} : Bool}) ->
+    {Bool.or(U32.is_eq(h, g), is.head(t, g)) == True{} : Bool}:
+  match b:
+    case True{}:
+      or_r_true(U32.is_eq(h, g), is.head(t, g), ih(e))
+    case False{}:
+      %some_inj(g, h, e) : {Bool.or(U32.is_eq(_, g), is.head(t, g)) == True{} : Bool}
+      %Equal.sym(Bool, U32.is_eq(g, g), True{}, u32_is_eq_refl(g)) : {Bool.or(_, is.head(t, g)) == True{} : Bool}
+      {==}
+
+def good_head(cs: List<&2, B.Sq>, +all: List<&2, B.Sq>, +g: U32, e: {Some{g} == B.c3.good(cs, all) : Maybe<&2, U32>}) -> {is.head(cs, g) == True{} : Bool}:
+  match cs:
+    case Nil{}:
+      Empty.absurd({False{} == True{} : Bool}, some_none(g, e))
+    case Con{c, +t}:
+      match c:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              good_head(t, all, g, e)
+            case Con{+h, +r}:
+              good_head.k(B.in_tails(all, h), h, t, all, g, e, f => good_head(t, all, g, f))
+
+def good_free.k(b: Bool, +h: U32, +t: List<&2, B.Sq>, +all: List<&2, B.Sq>, +g: U32, eq: {b == B.in_tails(all, h) : Bool},
+    e: {Some{g} == gk(b, h, t, all) : Maybe<&2, U32>},
+    ih: {Some{g} == B.c3.good(t, all) : Maybe<&2, U32>} -> {B.in_tails(all, g) == False{} : Bool}) ->
+    {B.in_tails(all, g) == False{} : Bool}:
+  match b:
+    case True{}:
+      ih(e)
+    case False{}:
+      %Equal.sym(U32, g, h, some_inj(g, h, e)) : {B.in_tails(all, _) == False{} : Bool}
+      Equal.sym(Bool, False{}, B.in_tails(all, h), eq)
+
+def good_free(cs: List<&2, B.Sq>, +all: List<&2, B.Sq>, +g: U32, e: {Some{g} == B.c3.good(cs, all) : Maybe<&2, U32>}) -> {B.in_tails(all, g) == False{} : Bool}:
+  match cs:
+    case Nil{}:
+      Empty.absurd({B.in_tails(all, g) == False{} : Bool}, some_none(g, e))
+    case Con{c, +t}:
+      match c:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              good_free(t, all, g, e)
+            case Con{+h, +r}:
+              good_free.k(B.in_tails(all, h), h, t, all, g, {==}, e, f => good_free(t, all, g, f))
+
+# a free head taken before an order sound for the lists after: sound
+def sound_cons(+g: U32, m: B.Mg, +ss: List<&2, B.Sq>, +hf: {B.in_tails(ss, g) == False{} : Bool}, +hh: {is.head(ss, g) == True{} : Bool},
+    +ih: {minv(m, B.c3.take(ss, g)) == True{} : Bool}) -> {minv(mcons(g, m), ss) == True{} : Bool}:
+  match m:
+    case B.MOk{+o}:
+      and_intro(B.sqs.kept(ss, Con{g, o}), Bool.and(B.distinct(Con{g, o}), sqs.all(Con{g, o}, ss)),
+        kept_cons(ss, g, o, and_l(B.sqs.kept(B.c3.take(ss, g), o), Bool.and(B.distinct(o), sqs.all(o, B.c3.take(ss, g))), ih)),
+        and_intro(B.distinct(Con{g, o}), sqs.all(Con{g, o}, ss),
+          and_intro(Bool.not(B.has(o, g)), B.distinct(o),
+            not_false(B.has(o, g), all_not(o, B.c3.take(ss, g), g,
+              and_r(B.distinct(o), sqs.all(o, B.c3.take(ss, g)), and_r(B.sqs.kept(B.c3.take(ss, g), o), Bool.and(B.distinct(o), sqs.all(o, B.c3.take(ss, g))), ih)),
+              take_gone(ss, g, hf))),
+            and_l(B.distinct(o), sqs.all(o, B.c3.take(ss, g)), and_r(B.sqs.kept(B.c3.take(ss, g), o), Bool.and(B.distinct(o), sqs.all(o, B.c3.take(ss, g))), ih))),
+          and_intro(sqs.has(ss, g), sqs.all(o, ss), head_has(ss, g, hh),
+            all_take(o, ss, g, and_r(B.distinct(o), sqs.all(o, B.c3.take(ss, g)), and_r(B.sqs.kept(B.c3.take(ss, g), o), Bool.and(B.distinct(o), sqs.all(o, B.c3.take(ss, g))), ih))))))
+    case B.MFail{x}:
+      {==}
+
+def sound_k(mb: Maybe<&2, U32>, +k: Nat, +s: B.Sq, +t: List<&2, B.Sq>, +e: {mb == B.c3.good(Con{s, t}, Con{s, t}) : Maybe<&2, U32>},
+    ih: @g:U32 -> {minv(mrest(k, B.c3.take(Con{s, t}, g)), B.c3.take(Con{s, t}, g)) == True{} : Bool}) ->
+    {minv(mrest_k(mb, k, s, t), Con{s, t}) == True{} : Bool}:
+  match mb:
+    case None{}:
+      {==}
+    case Some{+g}:
+      sound_cons(g, mrest(k, B.c3.take(Con{s, t}, g)), Con{s, t}, good_free(Con{s, t}, Con{s, t}, g, e), good_head(Con{s, t}, Con{s, t}, g, e), ih(g))
+
+def mrest_sound(n: Nat, +seqs: List<&2, B.Sq>) -> {minv(mrest(n, seqs), seqs) == True{} : Bool}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+(+k):
+      match seqs:
+        case Nil{}:
+          {==}
+        case Con{+s, +t}:
+          sound_k(B.c3.good(Con{s, t}, Con{s, t}), k, s, t, {==}, +g => mrest_sound(k, B.c3.take(Con{s, t}, g)))
+
+def sound_of(m: B.Mg, +ss: List<&2, B.Sq>, +h: {minv(m, ss) == True{} : Bool}) -> {B.mg.sound(m, ss) == True{} : Bool}:
+  match m:
+    case B.MOk{+o}:
+      and_intro(B.sqs.kept(ss, o), B.distinct(o), and_l(B.sqs.kept(ss, o), Bool.and(B.distinct(o), sqs.all(o, ss)), h),
+        and_l(B.distinct(o), sqs.all(o, ss), and_r(B.sqs.kept(ss, o), Bool.and(B.distinct(o), sqs.all(o, ss)), h)))
+    case B.MFail{x}:
+      {==}
+
+def Laws.c3.sound(n, seqs):
+  %merge_acc(n, seqs, Nil{}) : {B.mg.sound(_, seqs) == True{} : Bool}
+  %mpre_nil(mrest(n, seqs)) : {B.mg.sound(_, seqs) == True{} : Bool}
+  sound_of(mrest(n, seqs), seqs, mrest_sound(n, seqs))
+
+# no list empty
+def sqs.full(ss: List<&2, B.Sq>) -> Bool:
+  match ss:
+    case Nil{}:
+      True{}
+    case Con{s, t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              False{}
+            case Con{x, r}:
+              sqs.full(t)
+
+def eq_is(+x0: U32, +y: U32, +x: U32, e: {x0 == y : U32}, h: {U32.is_eq(x0, x) == True{} : Bool}) -> {U32.is_eq(y, x) == True{} : Bool}:
+  %e : {U32.is_eq(_, x) == True{} : Bool}
+  h
+
+def sub_has.k(b: Bool, +y: U32, +yr: List<&2, U32>, +x0: U32, +r: List<&2, U32>, +x: U32, eq: {b == U32.is_eq(x0, y) : Bool},
+    hs: {sub_k(b, yr, x0, r) == True{} : Bool}, hx: {B.has(Con{x0, r}, x) == True{} : Bool},
+    ih1: @p:{B.subseq(yr, r) == True{} : Bool} -> @q:{B.has(r, x) == True{} : Bool} -> {B.has(yr, x) == True{} : Bool},
+    ih2: @p:{B.subseq(yr, Con{x0, r}) == True{} : Bool} -> {B.has(yr, x) == True{} : Bool}) ->
+    {B.has(Con{y, yr}, x) == True{} : Bool}:
+  match b:
+    case True{}:
+      or_map(U32.is_eq(x0, x), B.has(r, x), U32.is_eq(y, x), B.has(yr, x), hx,
+        p => eq_is(x0, y, x, u32_eq_of_is_eq(x0, y, Equal.sym(Bool, True{}, U32.is_eq(x0, y), eq)), p), q => ih1(hs, q))
+    case False{}:
+      or_r_true(U32.is_eq(y, x), B.has(yr, x), ih2(hs))
+
+# an object of a subsequence is an object of the order
+def sub_has(ys: List<&2, U32>, xs: List<&2, U32>, +x: U32, hs: {B.subseq(ys, xs) == True{} : Bool}, +hx: {B.has(xs, x) == True{} : Bool}) ->
+    {B.has(ys, x) == True{} : Bool}:
+  match ys:
+    case Nil{}:
+      match xs:
+        case Nil{}:
+          Empty.absurd({B.has(Nil{}, x) == True{} : Bool}, MB.false_ne_true()(hx))
+        case Con{x0, r}:
+          Empty.absurd({B.has(Nil{}, x) == True{} : Bool}, MB.false_ne_true()(hs))
+    case Con{+y, +yr}:
+      match xs:
+        case Nil{}:
+          Empty.absurd({B.has(Con{y, yr}, x) == True{} : Bool}, MB.false_ne_true()(hx))
+        case Con{+x0, +r}:
+          sub_has.k(U32.is_eq(x0, y), y, yr, x0, r, x, {==}, hs, hx, p => q => sub_has(yr, r, x, p, q), p => sub_has(yr, Con{x0, r}, x, p, hx))
+
+def yr_has(b: Bool, +a: U32, +r: List<&2, U32>, +y: U32, +yr: List<&2, U32>, hs: {sub_k(b, yr, a, r) == True{} : Bool}, hr: {B.has(r, y) == True{} : Bool}) ->
+    {B.has(yr, y) == True{} : Bool}:
+  match b:
+    case True{}:
+      sub_has(yr, r, y, hs, hr)
+    case False{}:
+      sub_has(yr, Con{a, r}, y, hs, or_r_true(U32.is_eq(a, y), B.has(r, y), hr))
+
+def tail_free.k(c: Bool, +a: U32, +r: List<&2, U32>, +y: U32, +yr: List<&2, U32>, eqc: {c == B.has(r, y) : Bool},
+    hs: {B.subseq(Con{y, yr}, Con{a, r}) == True{} : Bool}, hd: {B.has(yr, y) == False{} : Bool}) -> {B.has(r, y) == False{} : Bool}:
+  match c:
+    case True{}:
+      Empty.absurd({B.has(r, y) == False{} : Bool}, both(B.has(yr, y), yr_has(U32.is_eq(a, y), a, r, y, yr, hs, Equal.sym(Bool, True{}, B.has(r, y), eqc)), hd))
+    case False{}:
+      Equal.sym(Bool, False{}, B.has(r, y), eqc)
+
+# an object first in an order holding it once is in no tail of a list
+# the order keeps
+def tails_none(ss: List<&2, B.Sq>, +y: U32, +yr: List<&2, U32>, +hk: {B.sqs.kept(ss, Con{y, yr}) == True{} : Bool}, +hd: {B.has(yr, y) == False{} : Bool}) ->
+    {B.in_tails(ss, y) == False{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              tails_none(t, y, yr, and_r(B.subseq(Con{y, yr}, Nil{}), B.sqs.kept(t, Con{y, yr}), hk), hd)
+            case Con{+a, +r}:
+              %Equal.sym(Bool, B.has(r, y), False{}, tail_free.k(B.has(r, y), a, r, y, yr, {==},
+                and_l(B.subseq(Con{y, yr}, Con{a, r}), B.sqs.kept(t, Con{y, yr}), hk), hd)) : {Bool.or(_, B.in_tails(t, y)) == False{} : Bool}
+              tails_none(t, y, yr, and_r(B.subseq(Con{y, yr}, Con{a, r}), B.sqs.kept(t, Con{y, yr}), hk), hd)
+
+def tails_eq(+all: List<&2, B.Sq>, +h: U32, +y: U32, e: {h == y : U32}, ht: {B.in_tails(all, y) == False{} : Bool}) -> {B.in_tails(all, h) == False{} : Bool}:
+  %Equal.sym(U32, h, y, e) : {B.in_tails(all, _) == False{} : Bool}
+  ht
+
+def good_some.k(b: Bool, +h: U32, +t: List<&2, B.Sq>, +all: List<&2, B.Sq>, +y: U32, eq: {b == B.in_tails(all, h) : Bool},
+    hh: {Bool.or(U32.is_eq(h, y), is.head(t, y)) == True{} : Bool}, ht: {B.in_tails(all, y) == False{} : Bool},
+    ih: {is.head(t, y) == True{} : Bool} -> {Maybe.is_some(&2, U32, B.c3.good(t, all)) == True{} : Bool}) ->
+    {Maybe.is_some(&2, U32, gk(b, h, t, all)) == True{} : Bool}:
+  match b:
+    case True{}:
+      or_cases(U32.is_eq(h, y), is.head(t, y), Maybe.is_some(&2, U32, B.c3.good(t, all)), hh,
+        p => Empty.absurd({Maybe.is_some(&2, U32, B.c3.good(t, all)) == True{} : Bool},
+          both(B.in_tails(all, h), Equal.sym(Bool, True{}, B.in_tails(all, h), eq), tails_eq(all, h, y, u32_eq_of_is_eq(h, y, p), ht))),
+        ih)
+    case False{}:
+      {==}
+
+# a head in no tail: the merge's search finds a head
+def good_some(cs: List<&2, B.Sq>, +all: List<&2, B.Sq>, +y: U32, hh: {is.head(cs, y) == True{} : Bool}, +ht: {B.in_tails(all, y) == False{} : Bool}) ->
+    {Maybe.is_some(&2, U32, B.c3.good(cs, all)) == True{} : Bool}:
+  match cs:
+    case Nil{}:
+      hh
+    case Con{c, +t}:
+      match c:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              good_some(t, all, y, hh, ht)
+            case Con{+h, +r}:
+              good_some.k(B.in_tails(all, h), h, t, all, y, {==}, hh, ht, p => good_some(t, all, y, p, ht))
+
+def skip1(+x: U32, +r: List<&2, U32>, +y: U32, +yr: List<&2, U32>, e: {U32.is_eq(x, y) == False{} : Bool},
+    h: {B.subseq(Con{y, yr}, Con{x, r}) == True{} : Bool}) -> {B.subseq(yr, Con{x, r}) == True{} : Bool}:
+  %e : {sub_k(_, yr, x, r) == True{} : Bool}
+  h
+
+# lists none of which an object heads, kept by an order after it: kept
+# by that order
+def kept_skip(ss: List<&2, B.Sq>, +y: U32, +yr: List<&2, U32>, +hk: {B.sqs.kept(ss, Con{y, yr}) == True{} : Bool}, +hh: {is.head(ss, y) == False{} : Bool}) ->
+    {B.sqs.kept(ss, yr) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              and_intro(B.subseq(yr, Nil{}), B.sqs.kept(t, yr), sub_nil(yr),
+                kept_skip(t, y, yr, and_r(B.subseq(Con{y, yr}, Nil{}), B.sqs.kept(t, Con{y, yr}), hk), hh))
+            case Con{+x, +r}:
+              and_intro(B.subseq(yr, Con{x, r}), B.sqs.kept(t, yr),
+                skip1(x, r, y, yr, or_false_l(U32.is_eq(x, y), is.head(t, y), hh), and_l(B.subseq(Con{y, yr}, Con{x, r}), B.sqs.kept(t, Con{y, yr}), hk)),
+                kept_skip(t, y, yr, and_r(B.subseq(Con{y, yr}, Con{x, r}), B.sqs.kept(t, Con{y, yr}), hk), or_false_r(U32.is_eq(x, y), is.head(t, y), hh)))
+
+def good_of.k(c: Bool, +y: U32, +yr: List<&2, U32>, +s: B.Sq, +t: List<&2, B.Sq>, eq: {c == is.head(Con{s, t}, y) : Bool},
+    +hk: {B.sqs.kept(Con{s, t}, Con{y, yr}) == True{} : Bool}, ht: {B.in_tails(Con{s, t}, y) == False{} : Bool},
+    ih: {B.sqs.kept(Con{s, t}, yr) == True{} : Bool} -> {Maybe.is_some(&2, U32, B.c3.good(Con{s, t}, Con{s, t})) == True{} : Bool}) ->
+    {Maybe.is_some(&2, U32, B.c3.good(Con{s, t}, Con{s, t})) == True{} : Bool}:
+  match c:
+    case True{}:
+      good_some(Con{s, t}, Con{s, t}, y, Equal.sym(Bool, True{}, is.head(Con{s, t}, y), eq), ht)
+    case False{}:
+      ih(kept_skip(Con{s, t}, y, yr, hk, Equal.sym(Bool, False{}, is.head(Con{s, t}, y), eq)))
+
+# lists, none empty, kept by an order holding each object once: a head
+# is free, the order's first object a list holds
+def good_of(ys: List<&2, U32>, +s: B.Sq, +t: List<&2, B.Sq>, +hk: {B.sqs.kept(Con{s, t}, ys) == True{} : Bool},
+    +hd: {B.distinct(ys) == True{} : Bool}, +hf: {sqs.full(Con{s, t}) == True{} : Bool}) ->
+    {Maybe.is_some(&2, U32, B.c3.good(Con{s, t}, Con{s, t})) == True{} : Bool}:
+  match ys:
+    case Nil{}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              Empty.absurd({Maybe.is_some(&2, U32, B.c3.good(Con{B.Sq{o, Nil{}}, t}, Con{B.Sq{o, Nil{}}, t})) == True{} : Bool}, MB.false_ne_true()(hf))
+            case Con{+x, +r}:
+              Empty.absurd({Maybe.is_some(&2, U32, B.c3.good(Con{B.Sq{o, Con{x, r}}, t}, Con{B.Sq{o, Con{x, r}}, t})) == True{} : Bool}, MB.false_ne_true()(hk))
+    case Con{+y, +yr}:
+      good_of.k(is.head(Con{s, t}, y), y, yr, s, t, {==}, hk,
+        tails_none(Con{s, t}, y, yr, hk, not_true(B.has(yr, y), and_l(Bool.not(B.has(yr, y)), B.distinct(yr), hd))),
+        p => good_of(yr, s, t, p, and_r(Bool.not(B.has(yr, y)), B.distinct(yr), hd), hf))
+
+def sub_weak.k(b: Bool, +y: U32, +yr: List<&2, U32>, +x: U32, +r: List<&2, U32>, h: {B.subseq(yr, Con{x, r}) == True{} : Bool},
+    ht: {B.subseq(yr, r) == True{} : Bool}) -> {sub_k(b, yr, x, r) == True{} : Bool}:
+  match b:
+    case True{}:
+      ht
+    case False{}:
+      h
+
+# an object before an order keeping a list: the list kept still, given
+# that the order keeps a list's rest where it keeps the list
+def sub_weak(+y: U32, +yr: List<&2, U32>, xs: List<&2, U32>, +h: {B.subseq(yr, xs) == True{} : Bool},
+    tl: @x:U32 -> @r:List<&2, U32> -> @p:{B.subseq(yr, Con{x, r}) == True{} : Bool} -> {B.subseq(yr, r) == True{} : Bool}) ->
+    {B.subseq(Con{y, yr}, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +r}:
+      sub_weak.k(U32.is_eq(x, y), y, yr, x, r, h, tl(x, r, h))
+
+def sub_tail.k(b: Bool, +y: U32, +yr: List<&2, U32>, +x: U32, +r: List<&2, U32>, h: {sub_k(b, yr, x, r) == True{} : Bool},
+    ih: @p:{B.subseq(yr, Con{x, r}) == True{} : Bool} -> {B.subseq(yr, r) == True{} : Bool},
+    wk: @p:{B.subseq(yr, r) == True{} : Bool} -> {B.subseq(Con{y, yr}, r) == True{} : Bool}) ->
+    {B.subseq(Con{y, yr}, r) == True{} : Bool}:
+  match b:
+    case True{}:
+      wk(h)
+    case False{}:
+      wk(ih(h))
+
+# where an order keeps a list, it keeps the list's rest
+def sub_tail(ys: List<&2, U32>, +x: U32, +r: List<&2, U32>, h: {B.subseq(ys, Con{x, r}) == True{} : Bool}) -> {B.subseq(ys, r) == True{} : Bool}:
+  match ys:
+    case Nil{}:
+      Empty.absurd({B.subseq(Nil{}, r) == True{} : Bool}, MB.false_ne_true()(h))
+    case Con{+y, +yr}:
+      sub_tail.k(U32.is_eq(x, y), y, yr, x, r, h, p => sub_tail(yr, x, r, p),
+        p => sub_weak(y, yr, r, p, x2 => r2 => q => sub_tail(yr, x2, r2, q)))
+
+def drop_kept.k(b: Bool, +ys: List<&2, U32>, +x: U32, +r: List<&2, U32>, h: {B.subseq(ys, Con{x, r}) == True{} : Bool}) ->
+    {B.subseq(ys, dk(b, x, r)) == True{} : Bool}:
+  match b:
+    case True{}:
+      sub_tail(ys, x, r, h)
+    case False{}:
+      h
+
+def keep_kept_in(+o: U32, d: List<&2, U32>, +t: List<&2, B.Sq>, +ys: List<&2, U32>, hd: {B.subseq(ys, d) == True{} : Bool},
+    ht: {B.sqs.kept(t, ys) == True{} : Bool}) -> {B.sqs.kept(B.c3.keep(o, d, t), ys) == True{} : Bool}:
+  match d:
+    case Nil{}:
+      ht
+    case Con{+x, +r}:
+      and_intro(B.subseq(ys, Con{x, r}), B.sqs.kept(t, ys), hd, ht)
+
+# lists an order keeps, a head taken from them: kept
+def kept_take(ss: List<&2, B.Sq>, +g: U32, +ys: List<&2, U32>, +hk: {B.sqs.kept(ss, ys) == True{} : Bool}) -> {B.sqs.kept(B.c3.take(ss, g), ys) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              kept_take(t, g, ys, and_r(B.subseq(ys, Nil{}), B.sqs.kept(t, ys), hk))
+            case Con{+x, +r}:
+              keep_kept_in(o, dk(U32.is_eq(x, g), x, r), B.c3.take(t, g), ys,
+                drop_kept.k(U32.is_eq(x, g), ys, x, r, and_l(B.subseq(ys, Con{x, r}), B.sqs.kept(t, ys), hk)),
+                kept_take(t, g, ys, and_r(B.subseq(ys, Con{x, r}), B.sqs.kept(t, ys), hk)))
+
+def keep_full(+o: U32, d: List<&2, U32>, +t: List<&2, B.Sq>, h: {sqs.full(t) == True{} : Bool}) -> {sqs.full(B.c3.keep(o, d, t)) == True{} : Bool}:
+  match d:
+    case Nil{}:
+      h
+    case Con{x, r}:
+      h
+
+# a take drops the lists it empties
+def full_take(ss: List<&2, B.Sq>, +g: U32) -> {sqs.full(B.c3.take(ss, g)) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, +xs}:
+          keep_full(o, B.c3.head.drop(xs, g), B.c3.take(t, g), full_take(t, g))
+
+# The fuel: a take shortens the lists, by one at least where it takes a
+# head
+
+def le_add_l(a: Nat, +b: Nat) -> MNat.le(b, Nat.add(a, b)):
+  match a:
+    case 0n:
+      MNat.le_refl(b)
+    case 1n+(+p):
+      MNat.le_trans(b, Nat.add(p, b), 1n+Nat.add(p, b), le_add_l(p, b), MNat.le_succ(Nat.add(p, b)))
+
+def le_add2(a2: Nat, +a: Nat, +b2: Nat, +b: Nat, h1: MNat.le(a2, a), h2: MNat.le(b2, b)) -> MNat.le(Nat.add(a2, b2), Nat.add(a, b)):
+  match a2 a:
+    case 0n _:
+      MNat.le_trans(b2, b, Nat.add(a, b), h2, le_add_l(a, b))
+    case 1n+p 0n:
+      Empty.absurd(MNat.le(Nat.add(1n+p, b2), Nat.add(0n, b)), MB.false_ne_true()(h1))
+    case 1n+p 1n+q:
+      le_add2(p, q, b2, b, h1, h2)
+
+def drop_len.k(b: Bool, +x: U32, +r: List<&2, U32>) -> MNat.le(List.length(&2, U32, dk(b, x, r)), List.length(&2, U32, Con{x, r})):
+  match b:
+    case True{}:
+      MNat.le_succ(List.length(&2, U32, r))
+    case False{}:
+      MNat.le_refl(List.length(&2, U32, Con{x, r}))
+
+def drop_len(xs: List<&2, U32>, +g: U32) -> MNat.le(List.length(&2, U32, B.c3.head.drop(xs, g)), List.length(&2, U32, xs)):
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +r}:
+      drop_len.k(U32.is_eq(x, g), x, r)
+
+def keep_len(+o: U32, d: List<&2, U32>, +t: List<&2, B.Sq>) -> {Nat.add(List.length(&2, U32, d), B.sqs.len(t)) == B.sqs.len(B.c3.keep(o, d, t)) : Nat}:
+  match d:
+    case Nil{}:
+      {==}
+    case Con{x, r}:
+      {==}
+
+def len_take(ss: List<&2, B.Sq>, +g: U32) -> MNat.le(B.sqs.len(B.c3.take(ss, g)), B.sqs.len(ss)):
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, +xs}:
+          %keep_len(o, B.c3.head.drop(xs, g), B.c3.take(t, g)) : MNat.le(_, B.sqs.len(Con{B.Sq{o, xs}, t}))
+          le_add2(List.length(&2, U32, B.c3.head.drop(xs, g)), List.length(&2, U32, xs), B.sqs.len(B.c3.take(t, g)), B.sqs.len(t),
+            drop_len(xs, g), len_take(t, g))
+
+def or_drop(+a: Bool, +b: Bool, ea: {a == False{} : Bool}, h: {Bool.or(a, b) == True{} : Bool}) -> {b == True{} : Bool}:
+  match a:
+    case True{}:
+      Empty.absurd({b == True{} : Bool}, MB.true_ne_false()(ea))
+    case False{}:
+      h
+
+def lt_k(b: Bool, +x: U32, +r: List<&2, U32>, +t: List<&2, B.Sq>, +g: U32, eq: {b == U32.is_eq(x, g) : Bool},
+    hh: {Bool.or(U32.is_eq(x, g), is.head(t, g)) == True{} : Bool},
+    ih: {is.head(t, g) == True{} : Bool} -> MNat.le(1n+B.sqs.len(B.c3.take(t, g)), B.sqs.len(t))) ->
+    MNat.le(1n+Nat.add(List.length(&2, U32, dk(b, x, r)), B.sqs.len(B.c3.take(t, g))), Nat.add(List.length(&2, U32, Con{x, r}), B.sqs.len(t))):
+  match b:
+    case True{}:
+      le_add2(List.length(&2, U32, r), List.length(&2, U32, r), B.sqs.len(B.c3.take(t, g)), B.sqs.len(t),
+        MNat.le_refl(List.length(&2, U32, r)), len_take(t, g))
+    case False{}:
+      %MNat.add_succ(List.length(&2, U32, r), B.sqs.len(B.c3.take(t, g))) : MNat.le(_, Nat.add(List.length(&2, U32, r), B.sqs.len(t)))
+      le_add2(List.length(&2, U32, r), List.length(&2, U32, r), 1n+B.sqs.len(B.c3.take(t, g)), B.sqs.len(t),
+        MNat.le_refl(List.length(&2, U32, r)), ih(or_drop(U32.is_eq(x, g), is.head(t, g), Equal.sym(Bool, False{}, U32.is_eq(x, g), eq), hh)))
+
+# a take of a head shortens the lists
+def len_take_lt(ss: List<&2, B.Sq>, +g: U32, hh: {is.head(ss, g) == True{} : Bool}) -> MNat.le(1n+B.sqs.len(B.c3.take(ss, g)), B.sqs.len(ss)):
+  match ss:
+    case Nil{}:
+      Empty.absurd(MNat.le(1n+B.sqs.len(B.c3.take(Nil{}, g)), B.sqs.len(Nil{})), MB.false_ne_true()(hh))
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              len_take_lt(t, g, hh)
+            case Con{+x, +r}:
+              %keep_len(o, dk(U32.is_eq(x, g), x, r), B.c3.take(t, g)) : MNat.le(1n+_, B.sqs.len(Con{B.Sq{o, Con{x, r}}, t}))
+              lt_k(U32.is_eq(x, g), x, r, t, g, {==}, hh, p => len_take_lt(t, g, p))
+
+def some_of(mb: Maybe<&2, U32>, +x: Maybe<&2, U32>, eq: {mb == x : Maybe<&2, U32>}, h: {Maybe.is_some(&2, U32, x) == True{} : Bool}) ->
+    {Maybe.is_some(&2, U32, mb) == True{} : Bool}:
+  %Equal.sym(Maybe<&2, U32>, mb, x, eq) : {Maybe.is_some(&2, U32, _) == True{} : Bool}
+  h
+
+def ok_k(mb: Maybe<&2, U32>, +k: Nat, +s: B.Sq, +t: List<&2, B.Sq>, +out: List<&2, U32>, eq: {mb == B.c3.good(Con{s, t}, Con{s, t}) : Maybe<&2, U32>},
+    hs: {Maybe.is_some(&2, U32, B.c3.good(Con{s, t}, Con{s, t})) == True{} : Bool},
+    ih: @g:U32 -> @e:{Some{g} == B.c3.good(Con{s, t}, Con{s, t}) : Maybe<&2, U32>} -> {B.mg.ok(B.c3.merge(k, B.c3.take(Con{s, t}, g), Con{g, out})) == True{} : Bool}) ->
+    {B.mg.ok(merge_k(mb, k, s, t, out)) == True{} : Bool}:
+  match mb:
+    case None{}:
+      Empty.absurd({False{} == True{} : Bool}, MB.false_ne_true()(some_of(None{}, B.c3.good(Con{s, t}, Con{s, t}), eq, hs)))
+    case Some{+g}:
+      ih(g, eq)
+
+# lists, none empty, kept by an order holding each object once, with
+# fuel past their lengths: the merge succeeds
+def merge_ok(n: Nat, +ss: List<&2, B.Sq>, +ys: List<&2, U32>, +out: List<&2, U32>, +hf: MNat.le(1n+B.sqs.len(ss), n),
+    +hk: {B.sqs.kept(ss, ys) == True{} : Bool}, +hd: {B.distinct(ys) == True{} : Bool}, +hu: {sqs.full(ss) == True{} : Bool}) ->
+    {B.mg.ok(B.c3.merge(n, ss, out)) == True{} : Bool}:
+  match n:
+    case 0n:
+      Empty.absurd({B.mg.ok(B.c3.merge(0n, ss, out)) == True{} : Bool}, MB.false_ne_true()(hf))
+    case 1n+(+k):
+      match ss:
+        case Nil{}:
+          {==}
+        case Con{+s, +t}:
+          ok_k(B.c3.good(Con{s, t}, Con{s, t}), k, s, t, out, {==}, good_of(ys, s, t, hk, hd, hu),
+            +g => +e => merge_ok(k, B.c3.take(Con{s, t}, g), ys, Con{g, out},
+              MNat.le_trans(1n+B.sqs.len(B.c3.take(Con{s, t}, g)), B.sqs.len(Con{s, t}), k, len_take_lt(Con{s, t}, g, good_head(Con{s, t}, Con{s, t}, g, e)), hf),
+              kept_take(Con{s, t}, g, ys, hk), hd, full_take(Con{s, t}, g)))
+
+def ok_mg(+id: U32, m: B.Mg) -> {B.mg.ok(m) == B.lz.ok(B.lin.mg(id, m)) : Bool}:
+  match m:
+    case B.MOk{ord}:
+      {==}
+    case B.MFail{ss}:
+      {==}
+
+def Laws.c3.complete(id, ps, seqs, ys, h1, h2):
+  %ok_mg(id, B.c3.merge(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), Nil{})) :
+    {_ == True{} : Bool}
+  merge_ok(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), ys, Nil{},
+    len_take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), kept_take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295, ys, h1), h2,
+    full_take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295))

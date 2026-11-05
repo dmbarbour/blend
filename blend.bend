@@ -1541,6 +1541,11 @@ def lz.or(m: Maybe<&2, Maybe<&2, Lz>>) -> Maybe<&2, Lz>:
 def lz.at(+lins: List<&2, Maybe<&2, Lz>>, +id: U32) -> Maybe<&2, Lz>:
   lz.or(List.get(&2, Maybe<&2, Lz>, lins, U32.to_nat(id)))
 
+def lz.ok(z: Lz) -> Bool:
+  match z:
+    case Lz{+ok, ord}:
+      ok
+
 def lz.ord(m: Maybe<&2, Lz>) -> List<&2, U32>:
   match m:
     case None{}:
@@ -4135,6 +4140,44 @@ def ordered(xs: List<&2, U32>, +cal: List<&2, List<&2, U32>>) -> Bool:
       True{}
     case Con{+u, +t}:
       all.in(ids.at(cal, u), t) && ordered(t, cal)
+
+# The merge's laws' terms (LAWS.bend, `c3.sound`, `c3.complete`)
+
+# whether xs is a subsequence of ys: its units in ys, in its order
+def subseq(ys: List<&2, U32>, xs: List<&2, U32>) -> Bool:
+  match ys xs:
+    case _ Nil{}:
+      True{}
+    case Nil{} Con{x, r}:
+      False{}
+    case Con{+y, +yr} Con{+x, +r}:
+      when(Bool, U32.is_eq(x, y), u => subseq(yr, r), u => subseq(yr, Con{x, r}))
+
+# every list's units in ys, in its order
+def sqs.kept(ss: List<&2, Sq>, +ys: List<&2, U32>) -> Bool:
+  match ss:
+    case Nil{}:
+      True{}
+    case Con{s, t}:
+      match s:
+        case Sq{+o, xs}:
+          subseq(ys, xs) && sqs.kept(t, ys)
+
+def mg.ok(m: Mg) -> Bool:
+  match m:
+    case MOk{ord}:
+      True{}
+    case MFail{seqs}:
+      False{}
+
+# a merge's order, where it has one, keeps every list it merged and
+# holds each unit once
+def mg.sound(m: Mg, +ss: List<&2, Sq>) -> Bool:
+  match m:
+    case MOk{+ord}:
+      sqs.kept(ss, ord) && distinct(ord)
+    case MFail{seqs}:
+      True{}
 
 def path.to(ps: List<&2, U32>, +c: U32) -> List<&2, U32>:
   match ps:

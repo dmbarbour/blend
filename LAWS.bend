@@ -226,3 +226,34 @@ law mults.walked:
   {B.mults(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(rss), obs, us))), B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>}) ==
     B.mults.spec(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(rss), obs, us))), List.reverse(&2, U32, B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(rss), obs, us)))),
       rss, ut, obs, us, s) : B.Ms}
+
+# LAW: a merge that succeeds keeps every list it merges as a subsequence
+# and holds each object once: an object's linearization keeps each of its
+# parents' linearizations, and its list of parents, in their order.
+# Record: blend-c3
+law c3.sound:
+  for +n: Nat
+  for +seqs: List<&2, B.Sq>
+  {B.mg.sound(B.c3.merge(n, seqs, Nil{}), seqs) == True{} : Bool}
+
+# LAW: and an object's linearization fails only where no order holding
+# each object once keeps every list it merges, its parents'
+# linearizations and its list of parents: given one, the merge succeeds,
+# within its fuel.
+# Record: blend-c3
+law c3.complete:
+  for +id: U32
+  for +ps: List<&2, U32>
+  for +seqs: List<&2, B.Sq>
+  for +ys: List<&2, U32>
+  for +h1: {B.sqs.kept(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), ys) == True{} : Bool}
+  for +h2: {B.distinct(ys) == True{} : Bool}
+  {B.lz.ok(B.lin.of(id, ps, Some{seqs})) == True{} : Bool}
+
+# LAW: a linearization begins with its object, merged or not.
+# Record: blend-c3
+law c3.first:
+  for +id: U32
+  for +ps: List<&2, U32>
+  for ss: Maybe<&2, List<&2, B.Sq>>
+  {List.head(&2, U32, B.lz.ord(Some{B.lin.of(id, ps, ss)})) == Some{id} : Maybe<&2, U32>}
