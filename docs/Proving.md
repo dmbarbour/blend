@@ -61,6 +61,12 @@ it alone taught. Add to this file what a new proof teaches.
   proof until the result reduces.
 - **State whose invariant holds by computation**: then the law costs a
   case split per step.
+- **Narrow a decision to where it can happen**: the writer kept on its
+  header's line any line numbered as the header, a test that only the
+  first line can pass, but that a proof must refute for every later
+  line, past 2^32 lines too; tested on the first line alone
+  (`rls.put`'s `first`), the later lines' newlines hold by computation
+  (`markers.writer`).
 
 ## Writing proofs
 
@@ -175,6 +181,32 @@ it alone taught. Add to this file what a new proof teaches.
   reversal of an append wants lemmas.
 - **A rewrite is a local statement**: no `match` may follow it. Match
   first, then rewrite in each branch.
+- **Text kept reversed, claimed by its last line**: where a writer
+  builds its text backwards (`Tb`'s `acc`), state where things land by
+  what lies from the text's last newline on (`from.nl`): text held
+  within a line written after it leaves that the same (`onto_from`), a
+  newline starts it over, and such equations chain by `Equal.trans`,
+  with no arithmetic; the newlines counted follow from it
+  (`nls_from`).
+- **A walk naming the code's own states**: a law that follows a fold
+  step by step (`wr.at`) calls the code's own step on the code's own
+  state, and ends by comparing with the code's own result (its `fin`),
+  so that a fault in how the steps compose is caught; checks on pieces
+  computed apart from the code would pass it.
+- **A bound on `U32.mod`**: the hub proves `U32.div` (`u32_div_to_nat`)
+  but not `U32.mod`; its internal invariant gives it, the divmod's pair
+  matched (`MU.internal_dm_go`, `mod10_lt`). A `%` rewrite by the hub's
+  `internal_u32_add_exact` in a goal holding `U32.add(48, r)` overflowed
+  the checker's stack; `Equal.trans` to a lemma rewriting a variable
+  did not (`dig_ne`, `ne_k`).
+- **A string literal splits by computation**: `codes("\nlaw ")` is
+  `Con{10, codes("law ")}` to the checker, and a marker built by
+  appending to such a literal is the newline before the literal's rest,
+  with no lemma (`wh_put`).
+- **A `U32` and its successor differ**, also past 2^32: through
+  `to_nat` mod 2^32, split on `Nat.is_lt(1+n, m)`; below the modulus the
+  sum is itself, else it is the modulus, its remainder 0, and `n` not 0
+  (`u32_succ_ne`).
 - **Templates prove as code does**: a proof def may take `~p`, and
   template parameters come first.
 - **A traversal's effect on one projection**: where a writer threads

@@ -5300,25 +5300,37 @@ def rts.put(ts: List<&2, Rt>, +e: Ec, +x: U32, +j: U32, b: Tb) -> Tb:
 def spaces(n: Nat) -> List<&2, U32>:
   List.replicate(U32, n, 32)
 
-# a body line, its indentation the definition's subtracted; one written
-# on its header's line (a type member's) stays on it
-def rl.put(l: Rl, +e: Ec, +x: U32, +j: U32, +dind: U32, +b: Tb) -> Tb:
+# what starts a body line: on its header's line (a type member's), a
+# space; else a newline, then its indentation (a blank line's none)
+def rl.lead(+on: Bool, +blank: Bool, +n: Nat) -> List<&2, U32>:
+  match on blank:
+    case True{} _:
+      [32]
+    case False{} True{}:
+      [10]
+    case False{} False{}:
+      Con{10, spaces(n)}
+
+# a body line, its indentation the definition's subtracted; the first,
+# where it is numbered as its header (a type member's), stays on the
+# header's line, so that each line after it starts one of its own
+# (LAWS.bend, `markers.writer`)
+def rl.put(l: Rl, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: Tb) -> Tb:
   match l:
     case Rl{+no, +ind, ts}:
       match ts:
         case Nil{}:
-          tb.put(b, [10])
+          tb.put(b, rl.lead(first && U32.is_eq(no, node.no(un.node(ec.un(e, x)))), True{}, 0n))
         case Con{t, r}:
-          rts.put(Con{t, r}, e, x, j,
-            when(Tb, U32.is_eq(no, node.no(un.node(ec.un(e, x)))), u => tb.put(b, [32]),
-              u => tb.put(b, Con{10, spaces(U32.to_nat(when(U32, U32.is_gt(ind, dind), v => (ind - dind : U32), v => 0)))})))
+          rts.put(Con{t, r}, e, x, j, tb.put(b, rl.lead(first && U32.is_eq(no, node.no(un.node(ec.un(e, x)))), False{},
+            U32.to_nat(when(U32, U32.is_gt(ind, dind), v => (ind - dind : U32), v => 0)))))
 
-def rls.put(ls: List<&2, Rl>, +e: Ec, +x: U32, +j: U32, +dind: U32, b: Tb) -> Tb:
+def rls.put(ls: List<&2, Rl>, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, b: Tb) -> Tb:
   match ls:
     case Nil{}:
       b
     case Con{l, t}:
-      rls.put(t, e, x, j, dind, rl.put(l, e, x, j, dind, b))
+      rls.put(t, e, x, j, dind, False{}, rl.put(l, e, x, j, dind, first, b))
 
 def ec.files(e: Ec) -> List<&2, List<&2, U32>>:
   match e:
@@ -5386,11 +5398,18 @@ def witness.body(+e: Ec, +x: U32) -> List<&2, U32>:
       Con{40, List.append(&2, U32, args.joined(node.params(un.node(ec.un(e, x)))), [41])})),
     u => Nil{})
 
+# a unit's copy in its parts, as a law follows them (LAWS.bend,
+# `markers.writer`): its head, the marker and the header; its body's
+# lines after; a witness's body last
+def unit.head(+e: Ec, +s: U32, +x: U32, +j: U32, b: Tb) -> Tb:
+  rts.put(un.hd(ec.un(e, s)), e, s, j,
+    tb.put(b, List.append(&2, U32, marker(e, s), List.append(&2, U32, unit.kw(e, s), own.name(e, x, j)))))
+
+def unit.body(+e: Ec, +s: U32, +x: U32, +j: U32, b: Tb) -> Tb:
+  rls.put(un.lines(ec.un(e, s)), e, s, j, node.ind(un.node(ec.un(e, s))), True{}, unit.head(e, s, x, j, b))
+
 def unit.put.as(+e: Ec, +s: U32, +x: U32, +j: U32, b: Tb) -> Tb:
-  tb.put(rls.put(un.lines(ec.un(e, s)), e, s, j, node.ind(un.node(ec.un(e, s))),
-    rts.put(un.hd(ec.un(e, s)), e, s, j,
-      tb.put(b, List.append(&2, U32, marker(e, s), List.append(&2, U32, unit.kw(e, s), own.name(e, x, j)))))),
-    List.append(&2, U32, witness.body(e, s), [10]))
+  tb.put(unit.body(e, s, x, j, b), List.append(&2, U32, witness.body(e, s), [10]))
 
 def unit.put(+e: Ec, +x: U32, +j: U32, b: Tb) -> Tb:
   unit.put.as(e, unit.src(e, x), x, j, b)
@@ -5440,6 +5459,183 @@ def order.put(xs: List<&2, U32>, +e: Ec, b: Tb) -> Tb:
       b
     case Con{+x, t}:
       order.put(t, e, unit.all(e, x, ec.mu(e, x), b))
+
+# The writer's law's terms (LAWS.bend, `markers.writer`): text held within
+# a line (`inline`), no newline in it; a text's newlines, and the text kept reversed from its last
+# newline on, what text holding none written after it leaves alone
+
+def inline(xs: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{+h, t}:
+      Bool.not(U32.is_eq(h, 10)) && inline(t)
+
+def inlines(xss: List<&2, List<&2, U32>>) -> Bool:
+  match xss:
+    case Nil{}:
+      True{}
+    case Con{x, t}:
+      inline(x) && inlines(t)
+
+def nl.k(+c: Bool, +n: Nat) -> Nat:
+  match c:
+    case True{}:
+      1n+n
+    case False{}:
+      n
+
+def nls(xs: List<&2, U32>) -> Nat:
+  match xs:
+    case Nil{}:
+      0n
+    case Con{+h, t}:
+      nl.k(U32.is_eq(h, 10), nls(t))
+
+def from.k(+c: Bool, +xs: List<&2, U32>, +r: List<&2, U32>) -> List<&2, U32>:
+  match c:
+    case True{}:
+      xs
+    case False{}:
+      r
+
+def from.nl(xs: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{+h, +t}:
+      from.k(U32.is_eq(h, 10), Con{h, t}, from.nl(t))
+
+def tb.acc(b: Tb) -> List<&2, U32>:
+  match b:
+    case Tb{acc, ctrs}:
+      acc
+
+def tb.nls(+b: Tb) -> Nat:
+  nls(tb.acc(b))
+
+def tb.from(+b: Tb) -> List<&2, U32>:
+  from.nl(tb.acc(b))
+
+# what the writer reads from its context holding no newline: the files'
+# paths, the objects', the imports' aliases, and each unit's name and
+# tokens (a reference's name, a name after an alias)
+def ob.inline(o: Ob) -> Bool:
+  match o:
+    case Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+      inlines(path)
+
+def obs.inline(obs: List<&2, Ob>) -> Bool:
+  match obs:
+    case Nil{}:
+      True{}
+    case Con{o, t}:
+      ob.inline(o) && obs.inline(t)
+
+def cis.inline(cs: List<&2, Ci>) -> Bool:
+  match cs:
+    case Nil{}:
+      True{}
+    case Con{c, t}:
+      match c:
+        case Ci{alias, path, +no}:
+          inline(alias) && cis.inline(t)
+
+def rt.inline(t: Rt) -> Bool:
+  match t:
+    case RT{tk}:
+      inline(tok.bytes(tk))
+    case RR{+mark, ref}:
+      inline(rf.name(ref))
+    case RX{+mark, path, rest}:
+      inline(rest)
+
+def rts.inline(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{t, r}:
+      rt.inline(t) && rts.inline(r)
+
+def rls.inline(ls: List<&2, Rl>) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{l, t}:
+      match l:
+        case Rl{+no, +ind, ts}:
+          rts.inline(ts) && rls.inline(t)
+
+def un.inline(u: Un) -> Bool:
+  match u:
+    case Un{+o, i, nd, hd, ls}:
+      match i:
+        case In{name, +q, +prior}:
+          inline(name) && rts.inline(hd) && rls.inline(ls)
+
+def uns.inline(us: List<&2, Un>) -> Bool:
+  match us:
+    case Nil{}:
+      True{}
+    case Con{u, t}:
+      un.inline(u) && uns.inline(t)
+
+def ht.inline(t: Ht<Un>) -> Bool:
+  match t:
+    case HLeaf{es}:
+      uns.inline(es)
+    case HNode{z, o}:
+      ht.inline(z) && ht.inline(o)
+
+def ec.inline(e: Ec) -> Bool:
+  match e:
+    case Ec{files, obs, us, als, own, res, paths, +mode, rtypes, ux, ut, mt}:
+      inlines(files) && obs.inline(obs) && cis.inline(own) && ht.inline(ut)
+
+# a body's lines numbered on from its header's line, or the line after
+def rls.from(+ls: List<&2, Rl>, +no: U32) -> Bool:
+  rl.from(ls, no) || rl.from(ls, (no + 1 : U32))
+
+# the marker's line as where.sh reads it, `# blend: FILE:LINE`
+def marker.line(+files: List<&2, List<&2, U32>>, +no: U32) -> List<&2, U32>:
+  List.append(&2, U32, codes("# blend: "), List.append(&2, U32, loc.file(files, no), Con{58, codes(U32.show(loc.line(no)))}))
+
+# a unit's head written after b as where.sh reads it: a newline, the
+# marker's line, a newline, then the header's line, none holding one
+def wr.head(+e: Ec, +s: U32, +x: U32, +j: U32, +b: Tb) -> Bool:
+  +ml = marker.line(ec.files(e), node.no(un.node(ec.un(e, s))))
+  inline(ml) && same(tb.from(unit.head(e, s, x, j, b)), Con{10, rev.onto(ml, Con{10, tb.acc(b)})})
+
+def rl.no(l: Rl) -> U32:
+  match l:
+    case Rl{+no, +ind, ts}:
+      no
+
+# a body line written after b, numbered n, on the text's line k: after a
+# newline of its own, or on b's line, holding none after
+def wr.line(+l: Rl, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: Tb, +k: Nat, +n: U32) -> Bool:
+  +a = rl.put(l, e, x, j, dind, first, b)
+  U32.is_eq(rl.no(l), n) && Nat.is_eq(tb.nls(a), k) && (same(tb.from(a), Con{10, tb.acc(b)}) || same(tb.from(a), tb.from(b)))
+
+# each of a body's lines so, numbered on and a line further each, and
+# then the text the writer ends with, fin
+def wr.at(ls: List<&2, Rl>, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: Tb, +k: Nat, +n: U32, +fin: List<&2, U32>) -> Bool:
+  match ls:
+    case Nil{}:
+      same(tb.acc(b), fin)
+    case Con{+l, t}:
+      wr.line(l, e, x, j, dind, first, b, k, n) && wr.at(t, e, x, j, dind, False{}, rl.put(l, e, x, j, dind, first, b), 1n+k, (n + 1 : U32), fin)
+
+# a unit's copy written after b: its head as where.sh reads it, then its
+# body's lines, the first on the header's line where numbered as it,
+# else each line k below the header numbered k after it
+def wr.unit(+e: Ec, +s: U32, +x: U32, +j: U32, +b: Tb) -> Bool:
+  +h = unit.head(e, s, x, j, b)
+  +ls = un.lines(ec.un(e, s))
+  +no = node.no(un.node(ec.un(e, s)))
+  +dind = node.ind(un.node(ec.un(e, s)))
+  +fin = tb.acc(unit.body(e, s, x, j, b))
+  wr.head(e, s, x, j, b) && (wr.at(ls, e, s, j, dind, True{}, h, tb.nls(h), no, fin) || wr.at(ls, e, s, j, dind, True{}, h, 1n+tb.nls(h), (no + 1 : U32), fin))
 
 # Imports
 # -------
