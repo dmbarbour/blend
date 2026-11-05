@@ -44,6 +44,9 @@
 #   by a twin without it (`mrest`, `merge_acc`); completeness by
 #   induction on a witness order, never a cycle (`good_of`); a lemma's
 #   mutually recursive partner taken as a function (`sub_weak`).
+# - The writer's counters (`sharing.counts`): each step's effect on one
+#   counter, for any text before it (`cy`, `keep`); U32 sums reassociated
+#   through to_nat (`u32_assoc`), the modulus a variable (`wrap_m`).
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -3905,3 +3908,596 @@ def Laws.c3.complete(id, ps, seqs, ys, h1, h2):
   merge_ok(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), ys, Nil{},
     len_take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), kept_take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295, ys, h1), h2,
     full_take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295))
+
+# U32 sums
+# --------
+#
+# U32 addition wraps at 2^32: a sum's to_nat is the naturals' sum mod
+# 2^32 (the hub's `u32_add_wrap`). Reasoned under a modulus N, the wrap
+# law passed in, so that the power is never unfolded: addition is then
+# associative and commutative, as the sharing law's two sums need.
+
+# a multiple of N added before a natural: its remainder the same
+def mod_mul(q: Nat, +n: Nat, +a: Nat) -> {Nat.mod(a, n) == Nat.mod(Nat.add(Nat.mul(q, n), a), n) : Nat}:
+  match q:
+    case 0n:
+      {==}
+    case 1n+(+p):
+      %Equal.sym(Nat, Nat.add(Nat.add(n, Nat.mul(p, n)), a), Nat.add(n, Nat.add(Nat.mul(p, n), a)), MNat.add_assoc(n, Nat.mul(p, n), a)) :
+        {Nat.mod(a, n) == Nat.mod(_, n) : Nat}
+      %Equal.sym(Nat, Nat.mod(Nat.add(n, Nat.add(Nat.mul(p, n), a)), n), Nat.mod(Nat.add(Nat.mul(p, n), a), n), MNat.add_mod_left(Nat.add(Nat.mul(p, n), a), n)) :
+        {Nat.mod(a, n) == _ : Nat}
+      mod_mul(p, n, a)
+
+# a remainder added first: the sum's remainder
+def mod_add_l(+x: Nat, +y: Nat, +n: Nat) -> {Nat.mod(Nat.add(Nat.mod(x, n), y), n) == Nat.mod(Nat.add(x, y), n) : Nat}:
+  %MNat.mod_add_div(x, n) : {Nat.mod(Nat.add(Nat.mod(x, n), y), n) == Nat.mod(Nat.add(_, y), n) : Nat}
+  %MNat.add_comm(Nat.mul(n, Nat.div(x, n)), Nat.mod(x, n)) : {Nat.mod(Nat.add(Nat.mod(x, n), y), n) == Nat.mod(Nat.add(_, y), n) : Nat}
+  %Equal.sym(Nat, Nat.add(Nat.add(Nat.mul(n, Nat.div(x, n)), Nat.mod(x, n)), y), Nat.add(Nat.mul(n, Nat.div(x, n)), Nat.add(Nat.mod(x, n), y)),
+      MNat.add_assoc(Nat.mul(n, Nat.div(x, n)), Nat.mod(x, n), y)) :
+    {Nat.mod(Nat.add(Nat.mod(x, n), y), n) == Nat.mod(_, n) : Nat}
+  %MNat.mul_comm(Nat.div(x, n), n) : {Nat.mod(Nat.add(Nat.mod(x, n), y), n) == Nat.mod(Nat.add(_, Nat.add(Nat.mod(x, n), y)), n) : Nat}
+  mod_mul(Nat.div(x, n), n, Nat.add(Nat.mod(x, n), y))
+
+# the sums' wraps, each an equation, as a proof function is used once
+def u32_assoc_n(+n: Nat, +a: U32, +b: U32, +c: U32, w1: {U32.to_nat(U32.add(U32.add(a, b), c)) == Nat.mod(Nat.add(U32.to_nat(U32.add(a, b)), U32.to_nat(c)), n) : Nat}, w2: {U32.to_nat(U32.add(a, b)) == Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(b)), n) : Nat},
+    w3: {U32.to_nat(U32.add(a, U32.add(b, c))) == Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(U32.add(b, c))), n) : Nat}, w4: {U32.to_nat(U32.add(b, c)) == Nat.mod(Nat.add(U32.to_nat(b), U32.to_nat(c)), n) : Nat}) -> {U32.to_nat(U32.add(U32.add(a, b), c)) == U32.to_nat(U32.add(a, U32.add(b, c))) : Nat}:
+  %Equal.sym(Nat, U32.to_nat(U32.add(U32.add(a, b), c)), Nat.mod(Nat.add(U32.to_nat(U32.add(a, b)), U32.to_nat(c)), n), w1) : {_ == U32.to_nat(U32.add(a, U32.add(b, c))) : Nat}
+  %Equal.sym(Nat, U32.to_nat(U32.add(a, b)), Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(b)), n), w2) : {Nat.mod(Nat.add(_, U32.to_nat(c)), n) == U32.to_nat(U32.add(a, U32.add(b, c))) : Nat}
+  %Equal.sym(Nat, Nat.mod(Nat.add(Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(b)), n), U32.to_nat(c)), n), Nat.mod(Nat.add(Nat.add(U32.to_nat(a), U32.to_nat(b)), U32.to_nat(c)), n), mod_add_l(Nat.add(U32.to_nat(a), U32.to_nat(b)), U32.to_nat(c), n)) : {_ == U32.to_nat(U32.add(a, U32.add(b, c))) : Nat}
+  %Equal.sym(Nat, Nat.add(Nat.add(U32.to_nat(a), U32.to_nat(b)), U32.to_nat(c)), Nat.add(U32.to_nat(a), Nat.add(U32.to_nat(b), U32.to_nat(c))), MNat.add_assoc(U32.to_nat(a), U32.to_nat(b), U32.to_nat(c))) : {Nat.mod(_, n) == U32.to_nat(U32.add(a, U32.add(b, c))) : Nat}
+  %Equal.sym(Nat, U32.to_nat(U32.add(a, U32.add(b, c))), Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(U32.add(b, c))), n), w3) : {Nat.mod(Nat.add(U32.to_nat(a), Nat.add(U32.to_nat(b), U32.to_nat(c))), n) == _ : Nat}
+  %Equal.sym(Nat, U32.to_nat(U32.add(b, c)), Nat.mod(Nat.add(U32.to_nat(b), U32.to_nat(c)), n), w4) : {Nat.mod(Nat.add(U32.to_nat(a), Nat.add(U32.to_nat(b), U32.to_nat(c))), n) == Nat.mod(Nat.add(U32.to_nat(a), _), n) : Nat}
+  %MNat.add_comm(Nat.mod(Nat.add(U32.to_nat(b), U32.to_nat(c)), n), U32.to_nat(a)) : {Nat.mod(Nat.add(U32.to_nat(a), Nat.add(U32.to_nat(b), U32.to_nat(c))), n) == Nat.mod(_, n) : Nat}
+  %Equal.sym(Nat, Nat.mod(Nat.add(Nat.mod(Nat.add(U32.to_nat(b), U32.to_nat(c)), n), U32.to_nat(a)), n), Nat.mod(Nat.add(Nat.add(U32.to_nat(b), U32.to_nat(c)), U32.to_nat(a)), n), mod_add_l(Nat.add(U32.to_nat(b), U32.to_nat(c)), U32.to_nat(a), n)) : {Nat.mod(Nat.add(U32.to_nat(a), Nat.add(U32.to_nat(b), U32.to_nat(c))), n) == _ : Nat}
+  %MNat.add_comm(U32.to_nat(a), Nat.add(U32.to_nat(b), U32.to_nat(c))) : {Nat.mod(Nat.add(U32.to_nat(a), Nat.add(U32.to_nat(b), U32.to_nat(c))), n) == Nat.mod(_, n) : Nat}
+  {==}
+
+def u32_comm_n(+n: Nat, +a: U32, +b: U32, w1: {U32.to_nat(U32.add(a, b)) == Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(b)), n) : Nat}, w2: {U32.to_nat(U32.add(b, a)) == Nat.mod(Nat.add(U32.to_nat(b), U32.to_nat(a)), n) : Nat}) -> {U32.to_nat(U32.add(a, b)) == U32.to_nat(U32.add(b, a)) : Nat}:
+  %Equal.sym(Nat, U32.to_nat(U32.add(a, b)), Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(b)), n), w1) : {_ == U32.to_nat(U32.add(b, a)) : Nat}
+  %Equal.sym(Nat, U32.to_nat(U32.add(b, a)), Nat.mod(Nat.add(U32.to_nat(b), U32.to_nat(a)), n), w2) : {Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(b)), n) == _ : Nat}
+  %MNat.add_comm(U32.to_nat(a), U32.to_nat(b)) : {Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(b)), n) == Nat.mod(_, n) : Nat}
+  {==}
+
+# U32 addition is associative and commutative
+def u32_assoc(+a: U32, +b: U32, +c: U32) -> {U32.add(U32.add(a, b), c) == U32.add(a, U32.add(b, c)) : U32}:
+  MU.u32_to_nat_inj(U32.add(U32.add(a, b), c), U32.add(a, U32.add(b, c)), u32_assoc_n(Nat.pow(2n, 32n), a, b, c,
+    MU.u32_add_wrap(U32.add(a, b), c), MU.u32_add_wrap(a, b), MU.u32_add_wrap(a, U32.add(b, c)), MU.u32_add_wrap(b, c)))
+
+def u32_comm(+a: U32, +b: U32) -> {U32.add(a, b) == U32.add(b, a) : U32}:
+  MU.u32_to_nat_inj(U32.add(a, b), U32.add(b, a), u32_comm_n(Nat.pow(2n, 32n), a, b, MU.u32_add_wrap(a, b), MU.u32_add_wrap(b, a)))
+
+def u32_one_n(+n: Nat, +a: U32, w: {U32.to_nat(U32.add(a, 0)) == Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(0)), n) : Nat},
+    h: {Nat.mod(U32.to_nat(a), n) == U32.to_nat(a) : Nat}) -> {U32.to_nat(U32.add(a, 0)) == U32.to_nat(a) : Nat}:
+  %Equal.sym(Nat, U32.to_nat(U32.add(a, 0)), Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(0)), n), w) : {_ == U32.to_nat(a) : Nat}
+  %Equal.sym(Nat, Nat.add(U32.to_nat(a), 0n), U32.to_nat(a), MNat.add_zero(U32.to_nat(a))) : {Nat.mod(_, n) == U32.to_nat(a) : Nat}
+  h
+
+# a zero added: nothing
+def u32_zero_r(+a: U32) -> {U32.add(a, 0) == a : U32}:
+  MU.u32_to_nat_inj(U32.add(a, 0), a, u32_one_n(Nat.pow(2n, 32n), a, MU.u32_add_wrap(a, 0),
+    MNat.mod_eq_of_lt(U32.to_nat(a), Nat.pow(2n, 32n), MU.u32_to_nat_lt(a))))
+
+def u32_zero_l(+a: U32) -> {U32.add(0, a) == a : U32}:
+  %Equal.sym(U32, U32.add(0, a), U32.add(a, 0), u32_comm(0, a)) : {_ == a : U32}
+  u32_zero_r(a)
+
+# The writer's counters
+# ---------------------
+#
+# A unit's counter of numbered calls, after its body is written: one more
+# at each call to it, where the writer is an object's (`wcv`); after all
+# of a unit's copies, that once for each (`reps`); which, the sums
+# swapped, is what the dispositions weigh each use by (`uses.w`).
+
+# a sum of c, once for each use; c n times
+def wsum(rs: List<&2, B.Ru>, +c: U32) -> U32:
+  match rs:
+    case Nil{}:
+      0
+    case Con{r, t}:
+      U32.add(c, wsum(t, c))
+
+def reps(n: Nat, +c: U32) -> U32:
+  match n:
+    case 0n:
+      0
+    case 1n+k:
+      U32.add(c, reps(k, c))
+
+def wsum_app(a: List<&2, B.Ru>, +b: List<&2, B.Ru>, +c: U32) -> {U32.add(wsum(a, c), wsum(b, c)) == wsum(List.append(&2, B.Ru, a, b), c) : U32}:
+  match a:
+    case Nil{}:
+      u32_zero_l(wsum(b, c))
+    case Con{r, +t}:
+      %Equal.sym(U32, U32.add(U32.add(c, wsum(t, c)), wsum(b, c)), U32.add(c, U32.add(wsum(t, c), wsum(b, c))), u32_assoc(c, wsum(t, c), wsum(b, c))) :
+        {_ == U32.add(c, wsum(List.append(&2, B.Ru, t, b), c)) : U32}
+      %wsum_app(t, b, c) : {U32.add(c, U32.add(wsum(t, c), wsum(b, c))) == U32.add(c, _) : U32}
+      {==}
+
+def uses_m_app(a: List<&2, B.Ru>, +b: List<&2, B.Ru>, +ut: B.Ht<B.Un>, +s: B.Ms) ->
+    {U32.add(B.uses.m(a, ut, s), B.uses.m(b, ut, s)) == B.uses.m(List.append(&2, B.Ru, a, b), ut, s) : U32}:
+  match a:
+    case Nil{}:
+      u32_zero_l(B.uses.m(b, ut, s))
+    case Con{r, +t}:
+      match r:
+        case B.Ru{+u, +no}:
+          %Equal.sym(U32, U32.add(U32.add(B.use.w(u, ut, s), B.uses.m(t, ut, s)), B.uses.m(b, ut, s)),
+              U32.add(B.use.w(u, ut, s), U32.add(B.uses.m(t, ut, s), B.uses.m(b, ut, s))), u32_assoc(B.use.w(u, ut, s), B.uses.m(t, ut, s), B.uses.m(b, ut, s))) :
+            {_ == U32.add(B.use.w(u, ut, s), B.uses.m(List.append(&2, B.Ru, t, b), ut, s)) : U32}
+          %uses_m_app(t, b, ut, s) : {U32.add(B.use.w(u, ut, s), U32.add(B.uses.m(t, ut, s), B.uses.m(b, ut, s))) == U32.add(B.use.w(u, ut, s), _) : U32}
+          {==}
+
+def uin_k(h: Bool, +x: U32, +no: U32, +t: List<&2, B.Ru>, +b: List<&2, B.Ru>, +y: U32,
+    ih: {List.append(&2, B.Ru, B.uses.in(t, x, y), B.uses.in(b, x, y)) == B.uses.in(List.append(&2, B.Ru, t, b), x, y) : List<&2, B.Ru>}) ->
+    {List.append(&2, B.Ru, B.uses.in.k(h, x, no, B.uses.in(t, x, y)), B.uses.in(b, x, y)) == B.uses.in.k(h, x, no, B.uses.in(List.append(&2, B.Ru, t, b), x, y)) : List<&2, B.Ru>}:
+  match h:
+    case True{}:
+      %ih : {Con{B.Ru{x, no}, List.append(&2, B.Ru, B.uses.in(t, x, y), B.uses.in(b, x, y))} == Con{B.Ru{x, no}, _} : List<&2, B.Ru>}
+      {==}
+    case False{}:
+      ih
+
+def uses_in_app(a: List<&2, B.Ru>, +b: List<&2, B.Ru>, +x: U32, +y: U32) ->
+    {List.append(&2, B.Ru, B.uses.in(a, x, y), B.uses.in(b, x, y)) == B.uses.in(List.append(&2, B.Ru, a, b), x, y) : List<&2, B.Ru>}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, +t}:
+      match r:
+        case B.Ru{+u, +no}:
+          uin_k(U32.is_eq(u, y), x, no, t, b, y, uses_in_app(t, b, x, y))
+
+def umin_k(h: Bool, +x: U32, +no: U32, +t: List<&2, B.Ru>, +y: U32, +ut: B.Ht<B.Un>, +s: B.Ms,
+    ih: {wsum(B.uses.in(t, x, y), B.use.w(x, ut, s)) == B.uses.m(B.uses.in(t, x, y), ut, s) : U32}) ->
+    {wsum(B.uses.in.k(h, x, no, B.uses.in(t, x, y)), B.use.w(x, ut, s)) == B.uses.m(B.uses.in.k(h, x, no, B.uses.in(t, x, y)), ut, s) : U32}:
+  match h:
+    case True{}:
+      %ih : {U32.add(B.use.w(x, ut, s), wsum(B.uses.in(t, x, y), B.use.w(x, ut, s))) == U32.add(B.use.w(x, ut, s), _) : U32}
+      {==}
+    case False{}:
+      ih
+
+# x's uses, weighed: each by x's weight
+def uses_m_in(rs: List<&2, B.Ru>, +x: U32, +y: U32, +ut: B.Ht<B.Un>, +s: B.Ms) ->
+    {wsum(B.uses.in(rs, x, y), B.use.w(x, ut, s)) == B.uses.m(B.uses.in(rs, x, y), ut, s) : U32}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{r, +t}:
+      match r:
+        case B.Ru{+u, +no}:
+          umin_k(U32.is_eq(u, y), x, no, t, y, ut, s, uses_m_in(t, x, y, ut, s))
+
+def reps_zero(n: Nat) -> {reps(n, 0) == 0 : U32}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+(+k):
+      %Equal.sym(U32, reps(k, 0), 0, reps_zero(k)) : {U32.add(0, _) == 0 : U32}
+      u32_zero_r(0)
+
+def wsum_zero(rs: List<&2, B.Ru>) -> {wsum(rs, 0) == 0 : U32}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{r, +t}:
+      %Equal.sym(U32, wsum(t, 0), 0, wsum_zero(t)) : {U32.add(0, _) == 0 : U32}
+      u32_zero_r(0)
+
+# a+b and c+d: a+c and b+d
+def swap4(+a: U32, +b: U32, +c: U32, +d: U32) -> {U32.add(U32.add(a, b), U32.add(c, d)) == U32.add(U32.add(a, c), U32.add(b, d)) : U32}:
+  %Equal.sym(U32, U32.add(U32.add(a, b), U32.add(c, d)), U32.add(a, U32.add(b, U32.add(c, d))), u32_assoc(a, b, U32.add(c, d))) :
+    {_ == U32.add(U32.add(a, c), U32.add(b, d)) : U32}
+  %u32_assoc(b, c, d) : {U32.add(a, _) == U32.add(U32.add(a, c), U32.add(b, d)) : U32}
+  %u32_comm(c, b) : {U32.add(a, U32.add(_, d)) == U32.add(U32.add(a, c), U32.add(b, d)) : U32}
+  %Equal.sym(U32, U32.add(U32.add(c, b), d), U32.add(c, U32.add(b, d)), u32_assoc(c, b, d)) : {U32.add(a, _) == U32.add(U32.add(a, c), U32.add(b, d)) : U32}
+  Equal.sym(U32, U32.add(U32.add(a, c), U32.add(b, d)), U32.add(a, U32.add(c, U32.add(b, d))), u32_assoc(a, c, U32.add(b, d)))
+
+def reps_add(n: Nat, +a: U32, +b: U32) -> {U32.add(reps(n, a), reps(n, b)) == reps(n, U32.add(a, b)) : U32}:
+  match n:
+    case 0n:
+      u32_zero_r(0)
+    case 1n+(+k):
+      %reps_add(k, a, b) : {U32.add(U32.add(a, reps(k, a)), U32.add(b, reps(k, b))) == U32.add(U32.add(a, b), _) : U32}
+      swap4(a, reps(k, a), b, reps(k, b))
+
+# the sums swapped: each use's c, n times; n times each use's c
+def reps_swap(rs: List<&2, B.Ru>, +n: Nat, +c: U32) -> {wsum(rs, reps(n, c)) == reps(n, wsum(rs, c)) : U32}:
+  match rs:
+    case Nil{}:
+      Equal.sym(U32, reps(n, 0), 0, reps_zero(n))
+    case Con{r, +t}:
+      %reps_add(n, c, wsum(t, c)) : {U32.add(reps(n, c), wsum(t, reps(n, c))) == _ : U32}
+      %reps_swap(t, n, c) : {U32.add(reps(n, c), wsum(t, reps(n, c))) == U32.add(reps(n, c), _) : U32}
+      {==}
+
+# the wrap law at a modulus m that is 2^32, so that the power is never
+# expanded (docs/Proving.md, a big constant)
+def wrap_m(+m: Nat, e: {Nat.pow(2n, 32n) == m : Nat}, +a: U32, +b: U32) -> {U32.to_nat(U32.add(a, b)) == Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(b)), m) : Nat}:
+  %e : {U32.to_nat(U32.add(a, b)) == Nat.mod(Nat.add(U32.to_nat(a), U32.to_nat(b)), _) : Nat}
+  MU.u32_add_wrap(a, b)
+
+# one, k times: k, mod 2^32
+def to_nat_reps(k: Nat, +m: Nat, +e: {Nat.pow(2n, 32n) == m : Nat}) -> {U32.to_nat(reps(k, 1)) == Nat.mod(k, m) : Nat}:
+  match k:
+    case 0n:
+      Equal.sym(Nat, Nat.mod(0n, m), 0n, MNat.zero_mod(m))
+    case 1n+(+p):
+      %Equal.sym(Nat, U32.to_nat(U32.add(1, reps(p, 1))), Nat.mod(Nat.add(U32.to_nat(1), U32.to_nat(reps(p, 1))), m), wrap_m(m, e, 1, reps(p, 1))) :
+        {_ == Nat.mod(1n+p, m) : Nat}
+      %Equal.sym(Nat, U32.to_nat(reps(p, 1)), Nat.mod(p, m), to_nat_reps(p, m, e)) : {Nat.mod(Nat.add(1n, _), m) == Nat.mod(1n+p, m) : Nat}
+      %MNat.add_comm(Nat.mod(p, m), 1n) : {Nat.mod(_, m) == Nat.mod(1n+p, m) : Nat}
+      %Equal.sym(Nat, Nat.mod(Nat.add(Nat.mod(p, m), 1n), m), Nat.mod(Nat.add(p, 1n), m), mod_add_l(p, 1n, m)) : {_ == Nat.mod(1n+p, m) : Nat}
+      %MNat.add_comm(p, 1n) : {Nat.mod(Nat.add(p, 1n), m) == Nat.mod(_, m) : Nat}
+      {==}
+
+def reps_one_m(+a: U32, +m: Nat, +e: {Nat.pow(2n, 32n) == m : Nat}, h: {Nat.mod(U32.to_nat(a), m) == U32.to_nat(a) : Nat}) ->
+    {U32.to_nat(reps(U32.to_nat(a), 1)) == U32.to_nat(a) : Nat}:
+  Equal.trans(Nat, U32.to_nat(reps(U32.to_nat(a), 1)), Nat.mod(U32.to_nat(a), m), U32.to_nat(a), to_nat_reps(U32.to_nat(a), m, e), h)
+
+# one, a times: a
+def reps_one(+a: U32) -> {reps(U32.to_nat(a), 1) == a : U32}:
+  MU.u32_to_nat_inj(reps(U32.to_nat(a), 1), a, reps_one_m(a, Nat.pow(2n, 32n), {==},
+    MNat.mod_eq_of_lt(U32.to_nat(a), Nat.pow(2n, 32n), MU.u32_to_nat_lt(a))))
+
+# a call's weight in one copy of an object's unit, and in all a unit's
+# copies, as use.w weighs it
+def wcv(o0: Bool) -> U32:
+  match o0:
+    case True{}:
+      0
+    case False{}:
+      1
+
+def uw_k(+o0: Bool, +m: U32) -> U32:
+  B.when(U32, o0, v => 0, v => U32.add(1, m))
+
+# a unit's calls, once in each of its copies: each weighed as the
+# dispositions weigh a use
+def weights(o0: Bool, +m: U32, +rs: List<&2, B.Ru>) -> {reps(1n+U32.to_nat(m), wsum(rs, wcv(o0))) == wsum(rs, uw_k(o0, m)) : U32}:
+  match o0:
+    case True{}:
+      %Equal.sym(U32, wsum(rs, 0), 0, wsum_zero(rs)) : {reps(1n+U32.to_nat(m), _) == _ : U32}
+      reps_zero(1n+U32.to_nat(m))
+    case False{}:
+      %reps_swap(rs, 1n+U32.to_nat(m), 1) : {_ == wsum(rs, U32.add(1, m)) : U32}
+      %Equal.sym(U32, reps(U32.to_nat(m), 1), m, reps_one(m)) : {wsum(rs, U32.add(1, _)) == wsum(rs, U32.add(1, m)) : U32}
+      {==}
+
+# y's counter in a text built; a call's weight in x's copies
+def cy(b: B.Tb, +y: U32) -> U32:
+  B.ctr.at(B.tb.ctrs(b), y)
+
+def wx(+e: B.Ec, +x: U32) -> U32:
+  wcv(U32.is_eq(B.un.o(B.ec.un(e, x)), 0))
+
+# text put keeps the counters
+def tbput_any(b: B.Tb, +xs: List<&2, U32>, +y: U32) -> {cy(b, y) == cy(B.tb.put(b, xs), y) : U32}:
+  match b:
+    case B.Tb{acc, ctrs}:
+      {==}
+
+def mark_k(c: Bool, b: B.Tb, +y: U32) -> {cy(b, y) == cy(B.mark.put.k(c, b), y) : U32}:
+  match c:
+    case True{}:
+      tbput_any(b, [126], y)
+    case False{}:
+      {==}
+
+def cy_mark(+mark: U32, b: B.Tb, +y: U32) -> {cy(b, y) == cy(B.mark.put(mark, b), y) : U32}:
+  mark_k(U32.is_eq(mark, 126), b, y)
+
+# a numbered call counts one on its unit's counter, and none on another's
+def next_self(+e: B.Ec, +y: U32, b: B.Tb) -> {U32.add(cy(b, y), 1) == cy(B.ref.next(e, y, b), y) : U32}:
+  match b:
+    case B.Tb{acc, +ctrs}:
+      %Equal.sym(Maybe<&2, U32>, B.um.get(U32, B.um.put(U32, ctrs, y, U32.add(B.ctr.at(ctrs, y), 1)), y),
+          mpick(U32, U32.is_eq(y, y), Some{U32.add(B.ctr.at(ctrs, y), 1)}, B.um.get(U32, ctrs, y)),
+          um_get_put(U32, ctrs, y, y, U32.add(B.ctr.at(ctrs, y), 1))) :
+        {U32.add(B.ctr.at(ctrs, y), 1) == B.ctr.or(_) : U32}
+      %Equal.sym(Bool, U32.is_eq(y, y), True{}, u32_is_eq_refl(y)) :
+        {U32.add(B.ctr.at(ctrs, y), 1) == B.ctr.or(mpick(U32, _, Some{U32.add(B.ctr.at(ctrs, y), 1)}, B.um.get(U32, ctrs, y))) : U32}
+      {==}
+
+def next_other(+e: B.Ec, +y2: U32, +y: U32, b: B.Tb, hq: {U32.is_eq(y2, y) == False{} : Bool}) -> {cy(b, y) == cy(B.ref.next(e, y2, b), y) : U32}:
+  match b:
+    case B.Tb{acc, +ctrs}:
+      %Equal.sym(Maybe<&2, U32>, B.um.get(U32, B.um.put(U32, ctrs, y2, U32.add(B.ctr.at(ctrs, y2), 1)), y),
+          mpick(U32, U32.is_eq(y2, y), Some{U32.add(B.ctr.at(ctrs, y2), 1)}, B.um.get(U32, ctrs, y)),
+          um_get_put(U32, ctrs, y2, y, U32.add(B.ctr.at(ctrs, y2), 1))) :
+        {B.ctr.at(ctrs, y) == B.ctr.or(_) : U32}
+      %Equal.sym(Bool, U32.is_eq(y2, y), False{}, hq) :
+        {B.ctr.at(ctrs, y) == B.ctr.or(mpick(U32, _, Some{U32.add(B.ctr.at(ctrs, y2), 1)}, B.um.get(U32, ctrs, y))) : U32}
+      {==}
+
+# unit.src's and ref.put's decisions mirrored: in the code's file, a
+# unit's own lines, and a call by the unit's kind
+def us_k(+c: Bool, +e: B.Ec, +x: U32) -> U32:
+  B.when(U32, c, u => B.on.maybe(U32, U32, B.ux.find(B.ec.ux(e), B.rf.law(B.un.ref(B.ec.un(e, x)))), v => x, y => y), u => x)
+
+def src_code(+e: B.Ec, hm: {B.ec.mode(e) == 0 : U32}, +x: U32) -> {x == B.unit.src(e, x) : U32}:
+  %Equal.sym(U32, B.ec.mode(e), 0, hm) : {x == us_k(Bool.and(U32.is_eq(_, 1), U32.is_eq(B.node.what(B.un.node(B.ec.un(e, x))), 2)), e, x) : U32}
+  {==}
+
+def rp_k(+c1: Bool, +c2: Bool, +e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +y: U32, +b: B.Tb) -> B.Tb:
+  B.when(B.Tb, c1,
+    u => B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.codes("Blend_Laws."), B.own.name(e, x, j))),
+    u => B.when(B.Tb, c2,
+      v => B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.codes("Blend_Laws."), B.rf.text(B.ec.obs(e), r))),
+      v => B.ref.self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b))))
+
+def ref_put_code(+e: B.Ec, hm: {B.ec.mode(e) == 0 : U32}, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +y: U32, +b: B.Tb) ->
+    {B.ref.self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b)) == B.ref.put(e, x, j, mark, r, Some{y}, b) : B.Tb}:
+  %Equal.sym(U32, B.ec.mode(e), 0, hm) :
+    {B.ref.self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b)) ==
+      rp_k(Bool.and(U32.is_eq(_, 2), B.proves.own(B.ec.ut(e), x, y)),
+        Bool.and(U32.is_eq(_, 2), Bool.or(U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 1), U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 2))),
+        e, x, j, mark, r, y, b) : B.Tb}
+  {==}
+
+def refput_none(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +b: B.Tb, +y: U32) -> {cy(b, y) == cy(B.ref.put(e, x, j, mark, r, None{}, b), y) : U32}:
+  Equal.trans(U32, cy(b, y), cy(B.mark.put(mark, b), y), cy(B.ref.put(e, x, j, mark, r, None{}, b), y), cy_mark(mark, b, y),
+    tbput_any(B.mark.put(mark, b), B.when(List<&2, U32>, Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)),
+      u => List.append(&2, U32, B.codes("Blend_0."), B.rf.text(B.ec.obs(e), r)), u => B.rf.ext(e, r)), y))
+
+# a text whose counter is b's: the rest of a body written after it, as
+# after b
+def keep(+b1: B.Tb, +b: B.Tb, +r: List<&2, B.Rt>, +e: B.Ec, +x: U32, +j: U32, +y: U32, +w: U32, h: {cy(b, y) == cy(b1, y) : U32},
+    ih: {cy(B.rts.put(r, e, x, j, b1), y) == U32.add(cy(b1, y), w) : U32}) -> {cy(B.rts.put(r, e, x, j, b1), y) == U32.add(cy(b, y), w) : U32}:
+  %Equal.sym(U32, cy(b, y), cy(b1, y), h) : {cy(B.rts.put(r, e, x, j, b1), y) == U32.add(_, w) : U32}
+  ih
+
+def rk_k(+o0: Bool, +e: B.Ec, +y: U32, +b: B.Tb) -> B.Tb:
+  B.when(B.Tb, o0, u => B.tb.put(b, B.unit.text(e, y)), u => B.ref.next(e, y, b))
+
+def rk_other(o0: Bool, +e: B.Ec, +y2: U32, +b: B.Tb, +y: U32, hq: {U32.is_eq(y2, y) == False{} : Bool}) -> {cy(b, y) == cy(rk_k(o0, e, y2, b), y) : U32}:
+  match o0:
+    case True{}:
+      tbput_any(b, B.unit.text(e, y2), y)
+    case False{}:
+      next_other(e, y2, y, b, hq)
+
+# a call to another unit than y leaves y's counter
+def kind_other(p0: Bool, p1: Bool, +e: B.Ec, +x: U32, +y2: U32, +j: U32, +b: B.Tb, +y: U32, hq: {U32.is_eq(y2, y) == False{} : Bool}) ->
+    {cy(b, y) == cy(B.ref.kind.k(p0, p1, e, x, y2, j, b), y) : U32}:
+  match p0 p1:
+    case True{} _:
+      tbput_any(b, B.unit.text(e, y2), y)
+    case False{} True{}:
+      rk_other(U32.is_eq(B.un.o(B.ec.un(e, x)), 0), e, y2, b, y, hq)
+    case False{} False{}:
+      tbput_any(b, B.own.name(e, y2, j), y)
+
+# a call to y, a copied unit: one more on its counter where the writer
+# is an object's, none where it is a module's definition
+def o_step(o0: Bool, +e: B.Ec, +x: U32, +y: U32, +j: U32, +b2: B.Tb, +b: B.Tb, +r: List<&2, B.Rt>, +w: U32, +hb: {cy(b, y) == cy(b2, y) : U32},
+    ih: @c:B.Tb -> {cy(B.rts.put(r, e, x, j, c), y) == U32.add(cy(c, y), w) : U32}) ->
+    {cy(B.rts.put(r, e, x, j, rk_k(o0, e, y, b2)), y) == U32.add(cy(b, y), U32.add(wcv(o0), w)) : U32}:
+  match o0:
+    case True{}:
+      %Equal.sym(U32, U32.add(0, w), w, u32_zero_l(w)) : {cy(B.rts.put(r, e, x, j, B.tb.put(b2, B.unit.text(e, y))), y) == U32.add(cy(b, y), _) : U32}
+      keep(B.tb.put(b2, B.unit.text(e, y)), b, r, e, x, j, y, w,
+        Equal.trans(U32, cy(b, y), cy(b2, y), cy(B.tb.put(b2, B.unit.text(e, y)), y), hb, tbput_any(b2, B.unit.text(e, y), y)), ih(B.tb.put(b2, B.unit.text(e, y))))
+    case False{}:
+      %u32_assoc(cy(b, y), 1, w) : {cy(B.rts.put(r, e, x, j, B.ref.next(e, y, b2)), y) == _ : U32}
+      %Equal.sym(U32, cy(b, y), cy(b2, y), hb) : {cy(B.rts.put(r, e, x, j, B.ref.next(e, y, b2)), y) == U32.add(U32.add(_, 1), w) : U32}
+      %Equal.sym(U32, U32.add(cy(b2, y), 1), cy(B.ref.next(e, y, b2), y), next_self(e, y, b2)) : {cy(B.rts.put(r, e, x, j, B.ref.next(e, y, b2)), y) == U32.add(_, w) : U32}
+      ih(B.ref.next(e, y, b2))
+
+def target_step(q: Bool, +y2: U32, +e: B.Ec, +x: U32, +j: U32, +b2: B.Tb, +b: B.Tb, +r: List<&2, B.Rt>, +no: U32, +y: U32,
+    +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}, eq: {q == U32.is_eq(y2, y) : Bool}, +hb: {cy(b, y) == cy(b2, y) : U32},
+    ih: @c:B.Tb -> {cy(B.rts.put(r, e, x, j, c), y) == U32.add(cy(c, y), wsum(B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y), wx(e, x))) : U32}) ->
+    {cy(B.rts.put(r, e, x, j, B.ref.kind.k(U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 1), e, x, y2, j, b2)), y) ==
+      U32.add(cy(b, y), wsum(B.uses.in.k(q, x, no, B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y)), wx(e, x))) : U32}:
+  match q:
+    case True{}:
+      %Equal.sym(U32, y2, y, u32_eq_of_is_eq(y2, y, Equal.sym(Bool, True{}, U32.is_eq(y2, y), eq))) :
+        {cy(B.rts.put(r, e, x, j, B.ref.kind.k(U32.is_eq(B.mu.kind(B.ec.mu(e, _)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, _)), 1), e, x, _, j, b2)), y) ==
+          U32.add(cy(b, y), wsum(B.uses.in.k(True{}, x, no, B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y)), wx(e, x))) : U32}
+      %Equal.sym(U32, B.mu.kind(B.ec.mu(e, y)), 1, hk) :
+        {cy(B.rts.put(r, e, x, j, B.ref.kind.k(U32.is_eq(_, 0), U32.is_eq(_, 1), e, x, y, j, b2)), y) ==
+          U32.add(cy(b, y), wsum(B.uses.in.k(True{}, x, no, B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y)), wx(e, x))) : U32}
+      o_step(U32.is_eq(B.un.o(B.ec.un(e, x)), 0), e, x, y, j, b2, b, r, wsum(B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y), wx(e, x)), hb, ih)
+    case False{}:
+      keep(B.ref.kind.k(U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 1), e, x, y2, j, b2), b, r, e, x, j, y, wsum(B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y), wx(e, x)),
+        Equal.trans(U32, cy(b, y), cy(b2, y), cy(B.ref.kind.k(U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 1), e, x, y2, j, b2), y), hb,
+          kind_other(U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 1), e, x, y2, j, b2, y, Equal.sym(Bool, False{}, U32.is_eq(y2, y), eq))),
+        ih(B.ref.kind.k(U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 1), e, x, y2, j, b2)))
+
+# refs.rts's step mirrored: a call to the unit itself aside
+def rs_k(+s: Bool, +y2: U32, +r: List<&2, B.Rt>, +ux: B.Ht<B.Xe>, +self: U32, +no: U32) -> List<&2, B.Ru>:
+  B.when(List<&2, B.Ru>, s, v => B.refs.rts(r, ux, self, no), v => Con{B.Ru{y2, no}, B.refs.rts(r, ux, self, no)})
+
+def self_step(s: Bool, +y2: U32, +mark: U32, +r: List<&2, B.Rt>, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +no: U32,
+    +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}, ih: @c:B.Tb -> {cy(B.rts.put(r, e, x, j, c), y) == U32.add(cy(c, y), wsum(B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y), wx(e, x))) : U32}) ->
+    {cy(B.rts.put(r, e, x, j, B.ref.self(s, e, x, j, y2, B.mark.put(mark, b))), y) == U32.add(cy(b, y), wsum(B.uses.in(rs_k(s, y2, r, B.ec.ux(e), x, no), x, y), wx(e, x))) : U32}:
+  match s:
+    case True{}:
+      keep(B.tb.put(B.mark.put(mark, b), B.own.name(e, x, j)), b, r, e, x, j, y, wsum(B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y), wx(e, x)),
+        Equal.trans(U32, cy(b, y), cy(B.mark.put(mark, b), y), cy(B.tb.put(B.mark.put(mark, b), B.own.name(e, x, j)), y), cy_mark(mark, b, y),
+          tbput_any(B.mark.put(mark, b), B.own.name(e, x, j), y)), ih(B.tb.put(B.mark.put(mark, b), B.own.name(e, x, j))))
+    case False{}:
+      target_step(U32.is_eq(y2, y), y2, e, x, j, B.mark.put(mark, b), b, r, no, y, hk, {==}, cy_mark(mark, b, y), ih)
+
+def rr_k(+mb: Maybe<&2, U32>, +r: List<&2, B.Rt>, +ux: B.Ht<B.Xe>, +self: U32, +no: U32) -> List<&2, B.Ru>:
+  B.on.maybe(U32, List<&2, B.Ru>, mb, v => B.refs.rts(r, ux, self, no),
+    +x => B.when(List<&2, B.Ru>, U32.is_eq(x, self), v => B.refs.rts(r, ux, self, no), v => Con{B.Ru{x, no}, B.refs.rts(r, ux, self, no)}))
+
+def rr_step(mb: Maybe<&2, U32>, +mark: U32, +ref: B.Rf, +r: List<&2, B.Rt>, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +no: U32,
+    +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32},
+    ih: @c:B.Tb -> {cy(B.rts.put(r, e, x, j, c), y) == U32.add(cy(c, y), wsum(B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y), wx(e, x))) : U32}) ->
+    {cy(B.rts.put(r, e, x, j, B.ref.put(e, x, j, mark, ref, mb, b)), y) == U32.add(cy(b, y), wsum(B.uses.in(rr_k(mb, r, B.ec.ux(e), x, no), x, y), wx(e, x))) : U32}:
+  match mb:
+    case None{}:
+      keep(B.ref.put(e, x, j, mark, ref, None{}, b), b, r, e, x, j, y, wsum(B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y), wx(e, x)), refput_none(e, x, j, mark, ref, b, y), ih(B.ref.put(e, x, j, mark, ref, None{}, b)))
+    case Some{+y2}:
+      %ref_put_code(e, hm, x, j, mark, ref, y2, b) :
+        {cy(B.rts.put(r, e, x, j, _), y) == U32.add(cy(b, y), wsum(B.uses.in(rr_k(Some{y2}, r, B.ec.ux(e), x, no), x, y), wx(e, x))) : U32}
+      self_step(U32.is_eq(y2, x), y2, mark, r, e, x, j, b, y, no, hk, ih)
+
+# a body's tokens written: y's counter up by x's calls to it, each
+# weighed as one copy of x weighs it
+def rts_cy(ts: List<&2, B.Rt>, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +no: U32, +hm: {B.ec.mode(e) == 0 : U32},
+    +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}) ->
+    {cy(B.rts.put(ts, e, x, j, b), y) == U32.add(cy(b, y), wsum(B.uses.in(B.refs.rts(ts, B.ec.ux(e), x, no), x, y), wx(e, x))) : U32}:
+  match ts:
+    case Nil{}:
+      Equal.sym(U32, U32.add(cy(b, y), 0), cy(b, y), u32_zero_r(cy(b, y)))
+    case Con{t, +r}:
+      match t:
+        case B.RT{+tk}:
+          keep(B.tb.put(b, B.tok.in.proof(e, tk)), b, r, e, x, j, y, wsum(B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y), wx(e, x)), tbput_any(b, B.tok.in.proof(e, tk), y),
+            rts_cy(r, e, x, j, B.tb.put(b, B.tok.in.proof(e, tk)), y, no, hm, hk))
+        case B.RR{+mark, +ref}:
+          rr_step(B.ux.find(B.ec.ux(e), ref), mark, ref, r, e, x, j, b, y, no, hm, hk, c => rts_cy(r, e, x, j, c, y, no, hm, hk))
+        case B.RX{+mark, +path, +rest}:
+          keep(B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest})), b, r, e, x, j, y, wsum(B.uses.in(B.refs.rts(r, B.ec.ux(e), x, no), x, y), wx(e, x)),
+            Equal.trans(U32, cy(b, y), cy(B.mark.put(mark, b), y), cy(B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest})), y),
+              cy_mark(mark, b, y), tbput_any(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest}), y)),
+            rts_cy(r, e, x, j, B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest})), y, no, hm, hk))
+
+# rl.put's start of a line mirrored: a space, or a newline and the
+# indentation, neither a call
+def wb_k(+c: Bool, +b: B.Tb, +ind: U32, +dind: U32) -> B.Tb:
+  B.when(B.Tb, c, u => B.tb.put(b, [32]),
+    u => B.tb.put(b, Con{10, B.spaces(U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0)))}))
+
+def cy_wb(c: Bool, +b: B.Tb, +ind: U32, +dind: U32, +y: U32) -> {cy(b, y) == cy(wb_k(c, b, ind, dind), y) : U32}:
+  match c:
+    case True{}:
+      tbput_any(b, [32], y)
+    case False{}:
+      tbput_any(b, Con{10, B.spaces(U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0)))}, y)
+
+def keep_l(+b1: B.Tb, +b: B.Tb, +t: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +y: U32, +w: U32, h: {cy(b, y) == cy(b1, y) : U32},
+    ih: {cy(B.rls.put(t, e, x, j, dind, b1), y) == U32.add(cy(b1, y), w) : U32}) -> {cy(B.rls.put(t, e, x, j, dind, b1), y) == U32.add(cy(b, y), w) : U32}:
+  %Equal.sym(U32, cy(b, y), cy(b1, y), h) : {cy(B.rls.put(t, e, x, j, dind, b1), y) == U32.add(_, w) : U32}
+  ih
+
+# a body's lines written: y's counter up by their calls to it
+def rls_cy(ls: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32},
+    +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}) ->
+    {cy(B.rls.put(ls, e, x, j, dind, b), y) == U32.add(cy(b, y), wsum(B.uses.in(B.refs.rls(ls, B.ec.ux(e), x), x, y), wx(e, x))) : U32}:
+  match ls:
+    case Nil{}:
+      Equal.sym(U32, U32.add(cy(b, y), 0), cy(b, y), u32_zero_r(cy(b, y)))
+    case Con{l, +t}:
+      match l:
+        case B.Rl{+no, +ind, ts}:
+          match ts:
+            case Nil{}:
+              keep_l(B.tb.put(b, [10]), b, t, e, x, j, dind, y, wsum(B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x)), tbput_any(b, [10], y),
+                rls_cy(t, e, x, j, dind, B.tb.put(b, [10]), y, hm, hk))
+            case Con{+tk, +r}:
+              %uses_in_app(B.refs.rts(Con{tk, r}, B.ec.ux(e), x, no), B.refs.rls(t, B.ec.ux(e), x), x, y) :
+                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) ==
+                  U32.add(cy(b, y), wsum(_, wx(e, x))) : U32}
+              %wsum_app(B.uses.in(B.refs.rts(Con{tk, r}, B.ec.ux(e), x, no), x, y), B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x)) :
+                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) ==
+                  U32.add(cy(b, y), _) : U32}
+              %u32_assoc(cy(b, y), wsum(B.uses.in(B.refs.rts(Con{tk, r}, B.ec.ux(e), x, no), x, y), wx(e, x)), wsum(B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x))) :
+                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) == _ : U32}
+              %Equal.sym(U32, cy(b, y), cy(wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind), y), cy_wb(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind, y)) :
+                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) ==
+                  U32.add(U32.add(_, wsum(B.uses.in(B.refs.rts(Con{tk, r}, B.ec.ux(e), x, no), x, y), wx(e, x))), wsum(B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x))) : U32}
+              %rts_cy(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind), y, no, hm, hk) :
+                {cy(B.rls.put(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind))), y) ==
+                  U32.add(_, wsum(B.uses.in(B.refs.rls(t, B.ec.ux(e), x), x, y), wx(e, x))) : U32}
+              rls_cy(t, e, x, j, dind, B.rts.put(Con{tk, r}, e, x, j, wb_k(U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x)))), b, ind, dind)), y, hm, hk)
+
+# a unit's copy written, in its parts: the text before its body, its
+# header written, its lines
+def t0(+e: B.Ec, +x: U32, +j: U32, +b: B.Tb) -> B.Tb:
+  B.tb.put(b, List.append(&2, U32, B.marker(e, x), List.append(&2, U32, B.unit.kw(e, x), B.own.name(e, x, j))))
+
+def hd_w(+e: B.Ec, +x: U32, +j: U32, +b: B.Tb) -> B.Tb:
+  B.rts.put(B.un.hd(B.ec.un(e, x)), e, x, j, t0(e, x, j, b))
+
+def ln_w(+e: B.Ec, +x: U32, +j: U32, +b: B.Tb) -> B.Tb:
+  B.rls.put(B.un.lines(B.ec.un(e, x)), e, x, j, B.node.ind(B.un.node(B.ec.un(e, x))), hd_w(e, x, j, b))
+
+def hd_u(+e: B.Ec, +x: U32, +y: U32) -> List<&2, B.Ru>:
+  B.uses.in(B.refs.rts(B.un.hd(B.ec.un(e, x)), B.ec.ux(e), x, B.node.no(B.un.node(B.ec.un(e, x)))), x, y)
+
+def ln_u(+e: B.Ec, +x: U32, +y: U32) -> List<&2, B.Ru>:
+  B.uses.in(B.refs.rls(B.un.lines(B.ec.un(e, x)), B.ec.ux(e), x), x, y)
+
+# one copy of x written: y's counter up by x's calls to it
+def unit_cy(+e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}) ->
+    {cy(B.unit.put(e, x, j, b), y) == U32.add(cy(b, y), wsum(B.uses.in(B.uses.e(e, x), x, y), wx(e, x))) : U32}:
+  %src_code(e, hm, x) : {cy(B.unit.put.as(e, _, x, j, b), y) == U32.add(cy(b, y), wsum(B.uses.in(B.uses.e(e, x), x, y), wx(e, x))) : U32}
+  %uses_in_app(B.refs.rts(B.un.hd(B.ec.un(e, x)), B.ec.ux(e), x, B.node.no(B.un.node(B.ec.un(e, x)))), B.refs.rls(B.un.lines(B.ec.un(e, x)), B.ec.ux(e), x), x, y) :
+    {cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y) == U32.add(cy(b, y), wsum(_, wx(e, x))) : U32}
+  %wsum_app(hd_u(e, x, y), ln_u(e, x, y), wx(e, x)) :
+    {cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y) == U32.add(cy(b, y), _) : U32}
+  %u32_assoc(cy(b, y), wsum(hd_u(e, x, y), wx(e, x)), wsum(ln_u(e, x, y), wx(e, x))) :
+    {cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y) == _ : U32}
+  %Equal.sym(U32, cy(b, y), cy(t0(e, x, j, b), y), tbput_any(b, List.append(&2, U32, B.marker(e, x), List.append(&2, U32, B.unit.kw(e, x), B.own.name(e, x, j))), y)) :
+    {cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y) ==
+      U32.add(U32.add(_, wsum(hd_u(e, x, y), wx(e, x))), wsum(ln_u(e, x, y), wx(e, x))) : U32}
+  %rts_cy(B.un.hd(B.ec.un(e, x)), e, x, j, t0(e, x, j, b), y, B.node.no(B.un.node(B.ec.un(e, x))), hm, hk) :
+    {cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y) == U32.add(_, wsum(ln_u(e, x, y), wx(e, x))) : U32}
+  %rls_cy(B.un.lines(B.ec.un(e, x)), e, x, j, B.node.ind(B.un.node(B.ec.un(e, x))), hd_w(e, x, j, b), y, hm, hk) :
+    {cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y) == _ : U32}
+  Equal.sym(U32, cy(ln_w(e, x, j, b), y), cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y),
+    tbput_any(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10]), y))
+
+def cx(+e: B.Ec, +x: U32, +y: U32) -> U32:
+  wsum(B.uses.in(B.uses.e(e, x), x, y), wx(e, x))
+
+# n more copies of x: x's calls, n times
+def copies_cy(n: Nat, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}) ->
+    {cy(B.copies.put(n, e, x, j, b), y) == U32.add(cy(b, y), reps(n, cx(e, x, y))) : U32}:
+  match n:
+    case 0n:
+      Equal.sym(U32, U32.add(cy(b, y), 0), cy(b, y), u32_zero_r(cy(b, y)))
+    case 1n+(+k):
+      %u32_assoc(cy(b, y), cx(e, x, y), reps(k, cx(e, x, y))) : {cy(B.copies.put(k, e, x, U32.add(j, 1), B.unit.put(e, x, j, b)), y) == _ : U32}
+      %unit_cy(e, x, j, b, y, hm, hk) : {cy(B.copies.put(k, e, x, U32.add(j, 1), B.unit.put(e, x, j, b)), y) == U32.add(_, reps(k, cx(e, x, y))) : U32}
+      copies_cy(k, e, x, U32.add(j, 1), B.unit.put(e, x, j, b), y, hm, hk)
+
+# all of x's copies, its own name's and its numbered ones
+def all_cy(+e: B.Ec, +x: U32, mu: B.Mu, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}) ->
+    {cy(B.unit.all(e, x, mu, b), y) == U32.add(cy(b, y), reps(1n+U32.to_nat(B.mu.m(mu)), cx(e, x, y))) : U32}:
+  match mu:
+    case B.Mu{+m, +kind}:
+      %u32_assoc(cy(b, y), cx(e, x, y), reps(U32.to_nat(m), cx(e, x, y))) : {cy(B.copies.put(U32.to_nat(m), e, x, 1, B.unit.put(e, x, 0, b)), y) == _ : U32}
+      %unit_cy(e, x, 0, b, y, hm, hk) : {cy(B.copies.put(U32.to_nat(m), e, x, 1, B.unit.put(e, x, 0, b)), y) == U32.add(_, reps(U32.to_nat(m), cx(e, x, y))) : U32}
+      copies_cy(U32.to_nat(m), e, x, 1, B.unit.put(e, x, 0, b), y, hm, hk)
+
+# what the writer reads of a unit and of its disposition, as use.w reads
+# them
+def un_e(e: B.Ec, +x: U32) -> {B.ec.un(e, x) == B.ut.un(B.ec.ut(e), x) : B.Un}:
+  match e:
+    case B.Ec{files, obs, us, als, own, res, paths, +mode, rtypes, ux, ut, mt}:
+      {==}
+
+def mu_e(e: B.Ec, +x: U32) -> {B.ec.mu(e, x) == B.ms.mu(B.ec.ms(e), x) : B.Mu}:
+  match e:
+    case B.Ec{files, obs, us, als, own, res, paths, +mode, rtypes, ux, ut, mt}:
+      {==}
+
+# an order written: y's counter up by each unit's calls to it, weighed as
+# the dispositions weigh them
+def order_cy(xs: List<&2, U32>, +e: B.Ec, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}) ->
+    {cy(B.order.put(xs, e, b), y) == U32.add(cy(b, y), B.uses.m(B.uses.of.e(xs, e, y), B.ec.ut(e), B.ec.ms(e))) : U32}:
+  match xs:
+    case Nil{}:
+      Equal.sym(U32, U32.add(cy(b, y), 0), cy(b, y), u32_zero_r(cy(b, y)))
+    case Con{+x, +t}:
+      %uses_m_app(B.uses.in(B.uses.e(e, x), x, y), B.uses.of.e(t, e, y), B.ec.ut(e), B.ec.ms(e)) : {cy(B.order.put(t, e, B.unit.all(e, x, B.ec.mu(e, x), b)), y) == U32.add(cy(b, y), _) : U32}
+      %u32_assoc(cy(b, y), B.uses.m(B.uses.in(B.uses.e(e, x), x, y), B.ec.ut(e), B.ec.ms(e)), B.uses.m(B.uses.of.e(t, e, y), B.ec.ut(e), B.ec.ms(e))) : {cy(B.order.put(t, e, B.unit.all(e, x, B.ec.mu(e, x), b)), y) == _ : U32}
+      %uses_m_in(B.uses.e(e, x), x, y, B.ec.ut(e), B.ec.ms(e)) : {cy(B.order.put(t, e, B.unit.all(e, x, B.ec.mu(e, x), b)), y) == U32.add(U32.add(cy(b, y), _), B.uses.m(B.uses.of.e(t, e, y), B.ec.ut(e), B.ec.ms(e))) : U32}
+      %un_e(e, x) :
+        {cy(B.order.put(t, e, B.unit.all(e, x, B.ec.mu(e, x), b)), y) == U32.add(U32.add(cy(b, y), wsum(B.uses.in(B.uses.e(e, x), x, y), uw_k(U32.is_eq(B.un.o(_), 0), B.mu.m(B.ms.mu(B.ec.ms(e), x))))), B.uses.m(B.uses.of.e(t, e, y), B.ec.ut(e), B.ec.ms(e))) : U32}
+      %mu_e(e, x) :
+        {cy(B.order.put(t, e, B.unit.all(e, x, B.ec.mu(e, x), b)), y) == U32.add(U32.add(cy(b, y), wsum(B.uses.in(B.uses.e(e, x), x, y), uw_k(U32.is_eq(B.un.o(B.ec.un(e, x)), 0), B.mu.m(_)))), B.uses.m(B.uses.of.e(t, e, y), B.ec.ut(e), B.ec.ms(e))) : U32}
+      %weights(U32.is_eq(B.un.o(B.ec.un(e, x)), 0), B.mu.m(B.ec.mu(e, x)), B.uses.in(B.uses.e(e, x), x, y)) :
+        {cy(B.order.put(t, e, B.unit.all(e, x, B.ec.mu(e, x), b)), y) == U32.add(U32.add(cy(b, y), _), B.uses.m(B.uses.of.e(t, e, y), B.ec.ut(e), B.ec.ms(e))) : U32}
+      %all_cy(e, x, B.ec.mu(e, x), b, y, hm, hk) : {cy(B.order.put(t, e, B.unit.all(e, x, B.ec.mu(e, x), b)), y) == U32.add(_, B.uses.m(B.uses.of.e(t, e, y), B.ec.ut(e), B.ec.ms(e))) : U32}
+      order_cy(t, e, B.unit.all(e, x, B.ec.mu(e, x), b), y, hm, hk)
+
+def Laws.sharing.counts(xs, e, b, y, hm, hk):
+  order_cy(xs, e, b, y, hm, hk)

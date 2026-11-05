@@ -4928,14 +4928,19 @@ def ref.next(+e: Ec, +y: U32, b: Tb) -> Tb:
 # a use of y from x's j-th copy: y's own name, the next of y's copies, or
 # the copy of y that goes with x's j-th; a definition of the module's
 # calls y by its own name
-def ref.kind(+kind: U32, +e: Ec, +x: U32, +y: U32, +j: U32, +b: Tb) -> Tb:
-  match kind:
-    case 0:
+def ref.kind.k(+plain: Bool, +copied: Bool, +e: Ec, +x: U32, +y: U32, +j: U32, +b: Tb) -> Tb:
+  match plain copied:
+    case True{} _:
       tb.put(b, unit.text(e, y))
-    case 1:
+    case False{} True{}:
       when(Tb, U32.is_eq(un.o(ec.un(e, x)), 0), u => tb.put(b, unit.text(e, y)), u => ref.next(e, y, b))
-    case _:
+    case False{} False{}:
       tb.put(b, own.name(e, y, j))
+
+# the kind tested, not matched, so that a law can follow it (LAWS.bend,
+# `sharing.counts`)
+def ref.kind(+kind: U32, +e: Ec, +x: U32, +y: U32, +j: U32, +b: Tb) -> Tb:
+  ref.kind.k(U32.is_eq(kind, 0), U32.is_eq(kind, 1), e, x, y, j, b)
 
 def ref.self(+self: Bool, +e: Ec, +x: U32, +j: U32, +y: U32, b: Tb) -> Tb:
   match self:
@@ -4944,12 +4949,15 @@ def ref.self(+self: Bool, +e: Ec, +x: U32, +j: U32, +y: U32, b: Tb) -> Tb:
     case False{}:
       ref.kind(mu.kind(ec.mu(e, y)), e, x, y, j, b)
 
-def mark.put(+mark: U32, b: Tb) -> Tb:
-  match mark:
-    case 126:
+def mark.put.k(+tilde: Bool, b: Tb) -> Tb:
+  match tilde:
+    case True{}:
       tb.put(b, [126])
-    case _:
+    case False{}:
       b
+
+def mark.put(+mark: U32, b: Tb) -> Tb:
+  mark.put.k(U32.is_eq(mark, 126), b)
 
 def ec.als(e: Ec) -> List<&2, Al>:
   match e:
@@ -5180,6 +5188,32 @@ def unit.all(+e: Ec, +x: U32, +mu: Mu, b: Tb) -> Tb:
   match mu:
     case Mu{+m, +kind}:
       copies.put(U32.to_nat(m), e, x, 1, unit.put(e, x, 0, b))
+
+# The sharing law's terms (LAWS.bend, `sharing.counts`)
+
+def tb.ctrs(b: Tb) -> Wm<U32>:
+  match b:
+    case Tb{acc, ctrs}:
+      ctrs
+
+# the dispositions emission reads, as mults made them
+def ec.ms(e: Ec) -> Ms:
+  match e:
+    case Ec{files, obs, us, als, own, res, paths, +mode, rtypes, ux, ut, mt}:
+      Ms{mt, Nil{}}
+
+# x's uses as the writer reads them: its body's references, its units
+# and their tables emission's own
+def uses.e(+e: Ec, +x: U32) -> List<&2, Ru>:
+  List.append(&2, Ru, refs.rts(un.hd(ec.un(e, x)), ec.ux(e), x, node.no(un.node(ec.un(e, x)))), refs.rls(un.lines(ec.un(e, x)), ec.ux(e), x))
+
+# the uses of y by the units xs, as the writer reads them
+def uses.of.e(xs: List<&2, U32>, +e: Ec, +y: U32) -> List<&2, Ru>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{+x, t}:
+      List.append(&2, Ru, uses.in(uses.e(e, x), x, y), uses.of.e(t, e, y))
 
 def order.put(xs: List<&2, U32>, +e: Ec, b: Tb) -> Tb:
   match xs:
