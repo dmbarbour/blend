@@ -1,6 +1,6 @@
 # A copied definition is always emitted by its own name too
 
-`blend-copies-keep-their-name` · maintainer · rev 9fbf666
+`blend-copies-keep-their-name` · maintainer · rev ab11f2b
 
 **Context.** A `copied` definition is emitted once for each use, numbered
 (`Obj.f.c1`, `Obj.f.c2`), so that each copy folds into its own caller.

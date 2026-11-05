@@ -1,11 +1,11 @@
 import Base
 
-# Blend: static objects for Bend (blend/README.md; the plan,
+# Blend: static objects for Bend (README.md; the plan,
 # docs/plans/Blend_2026-11-04.md). It reads a `.blend` file into its
 # structure (`blend-read`), checks its objects (`blend-objects`), binds
 # the names in each concrete object's copies (`blend-resolve`) and emits
 # the module (`blend-emit`); each command runs the stages up to its own
-# (The command line, at the end). Run it built (blend/run.sh).
+# (The command line, at the end). Run it built (run.sh).
 #
 # Bend has no mutual recursion, so the source is read in two passes: the
 # lines into a flat list of items, each with its line and indentation (an
@@ -222,7 +222,7 @@ def lines.line(cur: List<&2, U32>, +no: U32) -> Ln:
   line.of(List.reverse(&2, U32, cur), 0n, no)
 
 # the lines, a newline ending each, a carriage return dropped; the bytes
-# tested, not matched, so that a law can follow (blend/LAWS.bend,
+# tested, not matched, so that a law can follow (LAWS.bend,
 # `lines.join`)
 def lines.go(bs: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, Ln>) -> List<&2, Ln>:
   match bs:
@@ -240,7 +240,7 @@ def lines(bs: List<&2, U32>) -> List<&2, Ln>:
   lines.at(bs, 0)
 
 # a line as written: its indentation's spaces, then its text
-# (blend/LAWS.bend, `lines.join`)
+# (LAWS.bend, `lines.join`)
 def ln.text(l: Ln) -> List<&2, U32>:
   match l:
     case Ln{+no, +ind, txt}:
@@ -301,7 +301,7 @@ type Bl is Data:
 # a byte's class, as the tokens go by it: a space or a tab, a letter or
 # `_`, a digit, `.`, `"`, `#`, `^`, `~`, a backslash, `'`, any other. A
 # datatype, so that a law can follow the tokenizer's choices
-# (blend/LAWS.bend, `tokens.spell`): a byte's match leaves a proof stuck
+# (LAWS.bend, `tokens.spell`): a byte's match leaves a proof stuck
 type Cl is Data:
   CSp{}
   CAlpha{}
@@ -550,7 +550,7 @@ def tok.bytes(t: Tok) -> List<&2, U32>:
     case TSym{+c}:
       [c]
 
-# the bytes tokens spell, each token's in turn (blend/LAWS.bend,
+# the bytes tokens spell, each token's in turn (LAWS.bend,
 # `tokens.spell`)
 def toks.text(ts: List<&2, Tok>) -> List<&2, U32>:
   match ts:
@@ -1270,7 +1270,7 @@ def names.has(ns: List<&2, List<&2, U32>>, +n: List<&2, U32>) -> Bool:
       same(x, n) || names.has(t, n)
 
 # a dot told by a test, not a byte's match, so that a law can follow it
-# (blend/LAWS.bend, `names.dots_parts`)
+# (LAWS.bend, `names.dots_parts`)
 def parts.go(xs: List<&2, U32>, +cur: List<&2, U32>, +out: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
   match xs:
     case Nil{}:
@@ -3258,7 +3258,7 @@ def rr.under(+local: Bool, +cx: Cx, +o: U32, +q: U32, +r: List<&2, U32>, +t: Tok
 # a name by its first byte's tests: `^` a host's (up), `~` a template's
 # argument (tpl), `_` a prior or a local (under), else plain. The bytes
 # are tested, not matched, and the tests branched on here, so that a law
-# can follow it (blend/LAWS.bend, `locals`): a byte's match leaves a
+# can follow it (LAWS.bend, `locals`): a byte's match leaves a
 # proof stuck
 def rr.mark.k(+up: Bool, +tpl: Bool, +under: Bool, +cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +h: U32, +r: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
   match up tpl under:
@@ -4085,7 +4085,7 @@ def all.in(xs: List<&2, U32>, +order: List<&2, U32>) -> Bool:
     case Con{+x, t}:
       has(order, x) && all.in(t, order)
 
-# each unit's calls among ys (blend/LAWS.bend, `order.closed`)
+# each unit's calls among ys (LAWS.bend, `order.closed`)
 def calls.in(xs: List<&2, U32>, +cal: List<&2, List<&2, U32>>, +ys: List<&2, U32>) -> Bool:
   match xs:
     case Nil{}:
@@ -4093,7 +4093,7 @@ def calls.in(xs: List<&2, U32>, +cal: List<&2, List<&2, U32>>, +ys: List<&2, U32
     case Con{+x, t}:
       all.in(ids.at(cal, x), ys) && calls.in(t, cal, ys)
 
-# units each once (blend/LAWS.bend, `order.once`)
+# units each once (LAWS.bend, `order.once`)
 def distinct(xs: List<&2, U32>) -> Bool:
   match xs:
     case Nil{}:
@@ -4102,7 +4102,7 @@ def distinct(xs: List<&2, U32>) -> Bool:
       Bool.not(has(t, x)) && distinct(t)
 
 # an order, the last first, each unit's calls after it: emitted reversed,
-# callees first, as Bend requires (blend/LAWS.bend, `order.callees_first`)
+# callees first, as Bend requires (LAWS.bend, `order.callees_first`)
 def ordered(xs: List<&2, U32>, +cal: List<&2, List<&2, U32>>) -> Bool:
   match xs:
     case Nil{}:
@@ -4146,7 +4146,7 @@ def er.cycle(+obs: List<&2, Ob>, +us: List<&2, Un>, +path: List<&2, U32>, +c: U3
 
 # a call followed: to a unit walked (seen), one on the stack (a cycle),
 # else a unit pushed. Each step's choices are Bools a helper matches, so
-# that a law can follow the walk (blend/LAWS.bend, `order`)
+# that a law can follow the walk (LAWS.bend, `order`)
 def ds.call.k(+seen: Bool, +cyc: Bool, +c: U32, +u: U32, +rs: List<&2, U32>, +st: List<&2, Fm>, +roots: List<&2, U32>,
     +done: List<&2, U32>, +order: List<&2, U32>, +ers: List<&2, Er>, +cal: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Ds:
   match seen cyc:
@@ -4217,7 +4217,7 @@ def ds.go(n: Nat, s: Ds, +cal: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +us:
       ds.go(k, ds.step(s, cal, obs, us), cal, obs, us)
 
 # whether the walk has finished, its stack and its roots spent, as it
-# always does within its fuel (blend/LAWS.bend, `order.ends`)
+# always does within its fuel (LAWS.bend, `order.ends`)
 def ds.finished(d: Ds) -> Bool:
   match d:
     case Ds{stack, roots, done, order, ers}:
@@ -4241,7 +4241,7 @@ def walk.calls(cal: List<&2, List<&2, U32>>) -> Nat:
       Nat.add(walk.turns(xs), walk.calls(t))
 
 # the walk's fuel: the turns of its roots and of every unit's calls,
-# enough for any roots and calls (blend/LAWS.bend, `order.ends`)
+# enough for any roots and calls (LAWS.bend, `order.ends`)
 def walk.fuel(+roots: List<&2, U32>, +cal: List<&2, List<&2, U32>>) -> Nat:
   Nat.add(walk.turns(roots), walk.calls(cal))
 
@@ -4259,7 +4259,7 @@ def walk(+roots: List<&2, U32>, +cal: List<&2, List<&2, U32>>, +obs: List<&2, Ob
 # stands for, and each unit's calls by its position. A trie's shape is
 # that of its set, whatever order its units came in, so that each set is
 # the trie its list makes; and with the sets dropped, the state is the
-# walk above's, step by step (blend/LAWS.bend, `order.fast`).
+# walk above's, step by step (LAWS.bend, `order.fast`).
 
 # a set of words, by their bits, the lowest first
 type Wt is Data:
@@ -4735,7 +4735,7 @@ def mults(xs: List<&2, U32>, +rt: Pw<List<&2, Ru>>, +ut: Ht<Un>, +obs: List<&2, 
 
 # The dispositions, as specified: each unit's copies from all its uses by
 # the emitted units, as a search of them gathers them, which mults hands
-# on in one pass instead (blend/LAWS.bend, `mults.uses`)
+# on in one pass instead (LAWS.bend, `mults.uses`)
 
 def uses.in.k(+hit: Bool, +e: U32, +no: U32, rest: List<&2, Ru>) -> List<&2, Ru>:
   match hit:
@@ -5039,7 +5039,7 @@ def ec.files(e: Ec) -> List<&2, List<&2, U32>>:
 # the line before a definition naming where it is written,
 # `# blend: FILE:LINE`: its body's lines follow as they do there, so the
 # emitted line k lines below the marker is the source's k lines below
-# LINE (blend/where.sh finds it)
+# LINE (where.sh finds it)
 def marker.at(+files: List<&2, List<&2, U32>>, +no: U32) -> List<&2, U32>:
   List.append(&2, U32, codes("\n# blend: "), List.append(&2, U32, loc.file(files, no), Con{58, codes(U32.show(loc.line(no)))}))
 
@@ -5276,7 +5276,7 @@ def ds.order(d: Ds) -> List<&2, U32>:
     case Ds{stack, roots, done, order, ers}:
       order
 
-# the units walked (blend/LAWS.bend, `order.walked`)
+# the units walked (LAWS.bend, `order.walked`)
 def ds.walked(d: Ds) -> List<&2, U32>:
   match d:
     case Ds{stack, roots, done, order, ers}:
@@ -5351,7 +5351,7 @@ type Nm is Data:
 #
 # What the writer writes and what the names check checks, one list:
 # each unit of the order, its own definition (copy 0), then each of the
-# numbered copies its sharing asks for (blend/LAWS.bend, `emit.defs`,
+# numbered copies its sharing asks for (LAWS.bend, `emit.defs`,
 # `emit.names`)
 
 type Dp is Data:
@@ -6078,7 +6078,7 @@ def md.ok(m: Md) -> Bool:
 #                                         concrete object's definitions
 #                                         (`blend-emit`)
 #
-# blend/run.sh runs the same, built once (blend/build.sh).
+# run.sh runs the same, built once (build.sh).
 
 def base.k(r: List<&2, U32> & List<&2, U32>) -> String:
   (a, b) = r

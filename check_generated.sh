@@ -7,9 +7,9 @@
 # beside the samples; a laws or proofs file the emission no longer writes
 # is stale. Checks, never writes the files checked: a stale file fails,
 # and regenerating it is the developer's step. Run by Blend's gate
-# (check.sh) and by glam-in-bend's pre-commit hook. Blend runs built
-# (build.sh): its build, 13 s, comes once for each version of its
-# sources.
+# (check.sh) and by the pre-commit hooks, Blend's and glam-in-bend's.
+# Blend runs built (build.sh): its build, 13 s, comes once for each
+# version of its sources.
 #
 #   check_generated.sh
 set -u

@@ -1,31 +1,30 @@
-# Blend is arranged as a repository of its own
+# Blend is a repository of its own
 
-`blend-own-repository` · maintainer · rev e443d92
+`blend-own-repository` · maintainer · rev 4110220
 
 **Context.** Blend grew inside glam-in-bend, as the vehicle for glam's
 kernel (glam-in-bend's `codegen-vehicle`); it is meant to be shared
-beyond it (`blend-home`), and the maintainer expects to split it off
-soon (2026-11-05: arrange Blend as a repository, its records, checks and
-benchmarks with it, for an easy separation later).
+beyond it (`blend-home`). The maintainer, 2026-11-05: arrange Blend as a
+repository, its records, checks and benchmarks with it; then, the empty
+repository made, go ahead with a submodule.
 
-**Decision.** Blend is arranged within its directory as its own
-repository would hold it: its code, samples, laws, proofs and mutants;
-its benchmarks (`bench/`); its docs (`docs/`, this index and its
-records, its plans); its gate (`check.sh`) and its agents' notes
-(`AGENTS.md`). Its scripts work from its directory, writing under its
-own `results/`, and its docs name its files from its root. The tools it
-shares with glam-in-bend (`capped.sh`, `count.sh`, `results.py`,
-`kept.py`, `one_law.py`, `check_docs.py`, `check_laws.py`) stay in
-glam-in-bend's `scripts/`, found through `tools.sh`, until the split
-copies them into Blend's own `scripts/`.
+**Decision.** Blend is a repository of its own
+(github.com/dmbarbour/blend), its history filtered from glam-in-bend's:
+its directory's, its records' and its plan's commits, the records and
+plan at the paths they had before they moved into it, each commit's
+message and trailers kept, and each record's rev mapped to the commit it
+became. It holds its code, samples, laws, proofs and mutants, its
+benchmarks (`bench/`), its docs (`docs/`), its gate (`check.sh`), its
+tools (`scripts/`, copied from glam-in-bend's at the split, Blend's own
+since) and its hooks (`.githooks/`). glam-in-bend uses it as a submodule
+at its `blend/`, pinned to the commit it was tested with.
 
 **Consequences.**
-- While the two share a history, a step name is unique across both
-  projects' plans, a commit may name a step of either, and glam-in-bend's
-  gate runs Blend's.
-- glam-in-bend's docs name Blend's files by their paths under `blend/`
-  and its records by slug.
-- A split copies the tools and filters the history; record revs then
-  name glam-in-bend's commits, and want a map or a note.
+- A change to Blend is committed and pushed here first; then
+  glam-in-bend records the new commit, never before.
+- Blend's tools may diverge from glam-in-bend's: a fix wanted in both is
+  made in both.
+- The analysis store's runs up to 281, which the plan cites, are
+  glam-in-bend's store's; Blend's own store begins again.
 
-**Rule lives in:** `AGENTS.md`, Layout.
+**Rule lives in:** `AGENTS.md`, Layout and Used by glam-in-bend.

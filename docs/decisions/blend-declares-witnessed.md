@@ -1,6 +1,6 @@
 # A typed declaration is checked by a witness Bend checks
 
-`blend-declares-witnessed` · maintainer · rev c4d2f09
+`blend-declares-witnessed` · maintainer · rev 4e18b15
 
 **Context.** `declare foo` said only that a concrete family must define
 `foo`, with no way to say its type, while types may be overridden (the

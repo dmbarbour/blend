@@ -40,9 +40,8 @@ body moves in here.
 ## The repository
 
 - [`blend-own-repository`](decisions/blend-own-repository.md): Blend is
-  arranged within its directory as its own repository would hold it, the
-  tools it shares with glam-in-bend found there until a split copies
-  them.
+  a repository of its own, its history filtered from glam-in-bend's,
+  which uses it as a submodule.
 
 ## The model
 

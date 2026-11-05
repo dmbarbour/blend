@@ -8,8 +8,8 @@
 # other Bend file of its typechecks. A check whose inputs are unchanged
 # keeps its pass (kept.py: a verdict, a mutants file's, a typecheck),
 # never a failure, under results/kept. Times each section, and exits
-# nonzero on any failure. The tools it shares with glam-in-bend are found
-# by tools.sh; glam-in-bend's gate runs this one.
+# nonzero on any failure. Its tools are found by tools.sh; glam-in-bend's
+# gate runs this one.
 #
 #   check.sh
 set -u

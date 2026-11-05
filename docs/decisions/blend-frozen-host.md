@@ -1,6 +1,6 @@
 # `^` sees the host a nested object is made for, frozen
 
-`blend-frozen-host` · maintainer · rev c9cbdd0
+`blend-frozen-host` · maintainer · rev fab16af
 
 **Context.** A nested object is folded down its host's linearization
 (`blend-nested`): `Outer2.Inner` is made of Outer's Inner and Outer2's

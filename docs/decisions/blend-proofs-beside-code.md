@@ -1,6 +1,6 @@
 # A Blend module's laws and proofs are written beside its code
 
-`blend-proofs-beside-code` · agent · rev 5699309
+`blend-proofs-beside-code` · agent · rev 6e331aa
 
 **Context.** Laws and proofs became object members (`blend-object-laws`,
 `blend-adds-no-bend-logic`): a law stated in an abstract family holds for

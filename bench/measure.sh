@@ -5,11 +5,11 @@
 # executable (build.sh) under perf (count.sh), each run capped
 # (capped.sh); its instructions and seconds printed, and recorded in the
 # analysis store (results.py; these three tools found by tools.sh). A run
-# of tool `blend/bench/measure.sh` (its name since its first runs), its
-# shape and N its parameters; each size a row of `counts` (build `blend`,
-# the shape its workload, the size its k, no interactions) and its
-# seconds a metric (`<shape> <size> s`). The modules and what Blend
-# writes go to results/bench (out of git).
+# of tool `bench/measure.sh` (in glam-in-bend's store,
+# `blend/bench/measure.sh`), its shape and N its parameters; each size a
+# row of `counts` (build `blend`, the shape its workload, the size its k,
+# no interactions) and its seconds a metric (`<shape> <size> s`). The
+# modules and what Blend writes go to results/bench (out of git).
 #
 #   bench/measure.sh chain|fan|dense|down N [MB SECONDS]
 set -u
@@ -26,7 +26,7 @@ if [ ! -x "$gen" ] || [ bench/families.bend -nt "$gen" ]; then
   "$TOOLS/capped.sh" 1500 300 "$BEND" bench/families.bend -o "$gen" >&2 || exit 1
 fi
 blend=$(./build.sh) || exit 1
-run=$(python3 -I "$TOOLS/results.py" run blend/bench/measure.sh "{\"shape\": \"$shape\", \"n\": $n}") || exit 1
+run=$(python3 -I "$TOOLS/results.py" run bench/measure.sh "{\"shape\": \"$shape\", \"n\": $n}") || exit 1
 for k in "$n" $((2 * n)) $((4 * n)); do
   mod=$out/$shape$k.blend
   "$gen" "$shape" "$k" > "$mod" || exit 1

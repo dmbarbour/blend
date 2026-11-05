@@ -1,6 +1,6 @@
 # A bare name is a local or a definition, never both
 
-`blend-no-shadowing` · agent · rev e443d92
+`blend-no-shadowing` · agent · rev b268330
 
 **Context.** Blend follows glam's object model, and glam forbids
 shadowing (`shadowing-is-an-error`, glam-in-bend's): a bare name that

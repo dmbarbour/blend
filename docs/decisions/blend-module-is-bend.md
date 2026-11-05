@@ -1,6 +1,6 @@
 # A Blend module is no object: its own definitions are Bend's
 
-`blend-module-is-bend` · maintainer · rev c2147be
+`blend-module-is-bend` · maintainer · rev e5cc78e
 
 **Context.** Blend's first design made the module an object
 (`README.md`): its definitions were the outermost scope, reached

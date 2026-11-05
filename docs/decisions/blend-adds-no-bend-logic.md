@@ -1,6 +1,6 @@
 # Blend translates objects and adds no Bend logic of its own
 
-`blend-adds-no-bend-logic` · maintainer · rev b8e32bc
+`blend-adds-no-bend-logic` · maintainer · rev 76bae89
 
 **Context.** Blend reads `.blend` files and writes `.bend` files, its
 objects vanishing in the translation (`README.md`). Writing its

@@ -1,6 +1,6 @@
 # A library's family of additions, its laws stated and proved once for
 # every family: a module states laws its importers' families instantiate,
-# each bound to its own finals (blend/samples/laws-imported.blend).
+# each bound to its own finals (samples/laws-imported.blend).
 import Base
 
 abstract object Adds with

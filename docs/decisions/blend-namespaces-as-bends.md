@@ -1,6 +1,6 @@
 # Blend's namespaces are Bend's: a file's own, its imports' by alias
 
-`blend-namespaces-as-bends` · maintainer · rev ab4154f
+`blend-namespaces-as-bends` · maintainer · rev fd7250a
 
 **Context.** Bend's top-level namespace, tried 2026-11-04:
 - A file's definitions, datatypes and constructors go by their names.

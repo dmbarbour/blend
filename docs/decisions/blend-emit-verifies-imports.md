@@ -1,6 +1,6 @@
 # Emission writes the modules named and verifies their imports
 
-`blend-emit-verifies-imports` · maintainer · rev e08eff7
+`blend-emit-verifies-imports` · maintainer · rev d935c10
 
 **Context.** A module's emission depends on nothing that imports it:
 every definition is emitted and no top-level object can be extended, so

@@ -1,6 +1,6 @@
 # A template is affine by default, as any definition
 
-`blend-templates-affine` · maintainer · rev e8e6dfb
+`blend-templates-affine` · maintainer · rev a57703d
 
 **Context.** Templates are Bend's, passed through (`README.md`).
 Blend's affine default counts a template's call sites as any

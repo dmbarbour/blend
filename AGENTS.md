@@ -2,10 +2,9 @@
 
 Blend is a preprocessor of static objects for Bend 2, written in Bend
 (`blend.bend`): `.blend` files in, `.bend` files out, the objects gone.
-It grew in glam-in-bend and is arranged as a repository of its own
-(`blend-own-repository`). While it lives at glam-in-bend's `blend/`,
-that repository's AGENTS.md governs everything around it; this file
-governs Blend, and paths here are from Blend's directory.
+It grew in glam-in-bend, and is a repository of its own
+(`blend-own-repository`), which glam-in-bend uses as a submodule at its
+`blend/`. Paths here are from Blend's root.
 
 ## Reading
 
@@ -18,9 +17,9 @@ Required:
 
 Contingent:
 
-- When proving: glam-in-bend's `docs/Proving.md` (what the proofs so far
-  have taught) and `docs/BendIssues.md` (Bend's shortfalls and their
-  workarounds), and the lessons in `PROOF.bend`'s header
+- When proving: `docs/Proving.md` (what the proofs so far have taught),
+  glam-in-bend's [`docs/BendIssues.md`][issues] (Bend's shortfalls and
+  their workarounds), and the lessons in `PROOF.bend`'s header
 - When Bend is new to you: `bend guide`
 
 ## Layout
@@ -37,9 +36,10 @@ Contingent:
   `run.sh` runs it; `where.sh` maps an emitted line back to its source
 - `check.sh` the gate; `check_generated.sh` the generated samples;
   `samples/check.sh` the samples
-- `tools.sh` finds the tools Blend shares with glam-in-bend (`capped.sh`,
-  `count.sh`, `results.py`, `kept.py`, `one_law.py`, `check_docs.py`,
-  `check_laws.py`): its own `scripts/` once split, else its parent's
+- `scripts/` the tools (`capped.sh`, `count.sh`, `results.py`, `kept.py`,
+  `one_law.py`, `check_docs.py`, `check_laws.py`, `check_staged.py`,
+  `cgroup-delegate.sh`), copied from glam-in-bend's at the split and
+  Blend's own since; `tools.sh` finds them; `.githooks/` the commit hooks
 - `results/` builds, copies and logs, out of git
 
 ## Working Rules
@@ -56,8 +56,7 @@ Contingent:
 - Record decisions in `docs/decisions/` when they are made; a leaning is
   not a ruling.
 - Commits that advance a plan step end with `Plan-Step: <name>` trailers,
-  before attribution lines. While Blend shares glam-in-bend's history,
-  step names are unique across both projects.
+  before attribution lines.
 - When removing a check, tell redundant work from a deliberate boundary.
 
 ## Laws
@@ -98,10 +97,20 @@ generated check.
 - Cap anything that may run away (`capped.sh MB SECONDS command`), near
   its normal cost: a hang is a fault to trace, not to wait out.
 
-## The split
+## Setup
 
-When Blend leaves glam-in-bend (`blend-home.split`): its shared tools
-copied into `scripts/`, with the commit hooks; the lessons of
-glam-in-bend's `docs/Proving.md` and `docs/BendIssues.md` it needs
-copied into its `docs/`; its history filtered, and its records' revs,
-which name glam-in-bend's commits, mapped or noted.
+Bend 2.0.39 (`bend version`), Lean v4.34.0 for `--verdict` and `perf` for
+`count.sh`, as glam-in-bend's `scripts/dev-setup.sh` installs them;
+`scripts/cgroup-delegate.sh` at each container start, so that
+`capped.sh` caps memory in the kernel. Enable the hooks once per clone:
+`git config core.hooksPath .githooks`.
+
+## Used by glam-in-bend
+
+glam-in-bend has Blend as a submodule at `blend/`, pinned to the commit
+it was tested with, and its gate runs Blend's. A change to Blend is
+committed and pushed here first; then glam-in-bend records the new
+commit. Never the reverse: a pointer to a commit not pushed breaks every
+other clone of glam-in-bend.
+
+[issues]: https://github.com/dmbarbour/glam-in-bend/blob/main/docs/BendIssues.md

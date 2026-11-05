@@ -23,8 +23,7 @@ plans, which Blend keeps (`blend-own-repository`).
 ## Step names
 
 Every step has a name: kebab-case, in backticks, prefixed by its plan's
-topic, and unique across all docs (while Blend shares glam-in-bend's
-history, across both projects'), e.g. `blend-laws`.
+topic, and unique across all docs, e.g. `blend-laws`.
 - Refer to steps by name, never by number: numbers only order a list.
 - A commit that advances a step ends with a `Plan-Step: <name>` trailer,
   one per step, before any attribution lines. Find a step's history with

@@ -1,7 +1,7 @@
 # Mutations of Blend's code, each a fault a law named should catch
 # (scripts/one_law.py; docs/Proving.md, What to claim). Try them after a
 # proof or the code it follows changes:
-#   python3 -I scripts/one_law.py blend/PROOF.bend LAW --mutants blend/MUTANTS.txt
+#   python3 -I scripts/one_law.py PROOF.bend LAW --mutants MUTANTS.txt
 
 === root_kept order.ends
 a root already walked stays among the roots: the walk loops
