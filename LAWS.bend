@@ -318,3 +318,42 @@ law sharing.copied:
   for +hms: {B.ec.ms(e) == B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>})), Nil{}} : B.Ms}
   for +hu: {B.uses.of.e(List.reverse(&2, U32, xs), e, y) == B.uses.of(List.reverse(&2, U32, xs), rss, y) : List<&2, B.Ru>}
   {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, B.mu.m(B.ec.mu(e, y))) : U32}
+
+# LAW: where the dispositions report no error, each affine unit of the
+# order has one use at most: a second is an error, and an error stays.
+# Record: blend-templates-affine
+law sharing.once:
+  for +xs: List<&2, U32>
+  for +rss: List<&2, List<&2, B.Ru>>
+  for +ut: B.Ht<B.Un>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +s: B.Ms
+  for +y: U32
+  for +hy: {B.has(xs, y) == True{} : Bool}
+  for +ha: {B.mult.share(y, ut) == 0 : U32}
+  for +he: {B.ms.ers(B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)) == Nil{} : List<&2, B.Er>}
+  {Nat.is_le(List.length(&2, B.Ru, B.uses.of(List.reverse(&2, U32, xs), rss, y)), 1n) == True{} : Bool}
+
+# LAW: and an affine unit used once ends with its one user's copies, of
+# the affine kind where there are any, so that the writer, calling its
+# copy of each of the user's numbers from the user's copy of that number
+# (`ref.kind.k`), gives each copy one caller; with none, it stays as it
+# was, its one caller the user's one copy.
+# Record: blend-copies-keep-their-name
+law sharing.affine:
+  for +xs: List<&2, U32>
+  for +rss: List<&2, List<&2, B.Ru>>
+  for +ut: B.Ht<B.Un>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +s: B.Ms
+  for +y: U32
+  for +h1: {B.ordered(xs, B.calls(rss)) == True{} : Bool}
+  for +h2: {B.distinct(xs) == True{} : Bool}
+  for +hy: {B.has(xs, y) == True{} : Bool}
+  for +ha: {B.mult.share(y, ut) == 0 : U32}
+  for +hl: {List.length(&2, B.Ru, B.uses.of(List.reverse(&2, U32, xs), rss, y)) == 1n : Nat}
+  {B.ms.mu(B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s), y) ==
+    B.mu.after(B.mu.m(B.ms.mu(B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s), B.ru.user(B.uses.of(List.reverse(&2, U32, xs), rss, y)))),
+      B.ms.mu(s, y)) : B.Mu}

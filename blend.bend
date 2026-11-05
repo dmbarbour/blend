@@ -4807,6 +4807,12 @@ def mults(xs: List<&2, U32>, +rt: Pw<List<&2, Ru>>, +ut: Ht<Un>, +obs: List<&2, 
       mults(t, rt, ut, obs, us, mult.of(x, mult.share(x, ut), pend.at(p, x), obs, us, ut, s),
         pend.uses(rus.or(pw.get(List<&2, Ru>, rt, x)), x, p))
 
+# an affine unit's disposition after its one user's turn: the user's
+# copies, of the affine kind, where it has any; else as it was (LAWS.bend,
+# `sharing.affine`)
+def mu.after(+m: U32, +mu: Mu) -> Mu:
+  when(Mu, U32.is_gt(m, 0), v => Mu{m, 2}, v => mu)
+
 # The dispositions, as specified: each unit's copies from all its uses by
 # the emitted units, as a search of them gathers them, which mults hands
 # on in one pass instead (LAWS.bend, `mults.uses`)
