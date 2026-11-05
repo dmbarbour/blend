@@ -3,34 +3,39 @@
 # definition i calling earlier ones, and a main calling the last. Each is
 # measured at N, 2N and 4N (bench/README.md).
 #
-#   bend bench/families.bend chain|fan|dense|down N > module.blend
+#   bend bench/families.bend chain|fan|dense|down|copies N > module.blend
 import Base
 
 # a family's shape: i calling i-1 (chain); i-1, i-2, i/2 and i/3 (fan);
 # every earlier definition (dense); the next, i+1, written top down, so
-# that the walk's stack holds the whole chain (down)
+# that the walk's stack holds the whole chain (down); in an object, each
+# shared and calling a copied definition, written last, twice, so that
+# it has 2N numbered copies (copies)
 type Sh is Data:
   Chain{}
   Fan{}
   Dense{}
   Down{}
+  Copies{}
   Unknown{}
 
-def sh.of.k(chain: Bool, fan: Bool, dense: Bool, down: Bool) -> Sh:
-  match chain fan dense down:
-    case True{} _ _ _:
+def sh.of.k(chain: Bool, fan: Bool, dense: Bool, down: Bool, copies: Bool) -> Sh:
+  match chain fan dense down copies:
+    case True{} _ _ _ _:
       Chain{}
-    case False{} True{} _ _:
+    case False{} True{} _ _ _:
       Fan{}
-    case False{} False{} True{} _:
+    case False{} False{} True{} _ _:
       Dense{}
-    case False{} False{} False{} True{}:
+    case False{} False{} False{} True{} _:
       Down{}
-    case False{} False{} False{} False{}:
+    case False{} False{} False{} False{} True{}:
+      Copies{}
+    case False{} False{} False{} False{} False{}:
       Unknown{}
 
 def sh.of(+w: String) -> Sh:
-  sh.of.k(String.eq(w, "chain"), String.eq(w, "fan"), String.eq(w, "dense"), String.eq(w, "down"))
+  sh.of.k(String.eq(w, "chain"), String.eq(w, "fan"), String.eq(w, "dense"), String.eq(w, "down"), String.eq(w, "copies"))
 
 def before.k(keep: Bool, +j: U32, rest: List<&2, U32>) -> List<&2, U32>:
   match keep:
@@ -66,6 +71,8 @@ def calls(sh: Sh, +n: U32, +i: U32) -> List<&2, U32>:
       upto(U32.to_nat(i), 0)
     case Down{}:
       before([(i + 1 : U32)], n)
+    case Copies{}:
+      Nil{}
     case Unknown{}:
       Nil{}
 
@@ -88,7 +95,11 @@ def body(+js: List<&2, U32>) -> String:
   opens(js, "") ++ "n" ++ closes(js)
 
 def defn(sh: Sh, +n: U32, +i: U32) -> String:
-  "def f" ++ U32.show(i) ++ "(+n: U32) -> U32:\n  " ++ body(calls(sh, n, i)) ++ "\n\n"
+  match sh:
+    case Copies{}:
+      "  shared def f" ++ U32.show(i) ++ "(+n: U32) -> U32:\n    c(c(n))\n"
+    case _:
+      "def f" ++ U32.show(i) ++ "(+n: U32) -> U32:\n  " ++ body(calls(sh, n, i)) ++ "\n\n"
 
 # definitions i to i + k - 1, each printed as it is made
 def defs(k: Nat, +sh: Sh, +n: U32, +i: U32) -> IO(Unit):
@@ -101,12 +112,18 @@ def defs(k: Nat, +sh: Sh, +n: U32, +i: U32) -> IO(Unit):
         defs(p, sh, n, (i + 1 : U32))
 
 def usage() -> IO(Unit):
-  IO.die(Unit, 2, "usage: bend bench/families.bend chain|fan|dense|down N")
+  IO.die(Unit, 2, "usage: bend bench/families.bend chain|fan|dense|down|copies N")
 
 def module(+sh: Sh, +n: U32) -> IO(Unit):
   match sh:
     case Unknown{}:
       usage()
+    case Copies{}:
+      do IO<Unit>:
+        IO.write("import Base\n\nobject C with\n")
+        defs(U32.to_nat(n), sh, n, 0)
+        IO.write("  copied def c(+n: U32) -> U32:\n    (n + 1 : U32)\n\n")
+        IO.write("def main() -> IO(Unit):\n  IO.print(U32.show(C.f" ++ U32.show((n - 1 : U32)) ++ "(1)))\n\n")
     case _:
       do IO<Unit>:
         IO.write("import Base\n\n")
