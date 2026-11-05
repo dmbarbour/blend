@@ -57,6 +57,9 @@
 #   reversed descend to the first (`desc_to`, `rev_asc`); a pair taken
 #   apart by a lambda proved through its halves and its eta law
 #   (`bg_fst`, `bg_snd`, `pair_eta`).
+# - The nodes (`nodes`): membership under a structural equality
+#   (`ndef.same`), a "within" invariant through the object walk, the made
+#   objects' rounds, the member tables and the copies' loop.
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -5705,3 +5708,842 @@ def flat_ok(n: Nat, ls: List<&2, B.Ln>, +out: List<&2, B.Item>, +hc: {chain(ls) 
 
 def Laws.markers.items(ls, k, h):
   flat_ok(List.length(&2, B.Ln, ls), ls, Nil{}, chain_of(ls, k, h), {==})
+
+# The nodes
+# ---------
+#
+# The units' definitions are their objects' members (`nodes.copies`):
+# every table of members holds definitions held (`hw`), a put adding one
+# held and a lookup finding one in a leaf (`hw_put`, `hw_leaf`); a copy's
+# definition the one found (`rd_held`), the copies' loop adding no other
+# (`copies_ok`).
+
+# definitions held: each of a list, and each a table's leaves hold
+def nheld(es: List<&2, B.Node>, +ds: List<&2, B.Node>) -> Bool:
+  match es:
+    case Nil{}:
+      True{}
+    case Con{+e, t}:
+      Bool.and(B.node.held(e, ds), nheld(t, ds))
+
+def hw(t: B.Ht<B.Node>, +ds: List<&2, B.Node>) -> Bool:
+  match t:
+    case B.HLeaf{es}:
+      nheld(es, ds)
+    case B.HNode{z, o}:
+      Bool.and(hw(z, ds), hw(o, ds))
+
+def hw_empty(d: Nat, +ds: List<&2, B.Node>) -> {hw(B.ht.empty(B.Node, d), ds) == True{} : Bool}:
+  match d:
+    case 0n:
+      {==}
+    case 1n+(+k):
+      and_intro(hw(B.ht.empty(B.Node, k), ds), hw(B.ht.empty(B.Node, k), ds), hw_empty(k, ds), hw_empty(k, ds))
+
+def join_hw(c: Bool, +x: B.Ht<B.Node>, +y: B.Ht<B.Node>, +ds: List<&2, B.Node>, +hx: {hw(x, ds) == True{} : Bool}, +hy: {hw(y, ds) == True{} : Bool}) ->
+    {hw(B.ht.join(B.Node, c, x, y), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(hw(x, ds), hw(y, ds), hx, hy)
+    case False{}:
+      and_intro(hw(y, ds), hw(x, ds), hy, hx)
+
+def pick_hw(c: Bool, +z: B.Ht<B.Node>, +o: B.Ht<B.Node>, +ds: List<&2, B.Node>, +h: {hw(B.HNode{z, o}, ds) == True{} : Bool}) ->
+    {hw(B.ht.pick(B.Node, c, z, o), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_l(hw(z, ds), hw(o, ds), h)
+    case False{}:
+      and_r(hw(z, ds), hw(o, ds), h)
+
+def pick_hw2(c: Bool, +z: B.Ht<B.Node>, +o: B.Ht<B.Node>, +ds: List<&2, B.Node>, +h: {hw(B.HNode{z, o}, ds) == True{} : Bool}) ->
+    {hw(B.ht.pick(B.Node, c, o, z), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_r(hw(z, ds), hw(o, ds), h)
+    case False{}:
+      and_l(hw(z, ds), hw(o, ds), h)
+
+# a definition held put in a table of definitions held
+def hw_put(fuel: Nat, t: B.Ht<B.Node>, +b: U32, +h: U32, +e: B.Node, +ds: List<&2, B.Node>, +he: {B.node.held(e, ds) == True{} : Bool},
+    +ht: {hw(t, ds) == True{} : Bool}) -> {hw(B.ht.put.go(B.Node, fuel, t, b, h, e), ds) == True{} : Bool}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{+es}:
+          and_intro(B.node.held(e, ds), nheld(es, ds), he, ht)
+        case B.HNode{z, o}:
+          and_intro(B.node.held(e, ds), True{}, he, {==})
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{+es}:
+          and_intro(B.node.held(e, ds), nheld(es, ds), he, ht)
+        case B.HNode{+z, +o}:
+          join_hw(U32.is_eq(b, 0), B.ht.put.go(B.Node, k, B.ht.pick(B.Node, U32.is_eq(b, 0), z, o), nb(h), nh(h), e), B.ht.pick(B.Node, U32.is_eq(b, 0), o, z), ds,
+            hw_put(k, B.ht.pick(B.Node, U32.is_eq(b, 0), z, o), nb(h), nh(h), e, ds, he, pick_hw(U32.is_eq(b, 0), z, o, ds, ht)),
+            pick_hw2(U32.is_eq(b, 0), z, o, ds, ht))
+
+# a leaf of a table of definitions held: definitions held
+def hw_leaf(fuel: Nat, t: B.Ht<B.Node>, +b: U32, +h: U32, +ds: List<&2, B.Node>, +ht: {hw(t, ds) == True{} : Bool}) ->
+    {nheld(B.ht.leaf.go(B.Node, fuel, t, b, h), ds) == True{} : Bool}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          ht
+        case B.HNode{z, o}:
+          {==}
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          ht
+        case B.HNode{+z, +o}:
+          hw_leaf(k, B.ht.pick(B.Node, U32.is_eq(b, 0), z, o), nb(h), nh(h), ds, pick_hw(U32.is_eq(b, 0), z, o, ds, ht))
+
+# an object's members, their definitions held, put in a table held
+def mdputs_hw(ns: List<&2, B.Node>, +t: B.Ht<B.Node>, +ds: List<&2, B.Node>, +hn: {B.defs.within(ns, ds) == True{} : Bool}, +ht: {hw(t, ds) == True{} : Bool}) ->
+    {hw(B.md.puts(ns, t), ds) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      ht
+    case Con{nd, +r}:
+      match nd:
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          mdputs_hw(r, t, ds, and_r(B.defs.within(kids, ds), B.defs.within(r, ds), hn), ht)
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          hw_put(32n, B.md.puts(r, t), U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}, ds,
+            and_l(B.def.in(ds, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(r, ds), hn),
+            mdputs_hw(r, t, ds, and_r(B.def.in(ds, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(r, ds), hn), ht))
+        case B.NImport{+txt, +no}:
+          mdputs_hw(r, t, ds, hn, ht)
+        case B.NDecl{+names, +no}:
+          mdputs_hw(r, t, ds, hn, ht)
+        case B.NBad{+txt, +no}:
+          mdputs_hw(r, t, ds, hn, ht)
+        case B.NErr{+msg, +no}:
+          mdputs_hw(r, t, ds, hn, ht)
+        case B.NBend{+lines, +no}:
+          mdputs_hw(r, t, ds, hn, ht)
+
+# every table of a list held
+def mdsh(ms: List<&2, B.Ht<B.Node>>, +ds: List<&2, B.Node>) -> Bool:
+  match ms:
+    case Nil{}:
+      True{}
+    case Con{+m, t}:
+      Bool.and(hw(m, ds), mdsh(t, ds))
+
+def mdsh_of(os: List<&2, B.Ob>, +ds: List<&2, B.Node>, +h: {B.objs.within(os, ds) == True{} : Bool}) -> {mdsh(B.mds.of(os), ds) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{+o, +t}:
+      and_intro(hw(B.md.puts(B.ob.mems(o), B.ht.for(B.Node, List.length(&2, B.Node, B.ob.mems(o)))), ds), mdsh(B.mds.of(t), ds),
+        mdputs_hw(B.ob.mems(o), B.ht.for(B.Node, List.length(&2, B.Node, B.ob.mems(o))), ds, and_l(B.defs.within(B.ob.mems(o), ds), B.objs.within(t, ds), h),
+          hw_empty(B.ht.depth(32n, U32.from_nat(List.length(&2, B.Node, B.ob.mems(o)))), ds)),
+        mdsh_of(t, ds, and_r(B.defs.within(B.ob.mems(o), ds), B.objs.within(t, ds), h)))
+
+# the table for an object's number: held
+def mdsh_get(ms: List<&2, B.Ht<B.Node>>, n: Nat, +ds: List<&2, B.Node>, +h: {mdsh(ms, ds) == True{} : Bool}) ->
+    {hw(B.md.or(List.get(&2, B.Ht<B.Node>, ms, n)), ds) == True{} : Bool}:
+  match ms:
+    case Nil{}:
+      {==}
+    case Con{+m, +t}:
+      match n:
+        case 0n:
+          and_l(hw(m, ds), mdsh(t, ds), h)
+        case 1n+k:
+          mdsh_get(t, k, ds, and_r(hw(m, ds), mdsh(t, ds), h))
+
+def mheld(m: Maybe<&2, B.Node>, +ds: List<&2, B.Node>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{nd}:
+      B.node.held(nd, ds)
+
+def mfk(+c: Bool, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>,
+    +no: U32, +ind: U32, +what: U32, +t: List<&2, B.Node>, +n: List<&2, U32>) -> Maybe<&2, B.Node>:
+  B.when(Maybe<&2, B.Node>, c, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(t, n))
+
+def mf_k(c: Bool, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>,
+    +no: U32, +ind: U32, +what: U32, +t: List<&2, B.Node>, +n: List<&2, U32>, +ds: List<&2, B.Node>,
+    hd: {B.node.held(B.NDef{share, upd, name, rest, params, body, no, ind, what}, ds) == True{} : Bool}, ih: {mheld(B.mem.find(t, n), ds) == True{} : Bool}) ->
+    {mheld(mfk(c, share, upd, name, rest, params, body, no, ind, what, t, n), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      hd
+    case False{}:
+      ih
+
+# what a search of definitions held finds: held
+def mf_held(es: List<&2, B.Node>, +n: List<&2, U32>, +ds: List<&2, B.Node>, +h: {nheld(es, ds) == True{} : Bool}) -> {mheld(B.mem.find(es, n), ds) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          mf_k(B.same(name, n), share, upd, name, rest, params, body, no, ind, what, t, n, ds,
+            and_l(B.node.held(B.NDef{share, upd, name, rest, params, body, no, ind, what}, ds), nheld(t, ds), h),
+            mf_held(t, n, ds, and_r(B.node.held(B.NDef{share, upd, name, rest, params, body, no, ind, what}, ds), nheld(t, ds), h)))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          mf_held(t, n, ds, h)
+        case B.NImport{+txt, +no}:
+          mf_held(t, n, ds, h)
+        case B.NDecl{+names, +no}:
+          mf_held(t, n, ds, h)
+        case B.NBad{+txt, +no}:
+          mf_held(t, n, ds, h)
+        case B.NErr{+msg, +no}:
+          mf_held(t, n, ds, h)
+        case B.NBend{+lines, +no}:
+          mf_held(t, n, ds, h)
+
+# a context whose member tables hold definitions held
+def cxh(cx: B.Cx, +ds: List<&2, B.Node>) -> Bool:
+  match cx:
+    case B.Cx{obs, ls, fs, als, paths, pss, nxs, mds}:
+      mdsh(mds, ds)
+
+def cxmem_held(cx: B.Cx, +q: U32, +n: List<&2, U32>, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}) -> {mheld(B.cx.mem(cx, q, n), ds) == True{} : Bool}:
+  match cx:
+    case B.Cx{obs, ls, fs, als, paths, pss, nxs, +mds}:
+      mf_held(B.ht.leaf(B.Node, B.md.or(List.get(&2, B.Ht<B.Node>, mds, U32.to_nat(q))), U32.and(B.hash.name(n), 1), B.hash.name(n)), n, ds,
+        hw_leaf(32n, B.md.or(List.get(&2, B.Ht<B.Node>, mds, U32.to_nat(q))), U32.and(B.hash.name(n), 1), B.hash.name(n), ds, mdsh_get(mds, U32.to_nat(q), ds, hx)))
+
+def rdn(r: B.Rd) -> B.Node:
+  match r:
+    case B.Rd{i, nd, hd, ls}:
+      nd
+
+def ck_held(i: B.In, +nd: B.Node, h: B.Rb, b: B.Rb, sh: List<&2, B.Er>, +ds: List<&2, B.Node>, +hm: {B.node.held(nd, ds) == True{} : Bool}) ->
+    {B.node.held(rdn(Pair.fst(B.Rd, B.Rb, B.copy.k(i, nd, h, b, sh))), ds) == True{} : Bool}:
+  match h b:
+    case B.Rb{hl, he, hi} B.Rb{ls, es, more}:
+      hm
+
+# a copy's definition: the definition found for it
+def cn_held(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node, +ds: List<&2, B.Node>, +hm: {B.node.held(nd, ds) == True{} : Bool}) ->
+    {B.node.held(rdn(Pair.fst(B.Rd, B.Rb, B.copy.node(cx, o, i, nd))), ds) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          ck_held(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
+            B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
+            B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+            B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
+              u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
+                B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
+            ds, hm)
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          {==}
+        case B.NImport{+txt, +no}:
+          {==}
+        case B.NDecl{+names, +no}:
+          {==}
+        case B.NBad{+txt, +no}:
+          {==}
+        case B.NErr{+msg, +no}:
+          {==}
+        case B.NBend{+lines, +no}:
+          {==}
+
+# copy.of's lookup mirrored
+def ocm(+mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool) -> B.Rd & B.Rb:
+  B.on.maybe(B.Node, B.Rd & B.Rb, mb, u => (B.Rd{B.In{n, q, prior}, B.NBad{Nil{}, 0}, Nil{}, Nil{}}, B.Rb{Nil{}, Nil{}, Nil{}}),
+    nd => B.copy.node(cx, o, B.In{n, q, prior}, nd))
+
+def oc_k(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, +ds: List<&2, B.Node>, +hm: {mheld(mb, ds) == True{} : Bool}) ->
+    {B.node.held(rdn(Pair.fst(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior))), ds) == True{} : Bool}:
+  match mb:
+    case None{}:
+      {==}
+    case Some{nd}:
+      cn_held(cx, o, B.In{n, q, prior}, nd, ds, hm)
+
+# a copy's definition: one the member tables hold, where found
+def rd_held(+cx: B.Cx, +o: U32, i: B.In, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}) ->
+    {B.node.held(rdn(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i))), ds) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      oc_k(B.cx.mem(cx, q, n), cx, o, n, q, prior, ds, cxmem_held(cx, q, n, ds, hx))
+
+# copies whose definitions are held
+def rdsh(rs: List<&2, B.Rd>, +ds: List<&2, B.Node>) -> Bool:
+  match rs:
+    case Nil{}:
+      True{}
+    case Con{+r, t}:
+      Bool.and(B.node.held(rdn(r), ds), rdsh(t, ds))
+
+def cph(c: B.Cp, +ds: List<&2, B.Node>) -> Bool:
+  match c:
+    case B.Cp{rds, ers, done}:
+      rdsh(rds, ds)
+
+def cpadd_held(+rd: B.Rd, b: B.Rb, c: B.Cp, +ds: List<&2, B.Node>, +hr: {B.node.held(rdn(rd), ds) == True{} : Bool}, +hc: {cph(c, ds) == True{} : Bool}) ->
+    {cph(B.cp.add(rd, b, c), ds) == True{} : Bool}:
+  match b:
+    case B.Rb{ls, es, more}:
+      match c:
+        case B.Cp{+rds, ers, done}:
+          and_intro(B.node.held(rdn(rd), ds), rdsh(rds, ds), hr, hc)
+
+def pair_eta_rd(p: B.Rd & B.Rb, f: B.Rd -> B.Rb -> B.Cp) -> {B.on.pair(B.Rd, B.Rb, B.Cp, p, f) == f(Pair.fst(B.Rd, B.Rb, p), Pair.snd(B.Rd, B.Rb, p)) : B.Cp}:
+  match p:
+    case (a, b):
+      {==}
+
+# copies.go's step mirrored
+def cgk(+c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>) -> B.Cp:
+  B.when(B.Cp, c, u => B.copies.go(k, cx, o, t, B.Cp{rds, ers, done}),
+    u => B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))))
+
+def cg_ok(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>, +ds: List<&2, B.Node>,
+    ht: {cph(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done}), ds) == True{} : Bool}, hf: {cph(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), ds) == True{} : Bool}) ->
+    {cph(cgk(c, k, cx, o, i, t, rds, ers, done), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      ht
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cph(_, ds) == True{} : Bool}
+      hf
+
+# the copies' loop adds copies whose definitions are held
+def copies_ok(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}, +hc: {cph(c, ds) == True{} : Bool}) ->
+    {cph(B.copies.go(n, cx, o, todo, c), ds) == True{} : Bool}:
+  match n:
+    case 0n:
+      hc
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          hc
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              cg_ok(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, ds,
+                copies_ok(k, cx, o, t, B.Cp{rds, ers, done}, ds, hx, hc),
+                copies_ok(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), ds, hx,
+                  cpadd_held(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}, ds, rd_held(cx, o, i, ds, hx), hc)))
+
+def copies_held(+cx: B.Cx, +o: U32, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}) -> {cph(B.copies(cx, o), ds) == True{} : Bool}:
+  copies_ok(1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))), cx, o, B.ins.finals(B.cx.map(cx, o)),
+    B.Cp{Nil{}, Nil{}, B.ht.for(B.In, 1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))))}, ds, hx, {==})
+
+def ocsh(os: List<&2, B.Oc>, +ds: List<&2, B.Node>) -> Bool:
+  match os:
+    case Nil{}:
+      True{}
+    case Con{oc, t}:
+      match oc:
+        case B.Oc{+id, c}:
+          Bool.and(cph(c, ds), ocsh(t, ds))
+
+# module.copies's decisions mirrored
+def mck(+c1: Bool, +abs: Bool, +id: U32, +t: List<&2, B.Ob>, +cx: B.Cx) -> List<&2, B.Oc>:
+  B.when(List<&2, B.Oc>, c1, u => B.module.copies(t, cx),
+    u => B.when(List<&2, B.Oc>, abs, v => Con{B.Oc{id, B.Cp{Nil{}, Nil{}, B.HLeaf{Nil{}}}}, B.module.copies(t, cx)}, v => Con{B.Oc{id, B.copies(cx, id)}, B.module.copies(t, cx)}))
+
+def mc_ok(c1: Bool, abs: Bool, +id: U32, +t: List<&2, B.Ob>, +cx: B.Cx, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool},
+    +ih: {ocsh(B.module.copies(t, cx), ds) == True{} : Bool}) -> {ocsh(mck(c1, abs, id, t, cx), ds) == True{} : Bool}:
+  match c1 abs:
+    case True{} _:
+      ih
+    case False{} True{}:
+      ih
+    case False{} False{}:
+      and_intro(cph(B.copies(cx, id), ds), ocsh(B.module.copies(t, cx), ds), copies_held(cx, id, ds, hx), ih)
+
+def mcopies_ok(os: List<&2, B.Ob>, +cx: B.Cx, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}) -> {ocsh(B.module.copies(os, cx), ds) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+          mc_ok(Bool.or(Bool.not(U32.is_eq(B.loc.mod(no), 0)), Bool.not(B.is.object(kind))), abs, id, t, cx, ds, hx, mcopies_ok(t, cx, ds, hx))
+
+def rdsh_rev(xs: List<&2, B.Rd>, +acc: List<&2, B.Rd>, +ds: List<&2, B.Node>, +hx: {rdsh(xs, ds) == True{} : Bool}, +ha: {rdsh(acc, ds) == True{} : Bool}) ->
+    {rdsh(List.reverse.go(&2, B.Rd, xs, acc), ds) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+r, +t}:
+      rdsh_rev(t, Con{r, acc}, ds, and_r(B.node.held(rdn(r), ds), rdsh(t, ds), hx),
+        and_intro(B.node.held(rdn(r), ds), rdsh(acc, ds), and_l(B.node.held(rdn(r), ds), rdsh(t, ds), hx), ha))
+
+def urds_held(+o: U32, rs: List<&2, B.Rd>, +ds: List<&2, B.Node>, +h: {rdsh(rs, ds) == True{} : Bool}) -> {B.units.held(B.un.rds(o, rs), ds) == True{} : Bool}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{r, +t}:
+      match r:
+        case B.Rd{+i, +nd, +hd, +ls}:
+          and_intro(B.node.held(nd, ds), B.units.held(B.un.rds(o, t), ds), and_l(B.node.held(nd, ds), rdsh(t, ds), h),
+            urds_held(o, t, ds, and_r(B.node.held(nd, ds), rdsh(t, ds), h)))
+
+def uheld_app(a: List<&2, B.Un>, +b: List<&2, B.Un>, +ds: List<&2, B.Node>, +ha: {B.units.held(a, ds) == True{} : Bool}, +hb: {B.units.held(b, ds) == True{} : Bool}) ->
+    {B.units.held(List.append(&2, B.Un, a, b), ds) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{+u, +t}:
+      and_intro(B.node.held(B.un.node(u), ds), B.units.held(List.append(&2, B.Un, t, b), ds), and_l(B.node.held(B.un.node(u), ds), B.units.held(t, ds), ha),
+        uheld_app(t, b, ds, and_r(B.node.held(B.un.node(u), ds), B.units.held(t, ds), ha), hb))
+
+def units_held(os: List<&2, B.Oc>, +ds: List<&2, B.Node>, +h: {ocsh(os, ds) == True{} : Bool}) -> {B.units.held(B.units(os), ds) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{oc, +t}:
+      match oc:
+        case B.Oc{+id, c}:
+          match c:
+            case B.Cp{+rds, ers, done}:
+              uheld_app(B.un.rds(id, List.reverse(&2, B.Rd, rds)), B.units(t), ds,
+                urds_held(id, List.reverse(&2, B.Rd, rds), ds, rdsh_rev(rds, Nil{}, ds, and_l(rdsh(rds, ds), ocsh(t, ds), h), {==})),
+                units_held(t, ds, and_r(rdsh(rds, ds), ocsh(t, ds), h)))
+
+def Laws.nodes.copies(obs, ls, fs, als, paths, pss, nxs, ds, h):
+  units_held(B.module.copies(obs, B.Cx{obs, ls, fs, als, paths, pss, nxs, B.mds.of(obs)}), ds,
+    mcopies_ok(obs, B.Cx{obs, ls, fs, als, paths, pss, nxs, B.mds.of(obs)}, ds, mdsh_of(obs, ds, h)))
+
+# The objects' members (`nodes.objects`): a definition the same as itself
+# (`ndef_refl`), a tree's definitions held by its own list (`tree_self`)
+# and by every list holding it (`within_app_l`, `within_app_r`), each
+# object's members a node list of a tree, kept by the made objects'
+# rounds (`og_ok`, `sg_ok`).
+
+def tok_refl(t: B.Tok) -> {B.tok.same(t, t) == True{} : Bool}:
+  match t:
+    case B.TName{+x}:
+      Laws.names.same_refl(x)
+    case B.TNum{+x}:
+      Laws.names.same_refl(x)
+    case B.TStr{+x}:
+      Laws.names.same_refl(x)
+    case B.TCom{+x}:
+      Laws.names.same_refl(x)
+    case B.TSp{+x}:
+      Laws.names.same_refl(x)
+    case B.TSym{+c}:
+      u32_is_eq_refl(c)
+
+def toks_refl(xs: List<&2, B.Tok>) -> {B.toks.same(xs, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(B.tok.same(x, x), B.toks.same(t, t), tok_refl(x), toks_refl(t))
+
+def bl_refl(b: B.Bl) -> {B.bl.same(b, b) == True{} : Bool}:
+  match b:
+    case B.Bl{+n, +i, +t}:
+      and_intro(Bool.and(U32.is_eq(n, n), U32.is_eq(i, i)), B.toks.same(t, t), and_intro(U32.is_eq(n, n), U32.is_eq(i, i), u32_is_eq_refl(n), u32_is_eq_refl(i)), toks_refl(t))
+
+def bls_refl(xs: List<&2, B.Bl>) -> {B.bls.same(xs, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(B.bl.same(x, x), B.bls.same(t, t), bl_refl(x), bls_refl(t))
+
+def names_eq_refl(xs: List<&2, List<&2, U32>>) -> {B.names.eq(xs, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(B.same(x, x), B.names.eq(t, t), Laws.names.same_refl(x), names_eq_refl(t))
+
+def xor_refl(u: Bool) -> {Bool.not(Bool.xor(u, u)) == True{} : Bool}:
+  match u:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a definition the same as itself
+def ndef_refl(+share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: U32, +ind: U32, +what: U32) ->
+    {B.ndef.same(B.NDef{share, upd, name, rest, params, body, no, ind, what}, B.NDef{share, upd, name, rest, params, body, no, ind, what}) == True{} : Bool}:
+  and_intro(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(share, share), Bool.not(Bool.xor(upd, upd))), B.same(name, name)), B.same(rest, rest)), B.names.eq(params, params)), B.bls.same(body, body)), U32.is_eq(no, no)), U32.is_eq(ind, ind)), U32.is_eq(what, what), and_intro(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(share, share), Bool.not(Bool.xor(upd, upd))), B.same(name, name)), B.same(rest, rest)), B.names.eq(params, params)), B.bls.same(body, body)), U32.is_eq(no, no)), U32.is_eq(ind, ind), and_intro(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(share, share), Bool.not(Bool.xor(upd, upd))), B.same(name, name)), B.same(rest, rest)), B.names.eq(params, params)), B.bls.same(body, body)), U32.is_eq(no, no), and_intro(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(share, share), Bool.not(Bool.xor(upd, upd))), B.same(name, name)), B.same(rest, rest)), B.names.eq(params, params)), B.bls.same(body, body), and_intro(Bool.and(Bool.and(Bool.and(U32.is_eq(share, share), Bool.not(Bool.xor(upd, upd))), B.same(name, name)), B.same(rest, rest)), B.names.eq(params, params), and_intro(Bool.and(Bool.and(U32.is_eq(share, share), Bool.not(Bool.xor(upd, upd))), B.same(name, name)), B.same(rest, rest), and_intro(Bool.and(U32.is_eq(share, share), Bool.not(Bool.xor(upd, upd))), B.same(name, name), and_intro(U32.is_eq(share, share), Bool.not(Bool.xor(upd, upd)), u32_is_eq_refl(share), xor_refl(upd)), Laws.names.same_refl(name)), Laws.names.same_refl(rest)), names_eq_refl(params)), bls_refl(body)), u32_is_eq_refl(no)), u32_is_eq_refl(ind)), u32_is_eq_refl(what))
+
+def in_app_l(a: List<&2, B.Node>, +b: List<&2, B.Node>, +nd: B.Node, +h: {B.def.in(a, nd) == True{} : Bool}) -> {B.def.in(List.append(&2, B.Node, a, b), nd) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      Empty.absurd({B.def.in(b, nd) == True{} : Bool}, MB.false_ne_true()(h))
+    case Con{+d, +t}:
+      or_map(B.ndef.same(d, nd), B.def.in(t, nd), B.ndef.same(d, nd), B.def.in(List.append(&2, B.Node, t, b), nd), h, p => p, q => in_app_l(t, b, nd, q))
+
+def in_app_r(a: List<&2, B.Node>, +b: List<&2, B.Node>, +nd: B.Node, +h: {B.def.in(b, nd) == True{} : Bool}) -> {B.def.in(List.append(&2, B.Node, a, b), nd) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      h
+    case Con{+d, +t}:
+      or_r_true(B.ndef.same(d, nd), B.def.in(List.append(&2, B.Node, t, b), nd), in_app_r(t, b, nd, h))
+
+def within_app_l(ns: List<&2, B.Node>, +a: List<&2, B.Node>, +b: List<&2, B.Node>, +h: {B.defs.within(ns, a) == True{} : Bool}) -> {B.defs.within(ns, List.append(&2, B.Node, a, b)) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          and_intro(B.defs.within(kids, List.append(&2, B.Node, a, b)), B.defs.within(t, List.append(&2, B.Node, a, b)),
+            within_app_l(kids, a, b, and_l(B.defs.within(kids, a), B.defs.within(t, a), h)),
+            within_app_l(t, a, b, and_r(B.defs.within(kids, a), B.defs.within(t, a), h)))
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          and_intro(B.def.in(List.append(&2, B.Node, a, b), B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, List.append(&2, B.Node, a, b)),
+            in_app_l(a, b, B.NDef{share, upd, name, rest, params, body, no, ind, what}, and_l(B.def.in(a, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, a), h)),
+            within_app_l(t, a, b, and_r(B.def.in(a, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, a), h)))
+        case B.NImport{+txt, +no}:
+          within_app_l(t, a, b, h)
+        case B.NDecl{+names, +no}:
+          within_app_l(t, a, b, h)
+        case B.NBad{+txt, +no}:
+          within_app_l(t, a, b, h)
+        case B.NErr{+msg, +no}:
+          within_app_l(t, a, b, h)
+        case B.NBend{+lines, +no}:
+          within_app_l(t, a, b, h)
+
+def within_app_r(ns: List<&2, B.Node>, +a: List<&2, B.Node>, +b: List<&2, B.Node>, +h: {B.defs.within(ns, b) == True{} : Bool}) -> {B.defs.within(ns, List.append(&2, B.Node, a, b)) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          and_intro(B.defs.within(kids, List.append(&2, B.Node, a, b)), B.defs.within(t, List.append(&2, B.Node, a, b)),
+            within_app_r(kids, a, b, and_l(B.defs.within(kids, b), B.defs.within(t, b), h)),
+            within_app_r(t, a, b, and_r(B.defs.within(kids, b), B.defs.within(t, b), h)))
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          and_intro(B.def.in(List.append(&2, B.Node, a, b), B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, List.append(&2, B.Node, a, b)),
+            in_app_r(a, b, B.NDef{share, upd, name, rest, params, body, no, ind, what}, and_l(B.def.in(b, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, b), h)),
+            within_app_r(t, a, b, and_r(B.def.in(b, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, b), h)))
+        case B.NImport{+txt, +no}:
+          within_app_r(t, a, b, h)
+        case B.NDecl{+names, +no}:
+          within_app_r(t, a, b, h)
+        case B.NBad{+txt, +no}:
+          within_app_r(t, a, b, h)
+        case B.NErr{+msg, +no}:
+          within_app_r(t, a, b, h)
+        case B.NBend{+lines, +no}:
+          within_app_r(t, a, b, h)
+
+def within_cons(ns: List<&2, B.Node>, +d: B.Node, +b: List<&2, B.Node>, +h: {B.defs.within(ns, b) == True{} : Bool}) -> {B.defs.within(ns, Con{d, b}) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          and_intro(B.defs.within(kids, Con{d, b}), B.defs.within(t, Con{d, b}),
+            within_cons(kids, d, b, and_l(B.defs.within(kids, b), B.defs.within(t, b), h)),
+            within_cons(t, d, b, and_r(B.defs.within(kids, b), B.defs.within(t, b), h)))
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          and_intro(B.def.in(Con{d, b}, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, Con{d, b}),
+            or_r_true(B.ndef.same(d, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.def.in(b, B.NDef{share, upd, name, rest, params, body, no, ind, what}), and_l(B.def.in(b, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, b), h)),
+            within_cons(t, d, b, and_r(B.def.in(b, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, b), h)))
+        case B.NImport{+txt, +no}:
+          within_cons(t, d, b, h)
+        case B.NDecl{+names, +no}:
+          within_cons(t, d, b, h)
+        case B.NBad{+txt, +no}:
+          within_cons(t, d, b, h)
+        case B.NErr{+msg, +no}:
+          within_cons(t, d, b, h)
+        case B.NBend{+lines, +no}:
+          within_cons(t, d, b, h)
+
+# a tree's definitions held by its own list
+def tree_self(ns: List<&2, B.Node>) -> {B.defs.within(ns, B.tree.defs(ns)) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          and_intro(B.defs.within(kids, List.append(&2, B.Node, B.tree.defs(kids), B.tree.defs(t))), B.defs.within(t, List.append(&2, B.Node, B.tree.defs(kids), B.tree.defs(t))),
+            within_app_l(kids, B.tree.defs(kids), B.tree.defs(t), tree_self(kids)), within_app_r(t, B.tree.defs(kids), B.tree.defs(t), tree_self(t)))
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          and_intro(B.def.in(Con{B.NDef{share, upd, name, rest, params, body, no, ind, what}, B.tree.defs(t)}, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.defs.within(t, Con{B.NDef{share, upd, name, rest, params, body, no, ind, what}, B.tree.defs(t)}),
+            or_l_true(B.ndef.same(B.NDef{share, upd, name, rest, params, body, no, ind, what}, B.NDef{share, upd, name, rest, params, body, no, ind, what}), B.def.in(B.tree.defs(t), B.NDef{share, upd, name, rest, params, body, no, ind, what}), ndef_refl(share, upd, name, rest, params, body, no, ind, what)),
+            within_cons(t, B.NDef{share, upd, name, rest, params, body, no, ind, what}, B.tree.defs(t), tree_self(t)))
+        case B.NImport{+txt, +no}:
+          tree_self(t)
+        case B.NDecl{+names, +no}:
+          tree_self(t)
+        case B.NBad{+txt, +no}:
+          tree_self(t)
+        case B.NErr{+msg, +no}:
+          tree_self(t)
+        case B.NBend{+lines, +no}:
+          tree_self(t)
+
+# every tree of a list within ds
+def tsw(ts: List<&2, List<&2, B.Node>>, +ds: List<&2, B.Node>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{tr, t}:
+      Bool.and(B.defs.within(tr, ds), tsw(t, ds))
+
+def tsw_app_r(ts: List<&2, List<&2, B.Node>>, +a: List<&2, B.Node>, +b: List<&2, B.Node>, +h: {tsw(ts, b) == True{} : Bool}) ->
+    {tsw(ts, List.append(&2, B.Node, a, b)) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      {==}
+    case Con{+tr, +t}:
+      and_intro(B.defs.within(tr, List.append(&2, B.Node, a, b)), tsw(t, List.append(&2, B.Node, a, b)),
+        within_app_r(tr, a, b, and_l(B.defs.within(tr, b), tsw(t, b), h)), tsw_app_r(t, a, b, and_r(B.defs.within(tr, b), tsw(t, b), h)))
+
+# every tree within the trees' definitions
+def trees_within(ts: List<&2, List<&2, B.Node>>) -> {tsw(ts, B.trees.defs(ts)) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      {==}
+    case Con{+tr, +t}:
+      and_intro(B.defs.within(tr, List.append(&2, B.Node, B.tree.defs(tr), B.trees.defs(t))), tsw(t, List.append(&2, B.Node, B.tree.defs(tr), B.trees.defs(t))),
+        within_app_l(tr, B.tree.defs(tr), B.trees.defs(t), tree_self(tr)), tsw_app_r(t, B.tree.defs(tr), B.trees.defs(t), trees_within(t)))
+
+# the walk's member lists within ds
+def wfsw(st: List<&2, B.Wf>, +ds: List<&2, B.Node>) -> Bool:
+  match st:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      match f:
+        case B.Wf{+host, path, nodes}:
+          Bool.and(B.defs.within(nodes, ds), wfsw(t, ds))
+
+# the objects walked: each one's members a list the walk had, within ds
+def og_ok(n: Nat, st: List<&2, B.Wf>, +next: U32, +out: List<&2, B.Ob>, +ds: List<&2, B.Node>, +hs: {wfsw(st, ds) == True{} : Bool},
+    +ho: {B.objs.within(out, ds) == True{} : Bool}) -> {B.objs.within(B.obs.go(n, st, next, out), ds) == True{} : Bool}:
+  match n:
+    case 0n:
+      ho
+    case 1n+(+k):
+      match st:
+        case Nil{}:
+          ho
+        case Con{f, +rest}:
+          match f:
+            case B.Wf{+host, +path, nodes}:
+              match nodes:
+                case Nil{}:
+                  og_ok(k, rest, next, out, ds, hs, ho)
+                case Con{nd, +t}:
+                  match nd:
+                    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+                      og_ok(k, Con{B.Wf{next, List.append(&2, List<&2, U32>, path, [name]), kids}, Con{B.Wf{host, path, t}, rest}}, U32.add(next, 1),
+                        Con{B.Ob{next, host, List.append(&2, List<&2, U32>, path, [name]), abs, parents, kids, no, B.ob.kind.of(ext, path), next}, out}, ds,
+                        and_intro(B.defs.within(kids, ds), Bool.and(B.defs.within(t, ds), wfsw(rest, ds)),
+                          and_l(B.defs.within(kids, ds), B.defs.within(t, ds), and_l(Bool.and(B.defs.within(kids, ds), B.defs.within(t, ds)), wfsw(rest, ds), hs)),
+                          and_intro(B.defs.within(t, ds), wfsw(rest, ds),
+                            and_r(B.defs.within(kids, ds), B.defs.within(t, ds), and_l(Bool.and(B.defs.within(kids, ds), B.defs.within(t, ds)), wfsw(rest, ds), hs)),
+                            and_r(Bool.and(B.defs.within(kids, ds), B.defs.within(t, ds)), wfsw(rest, ds), hs))),
+                        and_intro(B.defs.within(kids, ds), B.objs.within(out, ds),
+                          and_l(B.defs.within(kids, ds), B.defs.within(t, ds), and_l(Bool.and(B.defs.within(kids, ds), B.defs.within(t, ds)), wfsw(rest, ds), hs)), ho))
+                    case B.NDef{+share, +upd, +name, +rest2, +params, +body, +no, +ind, +what}:
+                      og_ok(k, Con{B.Wf{host, path, t}, rest}, next, out, ds,
+                        and_intro(B.defs.within(t, ds), wfsw(rest, ds),
+                          and_r(B.def.in(ds, B.NDef{share, upd, name, rest2, params, body, no, ind, what}), B.defs.within(t, ds),
+                            and_l(Bool.and(B.def.in(ds, B.NDef{share, upd, name, rest2, params, body, no, ind, what}), B.defs.within(t, ds)), wfsw(rest, ds), hs)),
+                          and_r(Bool.and(B.def.in(ds, B.NDef{share, upd, name, rest2, params, body, no, ind, what}), B.defs.within(t, ds)), wfsw(rest, ds), hs)), ho)
+                    case B.NImport{+txt, +no}:
+                      og_ok(k, Con{B.Wf{host, path, t}, rest}, next, out, ds, hs, ho)
+                    case B.NDecl{+names, +no}:
+                      og_ok(k, Con{B.Wf{host, path, t}, rest}, next, out, ds, hs, ho)
+                    case B.NBad{+txt, +no}:
+                      og_ok(k, Con{B.Wf{host, path, t}, rest}, next, out, ds, hs, ho)
+                    case B.NErr{+msg, +no}:
+                      og_ok(k, Con{B.Wf{host, path, t}, rest}, next, out, ds, hs, ho)
+                    case B.NBend{+lines, +no}:
+                      og_ok(k, Con{B.Wf{host, path, t}, rest}, next, out, ds, hs, ho)
+
+def objs_rev(xs: List<&2, B.Ob>, +acc: List<&2, B.Ob>, +ds: List<&2, B.Node>, +hx: {B.objs.within(xs, ds) == True{} : Bool}, +ha: {B.objs.within(acc, ds) == True{} : Bool}) -> {B.objs.within(List.reverse.go(&2, B.Ob, xs, acc), ds) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+o, +t}:
+      objs_rev(t, Con{o, acc}, ds, and_r(B.defs.within(B.ob.mems(o), ds), B.objs.within(t, ds), hx),
+        and_intro(B.defs.within(B.ob.mems(o), ds), B.objs.within(acc, ds), and_l(B.defs.within(B.ob.mems(o), ds), B.objs.within(t, ds), hx), ha))
+
+def objs_app(xs: List<&2, B.Ob>, +b: List<&2, B.Ob>, +ds: List<&2, B.Node>, +hx: {B.objs.within(xs, ds) == True{} : Bool}, +hb: {B.objs.within(b, ds) == True{} : Bool}) -> {B.objs.within(List.append(&2, B.Ob, xs, b), ds) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      hb
+    case Con{+o, +t}:
+      and_intro(B.defs.within(B.ob.mems(o), ds), B.objs.within(List.append(&2, B.Ob, t, b), ds), and_l(B.defs.within(B.ob.mems(o), ds), B.objs.within(t, ds), hx),
+        objs_app(t, b, ds, and_r(B.defs.within(B.ob.mems(o), ds), B.objs.within(t, ds), hx), hb))
+
+def mods_ok(ts: List<&2, List<&2, B.Node>>, +k: U32, +out: List<&2, B.Ob>, +ds: List<&2, B.Node>, +ht: {tsw(ts, ds) == True{} : Bool}, +ho: {B.objs.within(out, ds) == True{} : Bool}) ->
+    {B.objs.within(B.obs.mods(ts, k, out), ds) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      ho
+    case Con{+tr, +t}:
+      mods_ok(t, U32.add(k, 1), B.obs.mod(tr, k, out), ds, and_r(B.defs.within(tr, ds), tsw(t, ds), ht),
+        og_ok(Nat.add(Nat.add(B.count(tr), B.count(tr)), 2n), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
+          Con{B.Ob{U32.from_nat(List.length(&2, B.Ob, out)), U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, False{}, Nil{}, tr, U32.mul(k, 1000000), 0,
+            U32.from_nat(List.length(&2, B.Ob, out))}, out}, ds,
+          and_intro(B.defs.within(tr, ds), True{}, and_l(B.defs.within(tr, ds), tsw(t, ds), ht), {==}),
+          and_intro(B.defs.within(tr, ds), B.objs.within(out, ds), and_l(B.defs.within(tr, ds), tsw(t, ds), ht), ho)))
+
+# the trees' objects: their members within the trees' definitions
+def obs_ok(+trees: List<&2, List<&2, B.Node>>) -> {B.objs.within(B.obs(trees), B.trees.defs(trees)) == True{} : Bool}:
+  objs_rev(B.obs.mods(trees, 0, Nil{}), Nil{}, B.trees.defs(trees), mods_ok(trees, 0, Nil{}, B.trees.defs(trees), trees_within(trees), {==}), {==})
+
+# syn.x's decision mirrored: a made object, no members of its own
+def sxk(+c: Bool, +n: List<&2, U32>, +t: List<&2, List<&2, U32>>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32) -> List<&2, B.Ob>:
+  B.when(List<&2, B.Ob>, c, u => B.syn.x(t, x, obs, made, next), u => B.syn.x(t, x, obs, Con{B.Ob{next, x, List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(obs, x)), [n]), B.ob.abs(B.ob.at(obs, x)), Nil{}, Nil{}, B.ob.no(B.ob.at(obs, x)), 3, next}, made}, U32.add(next, 1)))
+
+def sx_k(c: Bool, +n: List<&2, U32>, +t: List<&2, List<&2, U32>>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32, +ds: List<&2, B.Node>,
+    ih1: {B.objs.within(B.syn.x(t, x, obs, made, next), ds) == True{} : Bool}, ih2: {B.objs.within(B.syn.x(t, x, obs, Con{B.Ob{next, x, List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(obs, x)), [n]), B.ob.abs(B.ob.at(obs, x)), Nil{}, Nil{}, B.ob.no(B.ob.at(obs, x)), 3, next}, made}, U32.add(next, 1)), ds) == True{} : Bool}) ->
+    {B.objs.within(sxk(c, n, t, x, obs, made, next), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+def sx_ok(ns: List<&2, List<&2, U32>>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32, +ds: List<&2, B.Node>, +hm: {B.objs.within(made, ds) == True{} : Bool}) ->
+    {B.objs.within(B.syn.x(ns, x, obs, made, next), ds) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      hm
+    case Con{+n, +t}:
+      sx_k(Bool.or(B.made.has(obs, x, n), B.made.has(made, x, n)), n, t, x, obs, made, next, ds, sx_ok(t, x, obs, made, next, ds, hm),
+        sx_ok(t, x, obs, Con{B.Ob{next, x, List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(obs, x)), [n]), B.ob.abs(B.ob.at(obs, x)), Nil{}, Nil{}, B.ob.no(B.ob.at(obs, x)), 3, next}, made}, U32.add(next, 1), ds, hm))
+
+def srk(+c: Bool, +id: U32, +t: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>) -> List<&2, B.Ob>:
+  B.when(List<&2, B.Ob>, c, u => B.syn.round(t, obs, ls, B.syn.x(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))))),
+    u => B.syn.round(t, obs, ls, made))
+
+def sr_k(c: Bool, +id: U32, +t: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>, +ds: List<&2, B.Node>,
+    ih1: {B.objs.within(B.syn.round(t, obs, ls, B.syn.x(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))))), ds) == True{} : Bool},
+    ih2: {B.objs.within(B.syn.round(t, obs, ls, made), ds) == True{} : Bool}) -> {B.objs.within(srk(c, id, t, obs, ls, made), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+# a round's made objects: none with members
+def sr_ok(os: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>, +ds: List<&2, B.Node>, +hm: {B.objs.within(made, ds) == True{} : Bool}) ->
+    {B.objs.within(B.syn.round(os, obs, ls, made), ds) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      hm
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+          sr_k(Bool.and(B.is.object(kind), Bool.not(U32.is_eq(id, host))), id, t, obs, ls, made, ds,
+            sr_ok(t, obs, ls, B.syn.x(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))), ds,
+              sx_ok(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))), ds, hm)),
+            sr_ok(t, obs, ls, made, ds, hm))
+
+# an object's members by its number: within, where every object's are
+def get_within(os: List<&2, B.Ob>, n: Nat, +ds: List<&2, B.Node>, +h: {B.objs.within(os, ds) == True{} : Bool}) -> {B.defs.within(B.ob.mems(B.ob.or(List.get(&2, B.Ob, os, n))), ds) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{+o, +t}:
+      match n:
+        case 0n:
+          and_l(B.defs.within(B.ob.mems(o), ds), B.objs.within(t, ds), h)
+        case 1n+k:
+          get_within(t, k, ds, and_r(B.defs.within(B.ob.mems(o), ds), B.objs.within(t, ds), h))
+
+def ctk(+c: Bool, +t: U32, +r: List<&2, U32>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32) -> List<&2, B.Ob>:
+  B.when(List<&2, B.Ob>, c, u => B.copies.t(r, x, obs, made, next), u => B.copies.t(r, x, obs, Con{B.Ob{next, x, B.ob.path(B.ob.at(obs, t)), B.ob.abs(B.ob.at(obs, t)), Nil{}, B.ob.mems(B.ob.at(obs, t)), B.ob.no(B.ob.at(obs, t)), B.ob.kind(B.ob.at(obs, t)), t}, made}, U32.add(next, 1)))
+
+def ct_k(c: Bool, +t: U32, +r: List<&2, U32>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32, +ds: List<&2, B.Node>,
+    ih1: {B.objs.within(B.copies.t(r, x, obs, made, next), ds) == True{} : Bool}, ih2: {B.objs.within(B.copies.t(r, x, obs, Con{B.Ob{next, x, B.ob.path(B.ob.at(obs, t)), B.ob.abs(B.ob.at(obs, t)), Nil{}, B.ob.mems(B.ob.at(obs, t)), B.ob.no(B.ob.at(obs, t)), B.ob.kind(B.ob.at(obs, t)), t}, made}, U32.add(next, 1)), ds) == True{} : Bool}) -> {B.objs.within(ctk(c, t, r, x, obs, made, next), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+# a mixin's bound copies: its members, within
+def ct_ok(ts: List<&2, U32>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32, +ds: List<&2, B.Node>, +hobs: {B.objs.within(obs, ds) == True{} : Bool}, +hm: {B.objs.within(made, ds) == True{} : Bool}) ->
+    {B.objs.within(B.copies.t(ts, x, obs, made, next), ds) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      hm
+    case Con{+t, +r}:
+      ct_k(B.copy.has(obs, made, t, x), t, r, x, obs, made, next, ds, ct_ok(r, x, obs, made, next, ds, hobs, hm),
+        ct_ok(r, x, obs, Con{B.Ob{next, x, B.ob.path(B.ob.at(obs, t)), B.ob.abs(B.ob.at(obs, t)), Nil{}, B.ob.mems(B.ob.at(obs, t)), B.ob.no(B.ob.at(obs, t)), B.ob.kind(B.ob.at(obs, t)), t}, made}, U32.add(next, 1), ds, hobs,
+          and_intro(B.defs.within(B.ob.mems(B.ob.at(obs, t)), ds), B.objs.within(made, ds), get_within(obs, U32.to_nat(t), ds, hobs), hm)))
+
+def sck(+c: Bool, +host: U32, +path: List<&2, List<&2, U32>>, +t: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>) -> List<&2, B.Ob>:
+  B.when(List<&2, B.Ob>, c, u => B.syn.copies(t, obs, ls, B.copies.t(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))))), u => B.syn.copies(t, obs, ls, made))
+
+def sc_k(c: Bool, +host: U32, +path: List<&2, List<&2, U32>>, +t: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>,
+    +ds: List<&2, B.Node>, ih1: {B.objs.within(B.syn.copies(t, obs, ls, B.copies.t(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))))), ds) == True{} : Bool}, ih2: {B.objs.within(B.syn.copies(t, obs, ls, made), ds) == True{} : Bool}) -> {B.objs.within(sck(c, host, path, t, obs, ls, made), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+# the made objects' bound mixins: their members, within
+def sc_ok(os: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>, +ds: List<&2, B.Node>, +hobs: {B.objs.within(obs, ds) == True{} : Bool}, +hm: {B.objs.within(made, ds) == True{} : Bool}) ->
+    {B.objs.within(B.syn.copies(os, obs, ls, made), ds) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      hm
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, +path, +abs, parents, mems, +no, +kind, +tpl}:
+          sc_k(U32.is_eq(kind, 3), host, path, t, obs, ls, made, ds,
+            sc_ok(t, obs, ls, B.copies.t(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))), ds, hobs, ct_ok(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))), ds, hobs, hm)),
+            sc_ok(t, obs, ls, made, ds, hobs, hm))
+
+# syn.go's step mirrored
+def sgk(+c: Bool, +k: Nat, +als: List<&2, B.Al>, +obs: List<&2, B.Ob>, +npss: List<&2, List<&2, U32>>, +nls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>) -> B.Sy:
+  B.when(B.Sy, c, u => B.Sy{obs, npss, nls}, u => B.syn.go(k, als, List.append(&2, B.Ob, obs, List.reverse(&2, B.Ob, made)), npss, nls))
+
+def sg_k(c: Bool, +k: Nat, +als: List<&2, B.Al>, +obs: List<&2, B.Ob>, +npss: List<&2, List<&2, U32>>, +nls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>,
+    +ds: List<&2, B.Node>, +h: {B.objs.within(obs, ds) == True{} : Bool}, ih: {B.objs.within(B.sy.obs(B.syn.go(k, als, List.append(&2, B.Ob, obs, List.reverse(&2, B.Ob, made)), npss, nls)), ds) == True{} : Bool}) ->
+    {B.objs.within(B.sy.obs(sgk(c, k, als, obs, npss, nls, made)), ds) == True{} : Bool}:
+  match c:
+    case True{}:
+      h
+    case False{}:
+      ih
+
+# the made objects' rounds keep every object's members within
+def sg_ok(n: Nat, +als: List<&2, B.Al>, +obs: List<&2, B.Ob>, +pss: List<&2, List<&2, U32>>, +ls: List<&2, Maybe<&2, B.Lz>>, +ds: List<&2, B.Node>, +h: {B.objs.within(obs, ds) == True{} : Bool}) ->
+    {B.objs.within(B.sy.obs(B.syn.go(n, als, obs, pss, ls)), ds) == True{} : Bool}:
+  match n:
+    case 0n:
+      h
+    case 1n+(+k):
+      sg_k(Bool.and(B.obs.none(B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}))), B.pss.eq(B.pids(obs, als, obs, ls), pss)), k, als, obs, B.pids(obs, als, obs, ls), B.lins(B.pids(obs, als, obs, ls)), B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{})), ds, h,
+        sg_ok(k, als, List.append(&2, B.Ob, obs, List.reverse(&2, B.Ob, B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{})))), B.pids(obs, als, obs, ls), B.lins(B.pids(obs, als, obs, ls)), ds,
+          objs_app(obs, List.reverse(&2, B.Ob, B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}))), ds, h,
+            objs_rev(B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{})), Nil{}, ds, sc_ok(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}), ds, h, sr_ok(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}, ds, {==})), {==}))))
+
+def ma_ok(os: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +pss: List<&2, List<&2, U32>>, +ds: List<&2, B.Node>, +h: {B.objs.within(os, ds) == True{} : Bool}) -> {B.objs.within(B.made.abs(os, obs, pss), ds) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, path, +abs, parents, +mems, +no, +kind, +tpl}:
+          and_intro(B.defs.within(mems, ds), B.objs.within(B.made.abs(t, obs, pss), ds), and_l(B.defs.within(mems, ds), B.objs.within(t, ds), h),
+            ma_ok(t, obs, pss, ds, and_r(B.defs.within(mems, ds), B.objs.within(t, ds), h)))
+
+def Laws.nodes.objects(trees, als):
+  ma_ok(B.sy.obs(B.syn.of(als, B.obs(trees))), B.sy.obs(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))), B.trees.defs(trees),
+    sg_ok(Nat.add(2n, Nat.add(List.length(&2, B.Ob, B.obs(trees)), List.length(&2, B.Ob, B.obs(trees)))), als, B.obs(trees), Nil{}, Nil{}, B.trees.defs(trees), obs_ok(trees)))
+
+def Laws.nodes(trees, als, ls, fs, als2, paths, pss, nxs):
+  Laws.nodes.copies(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.trees.defs(trees), Laws.nodes.objects(trees, als))

@@ -3871,6 +3871,122 @@ def un.node(u: Un) -> Node:
     case Un{+o, i, nd, hd, ls}:
       nd
 
+# The nodes law's terms (LAWS.bend, `nodes.copies`, `nodes.objects`):
+# two definitions the same, field by field
+
+def tok.same(a: Tok, b: Tok) -> Bool:
+  match a b:
+    case TName{x} TName{y}:
+      same(x, y)
+    case TNum{x} TNum{y}:
+      same(x, y)
+    case TStr{x} TStr{y}:
+      same(x, y)
+    case TCom{x} TCom{y}:
+      same(x, y)
+    case TSp{x} TSp{y}:
+      same(x, y)
+    case TSym{+c} TSym{+d}:
+      U32.is_eq(c, d)
+    case _ _:
+      False{}
+
+def toks.same(xs: List<&2, Tok>, ys: List<&2, Tok>) -> Bool:
+  match xs ys:
+    case Nil{} Nil{}:
+      True{}
+    case Con{x, xt} Con{y, yt}:
+      tok.same(x, y) && toks.same(xt, yt)
+    case _ _:
+      False{}
+
+def bl.same(a: Bl, b: Bl) -> Bool:
+  match a b:
+    case Bl{+n1, +i1, t1} Bl{+n2, +i2, t2}:
+      U32.is_eq(n1, n2) && U32.is_eq(i1, i2) && toks.same(t1, t2)
+
+def bls.same(xs: List<&2, Bl>, ys: List<&2, Bl>) -> Bool:
+  match xs ys:
+    case Nil{} Nil{}:
+      True{}
+    case Con{x, xt} Con{y, yt}:
+      bl.same(x, y) && bls.same(xt, yt)
+    case _ _:
+      False{}
+
+def ndef.same(a: Node, b: Node) -> Bool:
+  match a b:
+    case NDef{+s1, +u1, n1, r1, p1, b1, +o1, +i1, +w1} NDef{+s2, +u2, n2, r2, p2, b2, +o2, +i2, +w2}:
+      U32.is_eq(s1, s2) && Bool.not(Bool.xor(u1, u2)) && same(n1, n2) && same(r1, r2) && names.eq(p1, p2) && bls.same(b1, b2) &&
+        U32.is_eq(o1, o2) && U32.is_eq(i1, i2) && U32.is_eq(w1, w2)
+    case _ _:
+      False{}
+
+# whether ds holds a definition the same as nd
+def def.in(ds: List<&2, Node>, +nd: Node) -> Bool:
+  match ds:
+    case Nil{}:
+      False{}
+    case Con{d, t}:
+      ndef.same(d, nd) || def.in(t, nd)
+
+# the definitions a tree holds, its objects' members' included
+def tree.defs(ns: List<&2, Node>) -> List<&2, Node>:
+  match ns:
+    case Nil{}:
+      Nil{}
+    case Con{nd, t}:
+      match nd:
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          List.append(&2, Node, tree.defs(kids), tree.defs(t))
+        case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          Con{NDef{share, upd, name, rest, params, body, no, ind, what}, tree.defs(t)}
+        case _:
+          tree.defs(t)
+
+def trees.defs(ts: List<&2, List<&2, Node>>) -> List<&2, Node>:
+  match ts:
+    case Nil{}:
+      Nil{}
+    case Con{tr, t}:
+      List.append(&2, Node, tree.defs(tr), trees.defs(t))
+
+# every definition of ns, its objects' members' included, held by ds
+def defs.within(ns: List<&2, Node>, +ds: List<&2, Node>) -> Bool:
+  match ns:
+    case Nil{}:
+      True{}
+    case Con{nd, t}:
+      match nd:
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          defs.within(kids, ds) && defs.within(t, ds)
+        case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          def.in(ds, NDef{share, upd, name, rest, params, body, no, ind, what}) && defs.within(t, ds)
+        case _:
+          defs.within(t, ds)
+
+def objs.within(os: List<&2, Ob>, +ds: List<&2, Node>) -> Bool:
+  match os:
+    case Nil{}:
+      True{}
+    case Con{o, t}:
+      defs.within(ob.mems(o), ds) && objs.within(t, ds)
+
+# a unit's definition, where it is one, held by ds
+def node.held(nd: Node, +ds: List<&2, Node>) -> Bool:
+  match nd:
+    case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+      def.in(ds, NDef{share, upd, name, rest, params, body, no, ind, what})
+    case _:
+      True{}
+
+def units.held(us: List<&2, Un>, +ds: List<&2, Node>) -> Bool:
+  match us:
+    case Nil{}:
+      True{}
+    case Con{u, t}:
+      node.held(un.node(u), ds) && units.held(t, ds)
+
 # the units of one file: the code's (what 0) or the laws' and proofs'
 def units.of(us: List<&2, Un>, +laws: Bool) -> List<&2, Un>:
   match us:
@@ -6087,13 +6203,21 @@ def er.made.parents(os: List<&2, Ob>, +als: List<&2, Al>, +obs: List<&2, Ob>, +l
 # the modules' objects (cmd 2), the root's copies (3) or the root module
 # emitted (4), or the errors of the first stage that has them, each
 # `FILE:LINE: message`
+# the made objects' rounds, and the objects then, each made one abstract as
+# its host or contributors say (LAWS.bend, `nodes.objects`)
+def syn.of(+als: List<&2, Al>, +obs0: List<&2, Ob>) -> Sy:
+  syn.go(Nat.add(2n, Nat.add(List.length(&2, Ob, obs0), List.length(&2, Ob, obs0))), als, obs0, Nil{}, Nil{})
+
+def obs.made(+sy: Sy) -> List<&2, Ob>:
+  made.abs(sy.obs(sy), sy.obs(sy), sy.pss(sy))
+
 def objects(+cmd: U32, +files: List<&2, List<&2, U32>>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
   +obs0 = obs(trees)
   +als = als.all(trees, 0, paths, obs0)
-  +sy = syn.go(Nat.add(2n, Nat.add(List.length(&2, Ob, obs0), List.length(&2, Ob, obs0))), als, obs0, Nil{}, Nil{})
+  +sy = syn.of(als, obs0)
   +pss = sy.pss(sy)
   +ls = sy.ls(sy)
-  +obs = made.abs(sy.obs(sy), sy.obs(sy), pss)
+  +obs = obs.made(sy)
   +fs = folds(ls, obs, chains.bad(obs, obs, pss))
   objects.out(cmd, files, als, paths, pss, obs, ls, fs,
     List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss), 

@@ -376,3 +376,46 @@ law markers.items:
   for +k: U32
   for +h: {B.ln.from(ls, k) == True{} : Bool}
   {B.items.ok(B.flat(ls)) == True{} : Bool}
+
+# LAW: each unit a module's objects copy has, where its definition is
+# found, one its objects' members hold: the member table finds among
+# them, and the copies make none. With `nodes.objects`, every unit's
+# definition is one a module's tree holds.
+# Record: blend-adds-no-bend-logic
+law nodes.copies:
+  for +obs: List<&2, B.Ob>
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +fs: List<&2, Maybe<&2, B.Fd>>
+  for +als: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +pss: List<&2, List<&2, U32>>
+  for +nxs: List<&2, B.Ht<B.En>>
+  for +ds: List<&2, B.Node>
+  for +h: {B.objs.within(obs, ds) == True{} : Bool}
+  {B.units.held(B.units(B.module.copies(obs, B.Cx{obs, ls, fs, als, paths, pss, nxs, B.mds.of(obs)})), ds) == True{} : Bool}
+
+# LAW: every object's members, the made objects' included, are
+# definitions the modules' trees hold: an object's members its node's in
+# the tree, a made object's none or a mixin's.
+# Record: blend-adds-no-bend-logic
+law nodes.objects:
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  {B.objs.within(B.obs.made(B.syn.of(als, B.obs(trees))), B.trees.defs(trees)) == True{} : Bool}
+
+# LAW: so every unit a module's objects copy has, where its definition is
+# found, a definition the modules' trees hold, as they were read: the
+# objects choose among definitions, and make none.
+# Record: blend-adds-no-bend-logic
+law nodes:
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +fs: List<&2, Maybe<&2, B.Fd>>
+  for +als2: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +pss: List<&2, List<&2, U32>>
+  for +nxs: List<&2, B.Ht<B.En>>
+  {B.units.held(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
+    B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})),
+    B.trees.defs(trees)) == True{} : Bool}
