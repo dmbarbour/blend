@@ -146,6 +146,12 @@ it alone taught. Add to this file what a new proof teaches.
   variable (`has_ers` on `Ms{ms, ers}`), though it reads that field
   alone: a lemma relating two records with the same field matches the
   field too (`set_ers`).
+- **A pair taken apart by a lambda** (`on.pair(p, a => b => ...)`)
+  sticks while `p` is computed: prove what is wanted of each half
+  (`Pair.fst`, `Pair.snd`) by a lemma of its own, and rewrite by the
+  pair's eta law, a match on the pair (`pair_eta`, `case (a, b):`),
+  rather than pass the lambda's property in as a function, which the
+  recursion would need twice.
 - **A recursive call needing its branch's fact**: where the induction
   hypothesis holds only in one case of a step's split (`x` not `y`),
   the step lemma takes it as a function of that case's equation, and

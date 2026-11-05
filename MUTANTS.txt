@@ -261,3 +261,25 @@ copies then numbered by its own counter rather than its user's
           when(Ms, U32.is_gt(mu.m(ms.mu(s, ru.user(rs))), 0), v => ms.set(s, x, Mu{mu.m(ms.mu(s, ru.user(rs))), 2}), v => s)
 +++
           when(Ms, U32.is_gt(mu.m(ms.mu(s, ru.user(rs))), 0), v => ms.set(s, x, Mu{mu.m(ms.mu(s, ru.user(rs))), 1}), v => s)
+
+=== newline_same markers.lines
+a newline not counted, so that the line after it has its number
+--- blend.bend
+      when(List<&2, Ln>, U32.is_eq(b, 10), u => lines.go(t, Nil{}, (no + 1 : U32), Con{lines.line(cur, no), out}),
++++
+      when(List<&2, Ln>, U32.is_eq(b, 10), u => lines.go(t, Nil{}, no, Con{lines.line(cur, no), out}),
+
+=== trim_leading markers.items
+a body's leading blank lines dropped for its trailing ones, so that it
+no longer starts on the line after its header's
+--- blend.bend
+  List.reverse(&2, Ln, body.lead(List.reverse(&2, Ln, ls)))
++++
+  body.lead(ls)
+
+=== body_skips markers.items
+a body read from the second line after its header's
+--- blend.bend
+                u => on.pair(List<&2, Ln>, List<&2, Ln>, List<&2, Item>, body.go(t, ind, Nil{}),
++++
+                u => on.pair(List<&2, Ln>, List<&2, Ln>, List<&2, Item>, body.go(List.tail(&2, Ln, t), ind, Nil{}),
