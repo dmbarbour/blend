@@ -142,6 +142,10 @@ it alone taught. Add to this file what a new proof teaches.
   answer exists" is proved as "given an answer, succeeds", by induction
   on the answer given; for C3, the given order's first object that any
   list holds is a free head (`good_of`).
+- **A recursive call needing its branch's fact**: where the induction
+  hypothesis holds only in one case of a step's split (`x` not `y`),
+  the step lemma takes it as a function of that case's equation, and
+  the caller passes the recursion as that function (`final_k`).
 - **A lemma wanting a mutually recursive partner** takes the partner's
   induction as a function argument (`sub_weak`'s `tl`), so that the
   recursion stays in one def (`sub_tail`).

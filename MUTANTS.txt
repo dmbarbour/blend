@@ -216,3 +216,33 @@ its own name
   when(U32, U32.is_eq(un.o(ut.un(ut, x)), 0), v => 0, v => (1 + mu.m(ms.mu(s, x)) : U32))
 +++
   when(U32, U32.is_eq(un.o(ut.un(ut, x)), 0), v => 0, v => mu.m(ms.mu(s, x)))
+
+=== copied_kind sharing.final
+a copied unit's disposition of the affine kind, its copies numbered by
+its user's
+--- blend.bend
+      ms.set(s, x, Mu{uses.m(rs, ut, s), 1})
++++
+      ms.set(s, x, Mu{uses.m(rs, ut, s), 2})
+
+=== aff_sets_user sharing.final
+an affine unit's turn setting its user's disposition, after the user's
+turn, where a copied unit may have read it
+--- blend.bend
+          when(Ms, U32.is_gt(mu.m(ms.mu(s, ru.user(rs))), 0), v => ms.set(s, x, Mu{mu.m(ms.mu(s, ru.user(rs))), 2}), v => s)
++++
+          when(Ms, U32.is_gt(mu.m(ms.mu(s, ru.user(rs))), 0), v => ms.set(s, ru.user(rs), Mu{mu.m(ms.mu(s, ru.user(rs))), 2}), v => s)
+
+=== counters_zero sharing.copied
+the writer's counters starting at 0, so that the first numbered call
+names a copy not written
+--- blend.bend
+def ctr.or(m: Maybe<&2, U32>) -> U32:
+  match m:
+    case None{}:
+      1
++++
+def ctr.or(m: Maybe<&2, U32>) -> U32:
+  match m:
+    case None{}:
+      0
