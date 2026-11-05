@@ -87,5 +87,16 @@ fi
 mkdir -p ../results/absolute || exit 1
 "$CAPPED" 500 30 "$BLEND" emit "$PWD/imports.blend" ../results/absolute >/dev/null ||
   { echo "blend: a module named by its absolute path fails"; status=1; }
+# a path holding a newline would break the markers naming it: refused
+nl="imports
+.blend"
+want="blend: a path holding a newline would break the lines naming it: refused"
+if got=$("$CAPPED" 500 30 "$BLEND" emit "$nl" 2>&1); then
+  echo "blend: a path holding a newline passes"
+  status=1
+elif [ "$got" != "$want" ]; then
+  echo "blend: a path holding a newline gives '$got', not '$want'"
+  status=1
+fi
 [ "$status" -eq 0 ] && echo "blend samples: $n valid, $m invalid, $k refused: ok"
 exit "$status"

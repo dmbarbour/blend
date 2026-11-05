@@ -6626,12 +6626,12 @@ def main.emit(+xs: List<&2, String>) -> IO(Unit):
   on.maybe(String, IO(Unit), List.head(&2, String, xs), u => main.out(Out{False{}, usage()}),
     +h => when(IO(Unit), String.eq(h, "--alone"), v => main.emit.k(True{}, List.tail(&2, String, xs)), v => main.emit.k(False{}, xs)))
 
-def main.cmd(+cmd: U32, xs: List<String>) -> IO(Unit):
+def main.cmd(+cmd: U32, +xs: List<&2, String>) -> IO(Unit):
   match cmd:
     case 0:
       main.out(Out{False{}, usage()})
     case 4:
-      main.emit(args.data(xs))
+      main.emit(xs)
     case _:
       match xs:
         case Con{+path, r}:
@@ -6656,12 +6656,25 @@ def cmd.of(+rd: Bool, +ob: Bool, +rs: Bool, +em: Bool) -> U32:
     case False{} False{} False{} False{}:
       0
 
+# whether an argument holds a newline: a path that would break each line
+# naming it, a marker or a file's header (`blend-laws.markers.newlines`)
+def args.nl(xs: List<&2, String>) -> Bool:
+  match xs:
+    case Nil{}:
+      False{}
+    case Con{x, t}:
+      holds(codes(x), [10]) || args.nl(t)
+
+def main.args.k(+flag: String, +xs: List<&2, String>) -> IO(Unit):
+  when(IO(Unit), args.nl(xs), v => main.out(Out{False{}, "blend: a path holding a newline would break the lines naming it: refused"}),
+    v => main.cmd(cmd.of(String.eq(flag, "read"), String.eq(flag, "objects"), String.eq(flag, "resolve"), String.eq(flag, "emit")), xs))
+
 def main.args(xs: List<String>) -> IO(Unit):
   match xs:
     case Con{p, r}:
       match r:
         case Con{+flag, r2}:
-          main.cmd(cmd.of(String.eq(flag, "read"), String.eq(flag, "objects"), String.eq(flag, "resolve"), String.eq(flag, "emit")), r2)
+          main.args.k(flag, args.data(r2))
         case Nil{}:
           main.out(Out{False{}, usage()})
     case Nil{}:

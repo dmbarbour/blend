@@ -59,6 +59,8 @@ its modules, namespaces and emitted names are Bend's.
   Blend's namespaces are Bend's, a file's own names and its imports' by
   local aliases, the same however imports reach them; `extend` stays out
   of the top level.
+- [`blend-paths-no-newline`](decisions/blend-paths-no-newline.md): a path
+  holding a newline is refused, as it would break each line naming it.
 - [`blend-c3`](decisions/blend-c3.md): inheritance is linearized by C3,
   an error where no order keeps every list it merges.
 - [`blend-frozen-host`](decisions/blend-frozen-host.md): `^` sees the host a

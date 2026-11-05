@@ -24,7 +24,9 @@ beside it, each byte, a file stale, missing or no longer emitted an
 error that writes nothing; `--alone` leaves the imports unverified
 (`bend blend.bend -- emit --alone ...` under Bend, which takes a dashed
 argument as its own). DIR takes every file flat, for checking: two
-modules writing one name there are an error. The
+modules writing one name there are an error. A path holding a newline
+is refused, as it would break each line naming it
+(`blend-paths-no-newline`). The
 stages before it print what they find: `read` the structure, `objects`
 each object's linearization and definitions, `resolve` each copy and
 what its names reach. `run.sh` runs the tool built once for each
