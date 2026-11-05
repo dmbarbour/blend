@@ -2099,25 +2099,51 @@ def ht.empty(-A: Data, d: Nat) -> Ht<A>:
 def ht.for(-A: Data, +n: Nat) -> Ht<A>:
   ht.empty(A, ht.depth(32n, U32.from_nat(n)))
 
-# e put first in its leaf, b the hash's next bit
-def ht.put(-A: Data, t: Ht<A>, +b: U32, +h: U32, +e: A) -> Ht<A>:
-  match t b:
-    case HLeaf{es} _:
-      HLeaf{Con{e, es}}
-    case HNode{z, o} 0:
-      HNode{ht.put(A, z, ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32), e), o}
-    case HNode{z, o} _:
-      HNode{z, ht.put(A, o, ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32), e)}
+# a node's child by a bit tested (U32.is_eq(b, 0)), and the node made
+# again around it: a decision a law can follow (LAWS.bend, `emit.unique`)
+# in a def of its own, as Bend matches no local, and calling nothing, as
+# Bend has no mutual recursion
+def ht.pick(-A: Data, c: Bool, z: Ht<A>, o: Ht<A>) -> Ht<A>:
+  match c:
+    case True{}:
+      z
+    case False{}:
+      o
 
-# the leaf of a hash
-def ht.leaf(-A: Data, t: Ht<A>, +b: U32, +h: U32) -> List<&2, A>:
-  match t b:
-    case HLeaf{es} _:
+def ht.join(-A: Data, c: Bool, x: Ht<A>, y: Ht<A>) -> Ht<A>:
+  match c:
+    case True{}:
+      HNode{x, y}
+    case False{}:
+      HNode{y, x}
+
+# e put first in its leaf, b the hash's next bit, the fuel past the
+# trie's depth (at most 32, `ht.for`); a node out of fuel a leaf of e
+def ht.put.go(-A: Data, fuel: Nat, t: Ht<A>, +b: U32, +h: U32, +e: A) -> Ht<A>:
+  match fuel t:
+    case _ HLeaf{es}:
+      HLeaf{Con{e, es}}
+    case 0n HNode{z, o}:
+      HLeaf{Con{e, Nil{}}}
+    case 1n+k HNode{+z, +o}:
+      +c = U32.is_eq(b, 0)
+      ht.join(A, c, ht.put.go(A, k, ht.pick(A, c, z, o), ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32), e), ht.pick(A, c, o, z))
+
+def ht.put(-A: Data, t: Ht<A>, +b: U32, +h: U32, +e: A) -> Ht<A>:
+  ht.put.go(A, 32n, t, b, h, e)
+
+# the leaf of a hash; a node out of fuel none
+def ht.leaf.go(-A: Data, fuel: Nat, t: Ht<A>, +b: U32, +h: U32) -> List<&2, A>:
+  match fuel t:
+    case _ HLeaf{es}:
       es
-    case HNode{z, o} 0:
-      ht.leaf(A, z, ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32))
-    case HNode{z, o} _:
-      ht.leaf(A, o, ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32))
+    case 0n HNode{z, o}:
+      Nil{}
+    case 1n+k HNode{z, o}:
+      ht.leaf.go(A, k, ht.pick(A, U32.is_eq(b, 0), z, o), ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32))
+
+def ht.leaf(-A: Data, t: Ht<A>, +b: U32, +h: U32) -> List<&2, A>:
+  ht.leaf.go(A, 32n, t, b, h)
 
 # a list's entries by position (`blend-scale.positions`): the trie keyed
 # by their indexes, as deep as their count has bits, so that a leaf holds
@@ -5415,6 +5441,16 @@ def nm.find(ns: List<&2, Nm>, +n: List<&2, U32>) -> Maybe<&2, U32>:
       match m:
         case Nm{+name, +u, +no}:
           when(Maybe<&2, U32>, same(name, n), v => Some{no}, v => nm.find(t, n))
+
+# no name twice among ns (LAWS.bend, `emit.unique`)
+def nms.distinct(ns: List<&2, Nm>) -> Bool:
+  match ns:
+    case Nil{}:
+      True{}
+    case Con{m, +t}:
+      match m:
+        case Nm{+name, +u, +no}:
+          Bool.not(Maybe.is_some(&2, U32, nm.find(t, name))) && nms.distinct(t)
 
 # a name two definitions would be emitted by, a prior's or a copy's and a
 # definition's whose name has dots (`tag.Plain` beside `_tag` from Plain)

@@ -133,3 +133,25 @@ a unit not handing its uses on
         pend.uses(rus.or(pw.get(List<&2, Ru>, rt, x)), x, p))
 +++
         p)
+
+=== names_forget emit.unique
+the names check not keeping a name it passes, so that a second is not
+seen
+--- blend.bend
+          on.maybe(U32, List<&2, Er>, nm.seen(seen, name), v => er.names(t, nm.put(seen, m)),
++++
+          on.maybe(U32, List<&2, Er>, nm.seen(seen, name), v => er.names(t, seen),
+
+=== leaf_other emit.unique
+a hash's leaf found down the other child from the one put to
+--- blend.bend
+      ht.leaf.go(A, k, ht.pick(A, U32.is_eq(b, 0), z, o), ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32))
++++
+      ht.leaf.go(A, k, ht.pick(A, U32.is_eq(b, 0), o, z), ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32))
+
+=== seen_shifted emit.unique
+a name looked for at a hash not the one it is put at
+--- blend.bend
+  nm.find(ht.leaf(Nm, t, (h .&. 1 : U32), h), n)
++++
+  nm.find(ht.leaf(Nm, t, (h .&. 1 : U32), (h >> 1n : U32)), n)

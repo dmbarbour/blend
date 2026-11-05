@@ -47,7 +47,15 @@ it alone taught. Add to this file what a new proof teaches.
   (`f.k(+test: Bool, ...)`), the tests computed by its caller, so that a
   lemma about the helper splits the `Bool`s without restating lambdas,
   which Bend does not infer. A `when` with lambdas serves too, at the
-  cost of a helper def in the proof file mirroring them.
+  cost of a helper def in the proof file mirroring them, and of a
+  closure for each arm at run time: in the hash trie's put and lookup,
+  14 to 23% of Blend's instructions (`blend-laws.unique`).
+- **A recursive decision on a test** whose arms recurse: Bend matches
+  no local (`+c = test` then `match c`: "give it its own def"), a helper
+  may not call back (no mutual recursion), and a self-call through a
+  helper's result (`f(pick(c, z, o))`) is no structural descent. Recurse
+  on fuel instead, matched first, and let non-recursive helpers decide
+  on the `Bool` (`ht.pick`, `ht.join`): 3 to 5% in the trie.
 - **A result read twice is a datatype read by projections**, not
   destructured in a lambda (`on.r(r, a => b => ...)`), which sticks a
   proof until the result reduces.
@@ -65,12 +73,15 @@ it alone taught. Add to this file what a new proof teaches.
   the simple form and `b` the complex one, so that a rewrite turns the
   complex form in a goal into the simple; wrap a lemma that runs the
   other way in `Equal.sym` once: `Equal.sym(T, a, b, e)` takes
-  `e : {a == b}` and gives `{b == a}`.
+  `e : {a == b}` and gives `{b == a}`. Every `_` in `P` is rewritten,
+  so that one rewrite turns both sides of a goal.
 - **Mark what a proof reuses**: `+` on a law's `for` binders, a proof's
   parameters and its patterns (`case Con{+h, +t}`, `case 1n+(+k)`).
 - **An absurd case names its type**: `Empty.absurd(T, e)`, `T` written
   out; refute a clash of constructors through a motive sending one to
-  `Unit` and the other to `Empty`.
+  `Unit` and the other to `Empty`. Where a hypothesis says a mirrored
+  step is `Nil` and the step makes a `Con`, rewrite the mirror itself in
+  the motive (`ers_some`), so that the `Con` need not be spelled out.
 - **A big constant is reasoned under a variable** `N` with
   `{N == Nat.pow(2n, 32n)}`, the power met only against a symbolic value
   or where both forms match exactly (glam-in-bend's BendIssues.md, "Big constants in

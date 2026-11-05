@@ -34,6 +34,12 @@
 # - The dispositions (`mults.uses`): a specification sharing `mult.of`,
 #   the uses waiting characterized after the units taken (`pa_at`), the
 #   induction's order the specification's reversal's accumulator.
+# - The names check (`emit.unique`): the hash trie's bit tested and
+#   decided by helpers that call nothing (`ht.pick`, `ht.join`), the
+#   recursion on fuel, so that a step lemma splits the test
+#   (`leaf_put.k`, `mono.k`) and the code pays a little, where a `when`'s
+#   closures cost a fifth; the check's step mirrored (`ers_k`) with its
+#   error's text, a `Con` against `Nil` refuted through the mirror.
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -2814,3 +2820,210 @@ def Laws.mults.walked(roots, rss, ut, obs, us, s):
       B.mults.spec(B.ds.order(_), List.reverse(&2, U32, B.ds.order(_)), rss, ut, obs, us, s) : B.Ms}
   Laws.mults.uses(B.ds.order(B.walk(roots, B.calls(rss), obs, us)), rss, ut, obs, us, s,
     Laws.order.callees_first(roots, B.calls(rss), obs, us), Laws.order.once(roots, B.calls(rss), obs, us))
+
+# Names emitted once
+# ------------------
+#
+# The names check keeps the names seen in a hash trie: a name put is
+# found again at its own hash (`leaf_put`), and a put elsewhere loses no
+# name (`seen_mono`), so that where it reports none, no name follows one
+# the same (`no_repeat`), and the names are distinct (`distinct_of`).
+
+# a hash's next bit and the rest
+def nb(+h: U32) -> U32:
+  ((h >> 1n : U32) .&. 1 : U32)
+
+def nh(+h: U32) -> U32:
+  (h >> 1n : U32)
+
+def leaf_put.k(-A: Data, c: Bool, +k: Nat, +z: B.Ht<A>, +o: B.Ht<A>, +b: U32, +h: U32, +e: A, eq: {c == U32.is_eq(b, 0) : Bool},
+    ih: @s:B.Ht<A> -> {Con{e, B.ht.leaf.go(A, k, s, nb(h), nh(h))} == B.ht.leaf.go(A, k, B.ht.put.go(A, k, s, nb(h), nh(h), e), nb(h), nh(h)) : List<&2, A>}) ->
+    {Con{e, B.ht.leaf.go(A, 1n+k, B.HNode{z, o}, b, h)} ==
+      B.ht.leaf.go(A, 1n+k, B.ht.join(A, c, B.ht.put.go(A, k, B.ht.pick(A, c, z, o), nb(h), nh(h), e), B.ht.pick(A, c, o, z)), b, h) : List<&2, A>}:
+  match c:
+    case True{}:
+      %eq : {Con{e, B.ht.leaf.go(A, k, B.ht.pick(A, _, z, o), nb(h), nh(h))} ==
+        B.ht.leaf.go(A, k, B.ht.pick(A, _, B.ht.put.go(A, k, z, nb(h), nh(h), e), o), nb(h), nh(h)) : List<&2, A>}
+      ih(z)
+    case False{}:
+      %eq : {Con{e, B.ht.leaf.go(A, k, B.ht.pick(A, _, z, o), nb(h), nh(h))} ==
+        B.ht.leaf.go(A, k, B.ht.pick(A, _, z, B.ht.put.go(A, k, o, nb(h), nh(h), e)), nb(h), nh(h)) : List<&2, A>}
+      ih(o)
+
+# an entry put is first in the leaf of its own hash
+def leaf_put(-A: Data, fuel: Nat, t: B.Ht<A>, +b: U32, +h: U32, +e: A) ->
+    {Con{e, B.ht.leaf.go(A, fuel, t, b, h)} == B.ht.leaf.go(A, fuel, B.ht.put.go(A, fuel, t, b, h, e), b, h) : List<&2, A>}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          {==}
+        case B.HNode{z, o}:
+          {==}
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          {==}
+        case B.HNode{+z, +o}:
+          leaf_put.k(A, U32.is_eq(b, 0), k, z, o, b, h, e, {==}, s => leaf_put(A, k, s, nb(h), nh(h), e))
+
+# a name found in a list of names, nm.find's step mirrored
+def has_n(l: List<&2, B.Nm>, +n: List<&2, U32>) -> Bool:
+  Maybe.is_some(&2, U32, B.nm.find(l, n))
+
+def find_k(+sm: Bool, +no: U32, l: List<&2, B.Nm>, +n: List<&2, U32>) -> Maybe<&2, U32>:
+  B.when(Maybe<&2, U32>, sm, v => Some{no}, v => B.nm.find(l, n))
+
+def find_cons.k(sm: Bool, +no: U32, l: List<&2, B.Nm>, +n: List<&2, U32>, hs: {has_n(l, n) == True{} : Bool}) ->
+    {Maybe.is_some(&2, U32, find_k(sm, no, l, n)) == True{} : Bool}:
+  match sm:
+    case True{}:
+      {==}
+    case False{}:
+      hs
+
+# a name found stays found with a name before it
+def find_cons(m: B.Nm, l: List<&2, B.Nm>, +n: List<&2, U32>, hs: {has_n(l, n) == True{} : Bool}) -> {has_n(Con{m, l}, n) == True{} : Bool}:
+  match m:
+    case B.Nm{+name, +u, +no}:
+      find_cons.k(B.same(name, n), no, l, n, hs)
+
+# a name first is found
+def find_self(+name: List<&2, U32>, +u: U32, +no: U32, l: List<&2, B.Nm>) -> {has_n(Con{B.Nm{name, u, no}, l}, name) == True{} : Bool}:
+  %Equal.sym(Bool, B.same(name, name), True{}, Laws.names.same_refl(name)) : {Maybe.is_some(&2, U32, find_k(_, no, l, name)) == True{} : Bool}
+  {==}
+
+def mono.k(c2: Bool, c: Bool, +k: Nat, +z: B.Ht<B.Nm>, +o: B.Ht<B.Nm>, +b: U32, +h: U32, +h2: U32, +m: B.Nm, +n: List<&2, U32>,
+    eq: {c == U32.is_eq(b, 0) : Bool},
+    hs: {has_n(B.ht.leaf.go(B.Nm, k, B.ht.pick(B.Nm, c, z, o), nb(h), nh(h)), n) == True{} : Bool},
+    ih: @s:B.Ht<B.Nm> -> @hs2:{has_n(B.ht.leaf.go(B.Nm, k, s, nb(h), nh(h)), n) == True{} : Bool} ->
+      {has_n(B.ht.leaf.go(B.Nm, k, B.ht.put.go(B.Nm, k, s, nb(h2), nh(h2), m), nb(h), nh(h)), n) == True{} : Bool}) ->
+    {has_n(B.ht.leaf.go(B.Nm, 1n+k, B.ht.join(B.Nm, c2, B.ht.put.go(B.Nm, k, B.ht.pick(B.Nm, c2, z, o), nb(h2), nh(h2), m), B.ht.pick(B.Nm, c2, o, z)), b, h), n) == True{} : Bool}:
+  match c2 c:
+    case True{} True{}:
+      %eq : {has_n(B.ht.leaf.go(B.Nm, k, B.ht.pick(B.Nm, _, B.ht.put.go(B.Nm, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), n) == True{} : Bool}
+      ih(z, hs)
+    case True{} False{}:
+      %eq : {has_n(B.ht.leaf.go(B.Nm, k, B.ht.pick(B.Nm, _, B.ht.put.go(B.Nm, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), n) == True{} : Bool}
+      hs
+    case False{} True{}:
+      %eq : {has_n(B.ht.leaf.go(B.Nm, k, B.ht.pick(B.Nm, _, z, B.ht.put.go(B.Nm, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), n) == True{} : Bool}
+      hs
+    case False{} False{}:
+      %eq : {has_n(B.ht.leaf.go(B.Nm, k, B.ht.pick(B.Nm, _, z, B.ht.put.go(B.Nm, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), n) == True{} : Bool}
+      ih(o, hs)
+
+# a name found in the leaf of its hash stays found, whatever is put
+def seen_mono(fuel: Nat, t: B.Ht<B.Nm>, +b: U32, +h: U32, +b2: U32, +h2: U32, +m: B.Nm, +n: List<&2, U32>,
+    hs: {has_n(B.ht.leaf.go(B.Nm, fuel, t, b, h), n) == True{} : Bool}) ->
+    {has_n(B.ht.leaf.go(B.Nm, fuel, B.ht.put.go(B.Nm, fuel, t, b2, h2, m), b, h), n) == True{} : Bool}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          find_cons(m, es, n, hs)
+        case B.HNode{z, o}:
+          Empty.absurd({has_n(Con{m, Nil{}}, n) == True{} : Bool}, MB.false_ne_true()(hs))
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          find_cons(m, es, n, hs)
+        case B.HNode{+z, +o}:
+          mono.k(U32.is_eq(b2, 0), U32.is_eq(b, 0), k, z, o, b, h, h2, m, n, {==}, hs,
+            s => hs2 => seen_mono(k, s, nb(h), nh(h), nb(h2), nh(h2), m, n, hs2))
+
+# the names check's trie: a name put is seen, and a name seen stays seen
+def seen_put(+t: B.Ht<B.Nm>, +name: List<&2, U32>, +u: U32, +no: U32) ->
+    {Maybe.is_some(&2, U32, B.nm.seen(B.nm.put(t, B.Nm{name, u, no}), name)) == True{} : Bool}:
+  %leaf_put(B.Nm, 32n, t, (B.hash.name(name) .&. 1 : U32), B.hash.name(name), B.Nm{name, u, no}) : {has_n(_, name) == True{} : Bool}
+  find_self(name, u, no, B.ht.leaf.go(B.Nm, 32n, t, (B.hash.name(name) .&. 1 : U32), B.hash.name(name)))
+
+def nm_mono(+t: B.Ht<B.Nm>, m: B.Nm, +n: List<&2, U32>, hs: {Maybe.is_some(&2, U32, B.nm.seen(t, n)) == True{} : Bool}) ->
+    {Maybe.is_some(&2, U32, B.nm.seen(B.nm.put(t, m), n)) == True{} : Bool}:
+  match m:
+    case B.Nm{+name, +u, +no}:
+      seen_mono(32n, t, (B.hash.name(n) .&. 1 : U32), B.hash.name(n), (B.hash.name(name) .&. 1 : U32), B.hash.name(name), B.Nm{name, u, no}, n, hs)
+
+# the names check's step mirrored: a name seen before an error, else the
+# name kept for those after it
+def ers_k(+mb: Maybe<&2, U32>, +name: List<&2, U32>, +u: U32, +no: U32, +t: List<&2, B.Nm>, +seen: B.Ht<B.Nm>) -> List<&2, B.Er>:
+  B.on.maybe(U32, List<&2, B.Er>, mb, v => B.er.names(t, B.nm.put(seen, B.Nm{name, u, no})),
+    +l => Con{B.Er{no, B.text(name) ++ " would name two emitted definitions, those of lines " ++ U32.show(l) ++ " and " ++
+      U32.show(no) ++ ": rename one"}, B.er.names(t, B.nm.put(seen, B.Nm{name, u, no}))})
+
+def nil_disc(-A: Data, xs: List<&2, A>) -> Type:
+  match xs:
+    case Nil{}:
+      Unit
+    case Con{c, cs}:
+      Empty
+
+def ers_some(+l: U32, +name: List<&2, U32>, +u: U32, +no: U32, +t: List<&2, B.Nm>, +seen: B.Ht<B.Nm>,
+    hn: {ers_k(Some{l}, name, u, no, t, seen) == Nil{} : List<&2, B.Er>}) -> Empty:
+  %Equal.sym(List<&2, B.Er>, ers_k(Some{l}, name, u, no, t, seen), Nil{}, hn) : nil_disc(B.Er, _)
+  Unit{}
+
+# where the check reports none, the name was not seen before, and the
+# rest report none with it seen
+def seen_none(mb: Maybe<&2, U32>, +name: List<&2, U32>, +u: U32, +no: U32, +t: List<&2, B.Nm>, +seen: B.Ht<B.Nm>,
+    hn: {ers_k(mb, name, u, no, t, seen) == Nil{} : List<&2, B.Er>}) -> {Maybe.is_some(&2, U32, mb) == False{} : Bool}:
+  match mb:
+    case None{}:
+      {==}
+    case Some{+l}:
+      Empty.absurd({True{} == False{} : Bool}, ers_some(l, name, u, no, t, seen, hn))
+
+def rest_nil(mb: Maybe<&2, U32>, +name: List<&2, U32>, +u: U32, +no: U32, +t: List<&2, B.Nm>, +seen: B.Ht<B.Nm>,
+    hn: {ers_k(mb, name, u, no, t, seen) == Nil{} : List<&2, B.Er>}) -> {B.er.names(t, B.nm.put(seen, B.Nm{name, u, no})) == Nil{} : List<&2, B.Er>}:
+  match mb:
+    case None{}:
+      hn
+    case Some{+l}:
+      Empty.absurd({B.er.names(t, B.nm.put(seen, B.Nm{name, u, no})) == Nil{} : List<&2, B.Er>}, ers_some(l, name, u, no, t, seen, hn))
+
+# a name seen, and one unseen the same as it: none
+def clash(+s: B.Ht<B.Nm>, +name: List<&2, U32>, +n: List<&2, U32>, e: {name == n : List<&2, U32>},
+    h1: {Maybe.is_some(&2, U32, B.nm.seen(s, name)) == False{} : Bool}) -> {False{} == Maybe.is_some(&2, U32, B.nm.seen(s, n)) : Bool}:
+  %e : {False{} == Maybe.is_some(&2, U32, B.nm.seen(s, _)) : Bool}
+  Equal.sym(Bool, Maybe.is_some(&2, U32, B.nm.seen(s, name)), False{}, h1)
+
+def no_repeat.k(sm: Bool, +name: List<&2, U32>, +n: List<&2, U32>, +no: U32, +t: List<&2, B.Nm>, +s: B.Ht<B.Nm>,
+    eq: {sm == B.same(name, n) : Bool},
+    hnone: {Maybe.is_some(&2, U32, B.nm.seen(s, name)) == False{} : Bool},
+    hs: {Maybe.is_some(&2, U32, B.nm.seen(s, n)) == True{} : Bool},
+    ih: {has_n(t, n) == False{} : Bool}) ->
+    {Maybe.is_some(&2, U32, find_k(sm, no, t, n)) == False{} : Bool}:
+  match sm:
+    case True{}:
+      Empty.absurd({True{} == False{} : Bool}, MB.false_ne_true()(Equal.trans(Bool, False{}, Maybe.is_some(&2, U32, B.nm.seen(s, n)), True{},
+        clash(s, name, n, Laws.names.same_eq(name, n, Equal.sym(Bool, True{}, B.same(name, n), eq)), hnone), hs)))
+    case False{}:
+      ih
+
+# where the check reports none, no name it reads was seen before it
+def no_repeat(t: List<&2, B.Nm>, +s: B.Ht<B.Nm>, +n: List<&2, U32>, +hn: {B.er.names(t, s) == Nil{} : List<&2, B.Er>},
+    +hs: {Maybe.is_some(&2, U32, B.nm.seen(s, n)) == True{} : Bool}) -> {has_n(t, n) == False{} : Bool}:
+  match t:
+    case Nil{}:
+      {==}
+    case Con{m, +t2}:
+      match m:
+        case B.Nm{+name, +u, +no}:
+          no_repeat.k(B.same(name, n), name, n, no, t2, s, {==}, seen_none(B.nm.seen(s, name), name, u, no, t2, s, hn), hs,
+            no_repeat(t2, B.nm.put(s, B.Nm{name, u, no}), n, rest_nil(B.nm.seen(s, name), name, u, no, t2, s, hn), nm_mono(s, B.Nm{name, u, no}, n, hs)))
+
+# so where it reports none, the names are distinct
+def distinct_of(ns: List<&2, B.Nm>, +s: B.Ht<B.Nm>, +hn: {B.er.names(ns, s) == Nil{} : List<&2, B.Er>}) -> {B.nms.distinct(ns) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{m, +t}:
+      match m:
+        case B.Nm{+name, +u, +no}:
+          %Equal.sym(Bool, has_n(t, name), False{}, no_repeat(t, B.nm.put(s, B.Nm{name, u, no}), name, rest_nil(B.nm.seen(s, name), name, u, no, t, s, hn), seen_put(s, name, u, no))) :
+            {Bool.and(Bool.not(_), B.nms.distinct(t)) == True{} : Bool}
+          distinct_of(t, B.nm.put(s, B.Nm{name, u, no}), rest_nil(B.nm.seen(s, name), name, u, no, t, s, hn))
+
+def Laws.emit.unique(xs, e, h):
+  %Laws.emit.names(xs, e) : {B.nms.distinct(_) == True{} : Bool}
+  distinct_of(B.names.all(xs, e), B.ht.for(B.Nm, List.length(&2, B.Nm, B.names.all(xs, e))), h)
