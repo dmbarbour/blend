@@ -155,3 +155,40 @@ a name looked for at a hash not the one it is put at
   nm.find(ht.leaf(Nm, t, (h .&. 1 : U32), h), n)
 +++
   nm.find(ht.leaf(Nm, t, (h .&. 1 : U32), (h >> 1n : U32)), n)
+
+=== tail_own c3.sound
+a head checked against its own list's tail only
+--- blend.bend
+              when(Maybe<&2, U32>, in_tails(all, h), u => c3.good(t, all), u => Some{h})
++++
+              when(Maybe<&2, U32>, has(r, h), u => c3.good(t, all), u => Some{h})
+
+=== take_first c3.sound
+an object taken from the first list's head only, so that it may be
+taken again
+--- blend.bend
+          c3.keep(o, c3.head.drop(xs, h), c3.take(t, h))
++++
+          c3.keep(o, c3.head.drop(xs, h), t)
+
+=== good_first c3.complete
+the search for a free head stopping at the first list's
+--- blend.bend
+              when(Maybe<&2, U32>, in_tails(all, h), u => c3.good(t, all), u => Some{h})
++++
+              when(Maybe<&2, U32>, in_tails(all, h), u => None{}, u => Some{h})
+
+=== fuel_lengths c3.complete
+the merge's fuel the lists' lengths, one short when every turn takes
+one object
+--- blend.bend
+      lin.mg(id, c3.merge(1n+sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.take(List.append(&2, Sq, seqs, [Sq{id, ps}]), 4294967295), Nil{}))
++++
+      lin.mg(id, c3.merge(sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.take(List.append(&2, Sq, seqs, [Sq{id, ps}]), 4294967295), Nil{}))
+
+=== object_dropped c3.first
+a linearization merged without its object before it
+--- blend.bend
+      Lz{True{}, Con{id, ord}}
++++
+      Lz{True{}, ord}

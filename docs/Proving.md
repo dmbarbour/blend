@@ -132,6 +132,17 @@ it alone taught. Add to this file what a new proof teaches.
 - **A law's proof may call another law's** (`Laws.x(...)`, typed by its
   law), so that a law for the case the tool meets composes the general
   law with the laws of what feeds it.
+- **Peel an accumulator off by a twin**: where a loop accumulates its
+  result (`c3.merge`'s `out`), prove it equal to its direct recursion
+  after the accumulated prefix (`merge_acc`), and reason about the twin
+  (`mrest`): each turn's result then sits before the rest's.
+- **Completeness by a witness, not a cycle**: "fails only where no
+  answer exists" is proved as "given an answer, succeeds", by induction
+  on the answer given; for C3, the given order's first object that any
+  list holds is a free head (`good_of`).
+- **A lemma wanting a mutually recursive partner** takes the partner's
+  induction as a function argument (`sub_weak`'s `tl`), so that the
+  recursion stays in one def (`sub_tail`).
 - **Induct with the accumulator a definition has**: a list reversed
   onto an accumulator (`List.reverse.go(rest, q)`) steps by computation
   (`reverse.go(Con{x, r}, q)` is `reverse.go(r, Con{x, q})`), where the
