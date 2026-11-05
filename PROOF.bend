@@ -6547,3 +6547,640 @@ def Laws.nodes.objects(trees, als):
 
 def Laws.nodes(trees, als, ls, fs, als2, paths, pss, nxs):
   Laws.nodes.copies(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.trees.defs(trees), Laws.nodes.objects(trees, als))
+
+# The tree (`markers.tree`): a body's lines made the tree's one for one
+# (`ln_bl`), each open object's members numbered so (`frok`), a node added
+# (`into_ok`), an object closed (`close_ok`), each item put (`put_ok`).
+
+def ln_bl(ls: List<&2, B.Ln>, +k: U32) -> {B.bl.from(B.toks.lines(ls), k) == B.ln.from(ls, k) : Bool}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +t}:
+      match l:
+        case B.Ln{+no, +ind, +txt}:
+          %Equal.sym(Bool, B.bl.from(B.toks.lines(t), U32.add(k, 1)), B.ln.from(t, U32.add(k, 1)), ln_bl(t, U32.add(k, 1))) :
+            {Bool.and(U32.is_eq(no, k), _) == Bool.and(U32.is_eq(no, k), B.ln.from(t, U32.add(k, 1))) : Bool}
+          {==}
+
+def frok(st: List<&2, B.Fr>) -> Bool:
+  match st:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      match f:
+        case B.Fr{+top, +ind, +abs, +with, +ext, name, parents, kids, +no}:
+          Bool.and(B.defs.ok(kids), frok(t))
+
+def cons_ok(n: B.Node, +ks: List<&2, B.Node>, +hn: {B.defs.ok(Con{n, Nil{}}) == True{} : Bool}, +hk: {B.defs.ok(ks) == True{} : Bool}) -> {B.defs.ok(Con{n, ks}) == True{} : Bool}:
+  match n:
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      and_intro(B.defs.ok(kids), B.defs.ok(ks), and_l(B.defs.ok(kids), True{}, hn), hk)
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      and_intro(Bool.or(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1))), B.defs.ok(ks),
+        and_l(Bool.or(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1))), True{}, hn), hk)
+    case B.NImport{+txt, +no}:
+      hk
+    case B.NDecl{+names, +no}:
+      hk
+    case B.NBad{+txt, +no}:
+      hk
+    case B.NErr{+msg, +no}:
+      hk
+    case B.NBend{+lines, +no}:
+      hk
+
+def head_ok(n: B.Node, +t: List<&2, B.Node>, +h: {B.defs.ok(Con{n, t}) == True{} : Bool}) -> {B.defs.ok(Con{n, Nil{}}) == True{} : Bool}:
+  match n:
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      and_intro(B.defs.ok(kids), True{}, and_l(B.defs.ok(kids), B.defs.ok(t), h), {==})
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      and_intro(Bool.or(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1))), True{},
+        and_l(Bool.or(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1))), B.defs.ok(t), h), {==})
+    case B.NImport{+txt, +no}:
+      {==}
+    case B.NDecl{+names, +no}:
+      {==}
+    case B.NBad{+txt, +no}:
+      {==}
+    case B.NErr{+msg, +no}:
+      {==}
+    case B.NBend{+lines, +no}:
+      {==}
+
+def tail_ok(n: B.Node, +t: List<&2, B.Node>, +h: {B.defs.ok(Con{n, t}) == True{} : Bool}) -> {B.defs.ok(t) == True{} : Bool}:
+  match n:
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      and_r(B.defs.ok(kids), B.defs.ok(t), h)
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      and_r(Bool.or(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1))), B.defs.ok(t), h)
+    case B.NImport{+txt, +no}:
+      h
+    case B.NDecl{+names, +no}:
+      h
+    case B.NBad{+txt, +no}:
+      h
+    case B.NErr{+msg, +no}:
+      h
+    case B.NBend{+lines, +no}:
+      h
+
+def dok_rev(xs: List<&2, B.Node>, +acc: List<&2, B.Node>, +hx: {B.defs.ok(xs) == True{} : Bool}, +ha: {B.defs.ok(acc) == True{} : Bool}) ->
+    {B.defs.ok(List.reverse.go(&2, B.Node, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+n, +t}:
+      dok_rev(t, Con{n, acc}, tail_ok(n, t, hx), cons_ok(n, acc, head_ok(n, t, hx), ha))
+
+# a node, numbered so, added to the open object
+def into_ok(st: List<&2, B.Fr>, +n: B.Node, +hn: {B.defs.ok(Con{n, Nil{}}) == True{} : Bool}, +hs: {frok(st) == True{} : Bool}) -> {frok(B.close.into(st, n)) == True{} : Bool}:
+  match st:
+    case Nil{}:
+      {==}
+    case Con{f, +rest}:
+      match f:
+        case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+          and_intro(B.defs.ok(Con{n, kids}), frok(rest), cons_ok(n, kids, hn, and_l(B.defs.ok(kids), frok(rest), hs)), and_r(B.defs.ok(kids), frok(rest), hs))
+
+def with_ok(with: Bool, kids: List<&2, B.Node>, +name: List<&2, U32>, +no: U32, +st: List<&2, B.Fr>, +hs: {frok(st) == True{} : Bool}) ->
+    {frok(B.close.with(with, kids, name, no, st)) == True{} : Bool}:
+  match with:
+    case True{}:
+      hs
+    case False{}:
+      match kids:
+        case Nil{}:
+          hs
+        case Con{k, t}:
+          into_ok(st, B.NErr{List.append(&2, U32, B.codes("object "), List.append(&2, U32, name, B.codes(" has members, so its header ends with `with`"))), no}, {==}, hs)
+
+# close.go's decision mirrored
+def cgo(+c: Bool, +k: Nat, +top: Bool, +ind: U32, +abs: Bool, +with: Bool, +ext: Bool, +name: List<&2, U32>, +parents: List<&2, List<&2, U32>>,
+    +kids: List<&2, B.Node>, +no: U32, +rest: List<&2, B.Fr>, +i: U32) -> List<&2, B.Fr>:
+  B.when(List<&2, B.Fr>, c, u => B.close.go(k, B.close.into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no}), i),
+    u => Con{B.Fr{top, ind, abs, with, ext, name, parents, kids, no}, rest})
+
+def cgo_ok(c: Bool, +k: Nat, +top: Bool, +ind: U32, +abs: Bool, +with: Bool, +ext: Bool, +name: List<&2, U32>, +parents: List<&2, List<&2, U32>>,
+    +kids: List<&2, B.Node>, +no: U32, +rest: List<&2, B.Fr>, +i: U32,
+    ih: {frok(B.close.go(k, B.close.into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no}), i)) == True{} : Bool},
+    hs: {frok(Con{B.Fr{top, ind, abs, with, ext, name, parents, kids, no}, rest}) == True{} : Bool}) ->
+    {frok(cgo(c, k, top, ind, abs, with, ext, name, parents, kids, no, rest, i)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih
+    case False{}:
+      hs
+
+# objects closed: each a node, its members numbered so, of the one below
+def close_ok(n: Nat, st: List<&2, B.Fr>, +i: U32, +hs: {frok(st) == True{} : Bool}) -> {frok(B.close.go(n, st, i)) == True{} : Bool}:
+  match n:
+    case 0n:
+      hs
+    case 1n+(+k):
+      match st:
+        case Nil{}:
+          {==}
+        case Con{f, +rest}:
+          match f:
+            case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+              cgo_ok(Bool.and(Bool.not(top), U32.is_ge(ind, i)), k, top, ind, abs, with, ext, name, parents, kids, no, rest, i,
+                close_ok(k, B.close.into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no}), i,
+                  into_ok(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no},
+                    and_intro(B.defs.ok(List.reverse(&2, B.Node, kids)), True{}, dok_rev(kids, Nil{}, and_l(B.defs.ok(kids), frok(rest), hs), {==}), {==}),
+                    with_ok(with, kids, name, no, rest, and_r(B.defs.ok(kids), frok(rest), hs)))),
+                hs)
+
+def close_all(+st: List<&2, B.Fr>, +i: U32, +hs: {frok(st) == True{} : Bool}) -> {frok(B.close(st, i)) == True{} : Bool}:
+  close_ok(List.length(&2, B.Fr, st), st, i, hs)
+
+def ndb_ok(+body: List<&2, B.Ln>, +no: U32, +hi: {B.body.from(body, no) == True{} : Bool}) -> {Bool.or(B.bl.from(B.toks.lines(body), no), B.bl.from(B.toks.lines(body), U32.add(no, 1))) == True{} : Bool}:
+  %Equal.sym(Bool, B.bl.from(B.toks.lines(body), no), B.ln.from(body, no), ln_bl(body, no)) :
+    {Bool.or(_, B.bl.from(B.toks.lines(body), U32.add(no, 1))) == True{} : Bool}
+  %Equal.sym(Bool, B.bl.from(B.toks.lines(body), U32.add(no, 1)), B.ln.from(body, U32.add(no, 1)), ln_bl(body, U32.add(no, 1))) :
+    {Bool.or(B.ln.from(body, no), _) == True{} : Bool}
+  hi
+
+# an item put: its node numbered so
+def put_ok(st: List<&2, B.Fr>, it: B.Item, +hi: {B.item.ok(it) == True{} : Bool}, +hs: {frok(st) == True{} : Bool}) -> {frok(B.tree.put(st, it)) == True{} : Bool}:
+  match it:
+    case B.IObj{+abs, +with, +ext, +name, +parents, +no, +ind}:
+      hs
+    case B.IDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      into_ok(st, B.NDef{share, upd, name, rest, params, B.toks.lines(body), no, ind, what}, and_intro(Bool.or(B.bl.from(B.toks.lines(body), no), B.bl.from(B.toks.lines(body), U32.add(no, 1))), True{}, ndb_ok(body, no, hi), {==}), hs)
+    case B.IImport{+txt, +no, +ind}:
+      into_ok(st, B.NImport{txt, no}, {==}, hs)
+    case B.IDecl{+names, +no, +ind}:
+      into_ok(st, B.NDecl{names, no}, {==}, hs)
+    case B.IBad{+txt, +no, +ind}:
+      into_ok(st, B.NBad{txt, no}, {==}, hs)
+    case B.IBend{+lines, +no, +ind}:
+      into_ok(st, B.NBend{lines, no}, {==}, hs)
+
+# the items put in turn, each after the objects its column closes
+def tree_go_ok(its: List<&2, B.Item>, +st: List<&2, B.Fr>, +hi: {B.items.ok(its) == True{} : Bool}, +hs: {frok(st) == True{} : Bool}) ->
+    {frok(B.tree.go(its, st)) == True{} : Bool}:
+  match its:
+    case Nil{}:
+      close_all(st, 0, hs)
+    case Con{it, +t}:
+      match it:
+        case B.IImport{+txt, +no, +ind}:
+          tree_go_ok(t, B.tree.put(B.close(st, ind), B.IImport{txt, no, ind}), and_r(B.item.ok(B.IImport{txt, no, ind}), B.items.ok(t), hi),
+            put_ok(B.close(st, ind), B.IImport{txt, no, ind}, and_l(B.item.ok(B.IImport{txt, no, ind}), B.items.ok(t), hi), close_all(st, ind, hs)))
+        case B.IObj{+abs, +with, +ext, +name, +parents, +no, +ind}:
+          tree_go_ok(t, B.tree.put(B.close(st, ind), B.IObj{abs, with, ext, name, parents, no, ind}), and_r(B.item.ok(B.IObj{abs, with, ext, name, parents, no, ind}), B.items.ok(t), hi),
+            put_ok(B.close(st, ind), B.IObj{abs, with, ext, name, parents, no, ind}, and_l(B.item.ok(B.IObj{abs, with, ext, name, parents, no, ind}), B.items.ok(t), hi), close_all(st, ind, hs)))
+        case B.IDecl{+names, +no, +ind}:
+          tree_go_ok(t, B.tree.put(B.close(st, ind), B.IDecl{names, no, ind}), and_r(B.item.ok(B.IDecl{names, no, ind}), B.items.ok(t), hi),
+            put_ok(B.close(st, ind), B.IDecl{names, no, ind}, and_l(B.item.ok(B.IDecl{names, no, ind}), B.items.ok(t), hi), close_all(st, ind, hs)))
+        case B.IDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          tree_go_ok(t, B.tree.put(B.close(st, ind), B.IDef{share, upd, name, rest, params, body, no, ind, what}), and_r(B.item.ok(B.IDef{share, upd, name, rest, params, body, no, ind, what}), B.items.ok(t), hi),
+            put_ok(B.close(st, ind), B.IDef{share, upd, name, rest, params, body, no, ind, what}, and_l(B.item.ok(B.IDef{share, upd, name, rest, params, body, no, ind, what}), B.items.ok(t), hi), close_all(st, ind, hs)))
+        case B.IBad{+txt, +no, +ind}:
+          tree_go_ok(t, B.tree.put(B.close(st, ind), B.IBad{txt, no, ind}), and_r(B.item.ok(B.IBad{txt, no, ind}), B.items.ok(t), hi),
+            put_ok(B.close(st, ind), B.IBad{txt, no, ind}, and_l(B.item.ok(B.IBad{txt, no, ind}), B.items.ok(t), hi), close_all(st, ind, hs)))
+        case B.IBend{+lines, +no, +ind}:
+          tree_go_ok(t, B.tree.put(B.close(st, ind), B.IBend{lines, no, ind}), and_r(B.item.ok(B.IBend{lines, no, ind}), B.items.ok(t), hi),
+            put_ok(B.close(st, ind), B.IBend{lines, no, ind}, and_l(B.item.ok(B.IBend{lines, no, ind}), B.items.ok(t), hi), close_all(st, ind, hs)))
+
+def fin_ok(st: List<&2, B.Fr>, +hs: {frok(st) == True{} : Bool}) -> {B.defs.ok(B.tree.fin(st)) == True{} : Bool}:
+  match st:
+    case Nil{}:
+      {==}
+    case Con{f, +rest}:
+      match f:
+        case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+          dok_rev(kids, Nil{}, and_l(B.defs.ok(kids), frok(rest), hs), {==})
+
+def Laws.markers.tree(its, h):
+  fin_ok(B.tree.go(its, [B.Fr{True{}, 0, False{}, True{}, False{}, Nil{}, Nil{}, Nil{}, 0}]), tree_go_ok(its, [B.Fr{True{}, 0, False{}, True{}, False{}, Nil{}, Nil{}, Nil{}, 0}], h, {==}))
+
+def Laws.markers.read(bs, base):
+  Laws.markers.tree(B.flat(B.lines.at(bs, base)), Laws.markers.items(B.lines.at(bs, base), U32.add(base, 1), Laws.markers.lines(bs, base)))
+
+# The units' lines (`markers.units`): a unit's lines its definition's
+# body's, number for number (`nos`), resolution making a line for a line
+# (`rbl_nos`), whatever definition a copy holds; the trees' definitions
+# numbered on from their lines (`dsok`), and a definition the same field
+# by field numbered so too (`in_ok`), so that through `nodes` every
+# unit's lines are.
+
+# lines and a body's lines, number for number
+def rlno(l: B.Rl) -> U32:
+  match l:
+    case B.Rl{+no, +ind, ts}:
+      no
+
+def blno(b: B.Bl) -> U32:
+  match b:
+    case B.Bl{+no, +ind, ts}:
+      no
+
+def nos(ls: List<&2, B.Rl>, bs: List<&2, B.Bl>) -> Bool:
+  match ls bs:
+    case Nil{} Nil{}:
+      True{}
+    case Con{l, lt} Con{b, bt}:
+      Bool.and(U32.is_eq(rlno(l), blno(b)), nos(lt, bt))
+    case _ _:
+      False{}
+
+def rbls(b: B.Rb) -> List<&2, B.Rl>:
+  match b:
+    case B.Rb{ls, es, more}:
+      ls
+
+def rbls_join(a: B.Rb, b: B.Rb) -> {List.append(&2, B.Rl, rbls(a), rbls(b)) == rbls(B.rb.join(a, b)) : List<&2, B.Rl>}:
+  match a b:
+    case B.Rb{l1, e1, i1} B.Rb{l2, e2, i2}:
+      {==}
+
+def rbls_line(+no: U32, +ind: U32, b: B.Rb) -> {[B.Rl{no, ind, B.rl.join(rbls(b))}] == rbls(B.rb.line(no, ind, b)) : List<&2, B.Rl>}:
+  match b:
+    case B.Rb{ls, es, more}:
+      {==}
+
+# a body resolved: a line for each of its lines, the same number
+def rbl_nos(bs: List<&2, B.Bl>, +cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>) -> {nos(rbls(B.rb.lines(bs, cx, o, q, locals)), bs) == True{} : Bool}:
+  match bs:
+    case Nil{}:
+      {==}
+    case Con{b, +t}:
+      match b:
+        case B.Bl{+no, +ind, +ts}:
+          %rbls_join(B.rb.line(no, ind, B.rb.toks(ts, cx, o, q, locals, no)), B.rb.lines(t, cx, o, q, locals)) :
+            {nos(_, Con{B.Bl{no, ind, ts}, t}) == True{} : Bool}
+          %rbls_line(no, ind, B.rb.toks(ts, cx, o, q, locals, no)) :
+            {nos(List.append(&2, B.Rl, _, rbls(B.rb.lines(t, cx, o, q, locals))), Con{B.Bl{no, ind, ts}, t}) == True{} : Bool}
+          and_intro(U32.is_eq(no, no), nos(rbls(B.rb.lines(t, cx, o, q, locals)), t), u32_is_eq_refl(no), rbl_nos(t, cx, o, q, locals))
+
+# a copy's lines its definition's body's, number for number
+def rdm(r: B.Rd) -> Bool:
+  match r:
+    case B.Rd{i, nd, hd, ls}:
+      match nd:
+        case B.NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          nos(ls, body)
+        case _:
+          True{}
+
+def ck_m(i: B.In, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: U32, +ind: U32, +what: U32,
+    h: B.Rb, b: B.Rb, sh: List<&2, B.Er>, hb: {nos(rbls(b), body) == True{} : Bool}) ->
+    {rdm(Pair.fst(B.Rd, B.Rb, B.copy.k(i, B.NDef{share, upd, name, rest, params, body, no, ind, what}, h, b, sh))) == True{} : Bool}:
+  match h b:
+    case B.Rb{hl, he, hi} B.Rb{ls, es, more}:
+      hb
+
+def cn_m(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node) -> {rdm(Pair.fst(B.Rd, B.Rb, B.copy.node(cx, o, i, nd))) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          ck_m(B.In{n, q, prior}, share, upd, name, rest, params, body, no, ind, what,
+            B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
+            B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+            B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
+              u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
+                B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
+            rbl_nos(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))))
+        case B.NImport{+txt, +no}:
+          {==}
+        case B.NDecl{+names, +no}:
+          {==}
+        case B.NBad{+txt, +no}:
+          {==}
+        case B.NErr{+msg, +no}:
+          {==}
+        case B.NBend{+lines, +no}:
+          {==}
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          {==}
+
+def oc_m(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool) -> {rdm(Pair.fst(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior))) == True{} : Bool}:
+  match mb:
+    case None{}:
+      {==}
+    case Some{nd}:
+      cn_m(cx, o, B.In{n, q, prior}, nd)
+
+def rd_m(+cx: B.Cx, +o: U32, i: B.In) -> {rdm(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i))) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      oc_m(B.cx.mem(cx, q, n), cx, o, n, q, prior)
+
+def rdsm(rs: List<&2, B.Rd>) -> Bool:
+  match rs:
+    case Nil{}:
+      True{}
+    case Con{+r, t}:
+      Bool.and(rdm(r), rdsm(t))
+
+def cpm(c: B.Cp) -> Bool:
+  match c:
+    case B.Cp{rds, ers, done}:
+      rdsm(rds)
+
+def cpadd_m(+rd: B.Rd, b: B.Rb, c: B.Cp, +hr: {rdm(rd) == True{} : Bool}, +hc: {cpm(c) == True{} : Bool}) -> {cpm(B.cp.add(rd, b, c)) == True{} : Bool}:
+  match b:
+    case B.Rb{ls, es, more}:
+      match c:
+        case B.Cp{+rds, ers, done}:
+          and_intro(rdm(rd), rdsm(rds), hr, hc)
+
+def cg_m(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    ht: {cpm(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == True{} : Bool}, hf: {cpm(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == True{} : Bool}) ->
+    {cpm(cgk(c, k, cx, o, i, t, rds, ers, done)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ht
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cpm(_) == True{} : Bool}
+      hf
+
+def copies_m(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +hc: {cpm(c) == True{} : Bool}) -> {cpm(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
+  match n:
+    case 0n:
+      hc
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          hc
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              cg_m(B.done.has(done, i), k, cx, o, i, t, rds, ers, done,
+                copies_m(k, cx, o, t, B.Cp{rds, ers, done}, hc),
+                copies_m(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}),
+                  cpadd_m(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}, rd_m(cx, o, i), hc)))
+
+def ocsm(os: List<&2, B.Oc>) -> Bool:
+  match os:
+    case Nil{}:
+      True{}
+    case Con{oc, t}:
+      match oc:
+        case B.Oc{+id, c}:
+          Bool.and(cpm(c), ocsm(t))
+
+def mc_m(c1: Bool, abs: Bool, +id: U32, +t: List<&2, B.Ob>, +cx: B.Cx, +ih: {ocsm(B.module.copies(t, cx)) == True{} : Bool}) -> {ocsm(mck(c1, abs, id, t, cx)) == True{} : Bool}:
+  match c1 abs:
+    case True{} _:
+      ih
+    case False{} True{}:
+      ih
+    case False{} False{}:
+      and_intro(cpm(B.copies(cx, id)), ocsm(B.module.copies(t, cx)),
+        copies_m(1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))), cx, id, B.ins.finals(B.cx.map(cx, id)),
+          B.Cp{Nil{}, Nil{}, B.ht.for(B.In, 1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))))}, {==}), ih)
+
+def mcopies_m(os: List<&2, B.Ob>, +cx: B.Cx) -> {ocsm(B.module.copies(os, cx)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+          mc_m(Bool.or(Bool.not(U32.is_eq(B.loc.mod(no), 0)), Bool.not(B.is.object(kind))), abs, id, t, cx, mcopies_m(t, cx))
+
+def nbok(nd: B.Node) -> Bool:
+  match nd:
+    case B.NDef{+share, +upd, name, rest, params, +body, +no, +ind, +what}:
+      Bool.or(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1)))
+    case _:
+      True{}
+
+def dsok(ds: List<&2, B.Node>) -> Bool:
+  match ds:
+    case Nil{}:
+      True{}
+    case Con{+d, t}:
+      Bool.and(nbok(d), dsok(t))
+
+def dsok_app(a: List<&2, B.Node>, +b: List<&2, B.Node>, +ha: {dsok(a) == True{} : Bool}, +hb: {dsok(b) == True{} : Bool}) -> {dsok(List.append(&2, B.Node, a, b)) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{+d, +t}:
+      and_intro(nbok(d), dsok(List.append(&2, B.Node, t, b)), and_l(nbok(d), dsok(t), ha), dsok_app(t, b, and_r(nbok(d), dsok(t), ha), hb))
+
+# a tree whose definitions are numbered so: its definitions' list
+def dsok_tree(ns: List<&2, B.Node>, +h: {B.defs.ok(ns) == True{} : Bool}) -> {dsok(B.tree.defs(ns)) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          dsok_app(B.tree.defs(kids), B.tree.defs(t), dsok_tree(kids, and_l(B.defs.ok(kids), B.defs.ok(t), h)), dsok_tree(t, and_r(B.defs.ok(kids), B.defs.ok(t), h)))
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          and_intro(Bool.or(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1))), dsok(B.tree.defs(t)),
+            and_l(Bool.or(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1))), B.defs.ok(t), h),
+            dsok_tree(t, and_r(Bool.or(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1))), B.defs.ok(t), h)))
+        case B.NImport{+txt, +no}:
+          dsok_tree(t, h)
+        case B.NDecl{+names, +no}:
+          dsok_tree(t, h)
+        case B.NBad{+txt, +no}:
+          dsok_tree(t, h)
+        case B.NErr{+msg, +no}:
+          dsok_tree(t, h)
+        case B.NBend{+lines, +no}:
+          dsok_tree(t, h)
+
+def dsok_trees(ts: List<&2, List<&2, B.Node>>, +h: {B.trees.ok(ts) == True{} : Bool}) -> {dsok(B.trees.defs(ts)) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      {==}
+    case Con{+tr, +t}:
+      dsok_app(B.tree.defs(tr), B.trees.defs(t), dsok_tree(tr, and_l(B.defs.ok(tr), B.trees.ok(t), h)), dsok_trees(t, and_r(B.defs.ok(tr), B.trees.ok(t), h)))
+
+# bodies the same line for line: numbered alike
+def bls_from_eq(b1: List<&2, B.Bl>, b2: List<&2, B.Bl>, +k: U32, +h: {B.bls.same(b1, b2) == True{} : Bool}) -> {B.bl.from(b1, k) == B.bl.from(b2, k) : Bool}:
+  match b1:
+    case Nil{}:
+      match b2:
+        case Nil{}:
+          {==}
+        case Con{y, yt}:
+          Empty.absurd({B.bl.from(Nil{}, k) == B.bl.from(Con{y, yt}, k) : Bool}, MB.false_ne_true()(h))
+    case Con{x, +xt}:
+      match x:
+        case B.Bl{+n1, +i1, +t1}:
+          match b2:
+            case Nil{}:
+              Empty.absurd({B.bl.from(Con{B.Bl{n1, i1, t1}, xt}, k) == B.bl.from(Nil{}, k) : Bool}, MB.false_ne_true()(h))
+            case Con{y, +yt}:
+              match y:
+                case B.Bl{+n2, +i2, +t2}:
+                  %u32_eq_of_is_eq(n1, n2, and_l(U32.is_eq(n1, n2), U32.is_eq(i1, i2), and_l(Bool.and(U32.is_eq(n1, n2), U32.is_eq(i1, i2)), B.toks.same(t1, t2),
+                      and_l(B.bl.same(B.Bl{n1, i1, t1}, B.Bl{n2, i2, t2}), B.bls.same(xt, yt), h)))) :
+                    {Bool.and(U32.is_eq(n1, k), B.bl.from(xt, U32.add(k, 1))) == Bool.and(U32.is_eq(_, k), B.bl.from(yt, U32.add(k, 1))) : Bool}
+                  %bls_from_eq(xt, yt, U32.add(k, 1), and_r(B.bl.same(B.Bl{n1, i1, t1}, B.Bl{n2, i2, t2}), B.bls.same(xt, yt), h)) :
+                    {Bool.and(U32.is_eq(n1, k), B.bl.from(xt, U32.add(k, 1))) == Bool.and(U32.is_eq(n1, k), _) : Bool}
+                  {==}
+
+# a definition the same as one numbered so: numbered so
+def same_ok(d: B.Node, nd: B.Node, +hs: {B.ndef.same(d, nd) == True{} : Bool}, +hd: {nbok(d) == True{} : Bool}) -> {nbok(nd) == True{} : Bool}:
+  match d:
+    case B.NDef{+s1, +u1, +n1, +r1, +p1, +b1, +o1, +i1, +w1}:
+      match nd:
+        case B.NDef{+s2, +u2, +n2, +r2, +p2, +b2, +o2, +i2, +w2}:
+          %u32_eq_of_is_eq(o1, o2, and_r(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2)), U32.is_eq(w1, w2), hs)))) : {Bool.or(B.bl.from(b2, _), B.bl.from(b2, U32.add(_, 1))) == True{} : Bool}
+          %bls_from_eq(b1, b2, o1, and_r(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2)), U32.is_eq(w1, w2), hs))))) : {Bool.or(_, B.bl.from(b2, U32.add(o1, 1))) == True{} : Bool}
+          %bls_from_eq(b1, b2, U32.add(o1, 1), and_r(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2)), U32.is_eq(w1, w2), hs))))) : {Bool.or(B.bl.from(b1, o1), _) == True{} : Bool}
+          hd
+        case B.NImport{+txt, +no}:
+          {==}
+        case B.NDecl{+names, +no}:
+          {==}
+        case B.NBad{+txt, +no}:
+          {==}
+        case B.NErr{+msg, +no}:
+          {==}
+        case B.NBend{+lines, +no}:
+          {==}
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          {==}
+    case B.NImport{+txt, +no}:
+      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
+    case B.NDecl{+names, +no}:
+      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
+    case B.NBad{+txt, +no}:
+      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
+    case B.NErr{+msg, +no}:
+      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
+    case B.NBend{+lines, +no}:
+      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
+
+# a definition held by definitions numbered so: numbered so
+def in_ok(ds: List<&2, B.Node>, +nd: B.Node, +hin: {B.def.in(ds, nd) == True{} : Bool}, +hd: {dsok(ds) == True{} : Bool}) -> {nbok(nd) == True{} : Bool}:
+  match ds:
+    case Nil{}:
+      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hin))
+    case Con{+d, +t}:
+      or_cases(B.ndef.same(d, nd), B.def.in(t, nd), nbok(nd), hin, p => same_ok(d, nd, p, and_l(nbok(d), dsok(t), hd)), q => in_ok(t, nd, q, and_r(nbok(d), dsok(t), hd)))
+
+# a unit's lines its definition's body's, number for number
+def um1(u: B.Un) -> Bool:
+  match u:
+    case B.Un{+o, i, nd, hd, ls}:
+      match nd:
+        case B.NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          nos(ls, body)
+        case _:
+          True{}
+
+def um(us: List<&2, B.Un>) -> Bool:
+  match us:
+    case Nil{}:
+      True{}
+    case Con{+u, t}:
+      Bool.and(um1(u), um(t))
+
+def rdsm_rev(xs: List<&2, B.Rd>, +acc: List<&2, B.Rd>, +hx: {rdsm(xs) == True{} : Bool}, +ha: {rdsm(acc) == True{} : Bool}) -> {rdsm(List.reverse.go(&2, B.Rd, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+r, +t}:
+      rdsm_rev(t, Con{r, acc}, and_r(rdm(r), rdsm(t), hx), and_intro(rdm(r), rdsm(acc), and_l(rdm(r), rdsm(t), hx), ha))
+
+def urds_m(+o: U32, rs: List<&2, B.Rd>, +h: {rdsm(rs) == True{} : Bool}) -> {um(B.un.rds(o, rs)) == True{} : Bool}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{r, +t}:
+      match r:
+        case B.Rd{+i, nd, +hd, +ls}:
+          match nd:
+            case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+              and_intro(nos(ls, body), um(B.un.rds(o, t)), and_l(nos(ls, body), rdsm(t), h), urds_m(o, t, and_r(nos(ls, body), rdsm(t), h)))
+            case B.NImport{+txt, +no}:
+              urds_m(o, t, h)
+            case B.NDecl{+names, +no}:
+              urds_m(o, t, h)
+            case B.NBad{+txt, +no}:
+              urds_m(o, t, h)
+            case B.NErr{+msg, +no}:
+              urds_m(o, t, h)
+            case B.NBend{+lines, +no}:
+              urds_m(o, t, h)
+            case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+              urds_m(o, t, h)
+
+def um_app(a: List<&2, B.Un>, +b: List<&2, B.Un>, +ha: {um(a) == True{} : Bool}, +hb: {um(b) == True{} : Bool}) -> {um(List.append(&2, B.Un, a, b)) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{+u, +t}:
+      and_intro(um1(u), um(List.append(&2, B.Un, t, b)), and_l(um1(u), um(t), ha), um_app(t, b, and_r(um1(u), um(t), ha), hb))
+
+def units_m(os: List<&2, B.Oc>, +h: {ocsm(os) == True{} : Bool}) -> {um(B.units(os)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{oc, +t}:
+      match oc:
+        case B.Oc{+id, c}:
+          match c:
+            case B.Cp{+rds, ers, done}:
+              um_app(B.un.rds(id, List.reverse(&2, B.Rd, rds)), B.units(t),
+                urds_m(id, List.reverse(&2, B.Rd, rds), rdsm_rev(rds, Nil{}, and_l(rdsm(rds), ocsm(t), h), {==})), units_m(t, and_r(rdsm(rds), ocsm(t), h)))
+
+# lines number for number with a body numbered from k: numbered from k
+def nos_from(ls: List<&2, B.Rl>, bs: List<&2, B.Bl>, +k: U32, +hn: {nos(ls, bs) == True{} : Bool}, +hb: {B.bl.from(bs, k) == True{} : Bool}) -> {B.rl.from(ls, k) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +lt}:
+      match l:
+        case B.Rl{+n1, +i1, +t1}:
+          match bs:
+            case Nil{}:
+              Empty.absurd({B.rl.from(Con{B.Rl{n1, i1, t1}, lt}, k) == True{} : Bool}, MB.false_ne_true()(hn))
+            case Con{b, +bt}:
+              match b:
+                case B.Bl{+n2, +i2, +t2}:
+                  %Equal.sym(U32, n1, n2, u32_eq_of_is_eq(n1, n2, and_l(U32.is_eq(n1, n2), nos(lt, bt), hn))) :
+                    {Bool.and(U32.is_eq(_, k), B.rl.from(lt, U32.add(k, 1))) == True{} : Bool}
+                  and_intro(U32.is_eq(n2, k), B.rl.from(lt, U32.add(k, 1)), and_l(U32.is_eq(n2, k), B.bl.from(bt, U32.add(k, 1)), hb),
+                    nos_from(lt, bt, U32.add(k, 1), and_r(U32.is_eq(n1, n2), nos(lt, bt), hn), and_r(U32.is_eq(n2, k), B.bl.from(bt, U32.add(k, 1)), hb)))
+
+# a unit whose definition is held by definitions numbered so, its lines
+# its definition's body's: numbered so
+def unit_ok(u: B.Un, +ds: List<&2, B.Node>, +hh: {B.node.held(B.un.node(u), ds) == True{} : Bool}, +hd: {dsok(ds) == True{} : Bool}, +hm: {um1(u) == True{} : Bool}) ->
+    {B.un.ok(u) == True{} : Bool}:
+  match u:
+    case B.Un{+o, +i, nd, +hd2, +ls}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          or_map(B.bl.from(body, no), B.bl.from(body, U32.add(no, 1)), B.rl.from(ls, no), B.rl.from(ls, U32.add(no, 1)), in_ok(ds, B.NDef{share, upd, name, rest, params, body, no, ind, what}, hh, hd),
+            p => nos_from(ls, body, no, hm, p), q => nos_from(ls, body, U32.add(no, 1), hm, q))
+        case B.NImport{+txt, +no}:
+          {==}
+        case B.NDecl{+names, +no}:
+          {==}
+        case B.NBad{+txt, +no}:
+          {==}
+        case B.NErr{+msg, +no}:
+          {==}
+        case B.NBend{+lines, +no}:
+          {==}
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          {==}
+
+def units_ok(us: List<&2, B.Un>, +ds: List<&2, B.Node>, +hh: {B.units.held(us, ds) == True{} : Bool}, +hd: {dsok(ds) == True{} : Bool}, +hm: {um(us) == True{} : Bool}) ->
+    {B.units.ok(us) == True{} : Bool}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      and_intro(B.un.ok(u), B.units.ok(t),
+        unit_ok(u, ds, and_l(B.node.held(B.un.node(u), ds), B.units.held(t, ds), hh), hd, and_l(um1(u), um(t), hm)),
+        units_ok(t, ds, and_r(B.node.held(B.un.node(u), ds), B.units.held(t, ds), hh), hd, and_r(um1(u), um(t), hm)))
+
+def Laws.markers.units(trees, als, ls, fs, als2, paths, pss, nxs, h):
+  units_ok(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), B.trees.defs(trees), Laws.nodes(trees, als, ls, fs, als2, paths, pss, nxs), dsok_trees(trees, h),
+    units_m(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), mcopies_m(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})))

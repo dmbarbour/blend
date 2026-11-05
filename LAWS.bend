@@ -419,3 +419,38 @@ law nodes:
   {B.units.held(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
     B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})),
     B.trees.defs(trees)) == True{} : Bool}
+
+# LAW: items whose bodies are numbered on from their headers make a tree
+# whose definitions keep them so, each a node of the object it is read
+# in.
+# Record: blend-adds-no-bend-logic
+law markers.tree:
+  for +its: List<&2, B.Item>
+  for +h: {B.items.ok(its) == True{} : Bool}
+  {B.defs.ok(B.tree(its)) == True{} : Bool}
+
+# LAW: so a file read: every definition's body numbered on from its
+# header's line, as a marker counts on.
+# Record: blend-adds-no-bend-logic
+law markers.read:
+  for +bs: List<&2, U32>
+  for +base: U32
+  {B.defs.ok(B.read.at(bs, base)) == True{} : Bool}
+
+# LAW: and the units copied from trees so numbered, each where its
+# definition is found, have their lines numbered on from their
+# definition's line (or the line after): its body's, line for line,
+# whatever object holds it.
+# Record: blend-adds-no-bend-logic
+law markers.units:
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +fs: List<&2, Maybe<&2, B.Fd>>
+  for +als2: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +pss: List<&2, List<&2, U32>>
+  for +nxs: List<&2, B.Ht<B.En>>
+  for +h: {B.trees.ok(trees) == True{} : Bool}
+  {B.units.ok(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
+    B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))) == True{} : Bool}
