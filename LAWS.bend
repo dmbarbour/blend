@@ -357,3 +357,22 @@ law sharing.affine:
   {B.ms.mu(B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s), y) ==
     B.mu.after(B.mu.m(B.ms.mu(B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s), B.ru.user(B.uses.of(List.reverse(&2, U32, xs), rss, y)))),
       B.ms.mu(s, y)) : B.Mu}
+
+# LAW: a file's lines are numbered from its base, one more each, none
+# skipped: the line a marker names and those after it are the file's.
+# Record: blend-adds-no-bend-logic
+law markers.lines:
+  for +bs: List<&2, U32>
+  for +base: U32
+  {B.ln.from(B.lines.at(bs, base), (base + 1 : U32)) == True{} : Bool}
+
+# LAW: lines numbered one more each read as items, each definition's body
+# is the lines after its header's, none dropped nor merged, numbered on
+# from its header's line (a type member's from that line itself), and a
+# datatype's lines from its own: what a marker counts on.
+# Record: blend-adds-no-bend-logic
+law markers.items:
+  for +ls: List<&2, B.Ln>
+  for +k: U32
+  for +h: {B.ln.from(ls, k) == True{} : Bool}
+  {B.items.ok(B.flat(ls)) == True{} : Bool}

@@ -239,6 +239,16 @@ def lines.at(bs: List<&2, U32>, +base: U32) -> List<&2, Ln>:
 def lines(bs: List<&2, U32>) -> List<&2, Ln>:
   lines.at(bs, 0)
 
+# lines numbered from k, one more each (LAWS.bend, `markers.lines`)
+def ln.from(ls: List<&2, Ln>, +k: U32) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{l, +t}:
+      match l:
+        case Ln{+no, +ind, txt}:
+          U32.is_eq(no, k) && ln.from(t, (k + 1 : U32))
+
 # a line as written: its indentation's spaces, then its text
 # (LAWS.bend, `lines.join`)
 def ln.text(l: Ln) -> List<&2, U32>:
@@ -984,6 +994,27 @@ def flat.go(n: Nat, ls: List<&2, Ln>, +out: List<&2, Item>) -> List<&2, Item>:
 
 def flat(+ls: List<&2, Ln>) -> List<&2, Item>:
   flat.go(List.length(&2, Ln, ls), ls, Nil{})
+
+# a body's lines numbered from its header's line on, as a type member's
+# is, or from the line after (LAWS.bend, `markers.items`)
+def body.from(+body: List<&2, Ln>, +no: U32) -> Bool:
+  ln.from(body, no) || ln.from(body, (no + 1 : U32))
+
+def item.ok(it: Item) -> Bool:
+  match it:
+    case IDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+      body.from(body, no)
+    case IBend{lines, +no, +ind}:
+      ln.from(lines, no)
+    case _:
+      True{}
+
+def items.ok(its: List<&2, Item>) -> Bool:
+  match its:
+    case Nil{}:
+      True{}
+    case Con{it, t}:
+      item.ok(it) && items.ok(t)
 
 # The tree
 # --------
