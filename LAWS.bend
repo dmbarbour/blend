@@ -272,3 +272,49 @@ law sharing.counts:
   for +hm: {B.ec.mode(e) == 0 : U32}
   for +hk: {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}
   {B.ctr.at(B.tb.ctrs(B.order.put(xs, e, b)), y) == U32.add(B.ctr.at(B.tb.ctrs(b), y), B.uses.m(B.uses.of.e(xs, e, y), B.ec.ut(e), B.ec.ms(e))) : U32}
+
+# LAW: in an order callee-first and holding each unit once, as the walk's
+# is, a copied unit's disposition at the end weighs its uses against the
+# dispositions at the end: its users' are final at its turn.
+# Record: blend-copies-keep-their-name
+law sharing.final:
+  for +xs: List<&2, U32>
+  for +rss: List<&2, List<&2, B.Ru>>
+  for +ut: B.Ht<B.Un>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +s: B.Ms
+  for +y: U32
+  for +h1: {B.ordered(xs, B.calls(rss)) == True{} : Bool}
+  for +h2: {B.distinct(xs) == True{} : Bool}
+  for +hy: {B.has(xs, y) == True{} : Bool}
+  for +hc: {B.mult.share(y, ut) == 2 : U32}
+  {B.ms.mu(B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s), y) ==
+    B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}
+
+# LAW: so, writing the walk's order into the code's file with the
+# dispositions mults makes, each copied unit's counter ends at one more
+# than its numbered copies: the writer numbers calls from 1 up, one at a
+# time, so that each numbered copy has one caller, its number its own.
+# Given that the writer reads the uses mults reads (both from the units'
+# list: emission's table holds it, unproved).
+# Record: blend-copies-keep-their-name
+law sharing.copied:
+  for +xs: List<&2, U32>
+  for +rss: List<&2, List<&2, B.Ru>>
+  for +ut: B.Ht<B.Un>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +s: B.Ms
+  for +e: B.Ec
+  for +acc: List<&2, U32>
+  for +y: U32
+  for +h1: {B.ordered(xs, B.calls(rss)) == True{} : Bool}
+  for +h2: {B.distinct(xs) == True{} : Bool}
+  for +hy: {B.has(xs, y) == True{} : Bool}
+  for +hc: {B.mult.share(y, ut) == 2 : U32}
+  for +hm: {B.ec.mode(e) == 0 : U32}
+  for +hut: {B.ec.ut(e) == ut : B.Ht<B.Un>}
+  for +hms: {B.ec.ms(e) == B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>})), Nil{}} : B.Ms}
+  for +hu: {B.uses.of.e(List.reverse(&2, U32, xs), e, y) == B.uses.of(List.reverse(&2, U32, xs), rss, y) : List<&2, B.Ru>}
+  {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, B.mu.m(B.ec.mu(e, y))) : U32}

@@ -4774,14 +4774,19 @@ def mult.aff(n: Nat, +x: U32, +rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&
 
 # x's copies, its users' known: a copied unit's uses, an affine unit's one
 # user's copies, an affine unit used twice an error
-def mult.of(+x: U32, +share: U32, +rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&2, Un>, +ut: Ht<Un>, +s: Ms) -> Ms:
-  match share:
-    case 1:
+def mult.of.k(+shared: Bool, +copied: Bool, +x: U32, +rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&2, Un>, +ut: Ht<Un>, +s: Ms) -> Ms:
+  match shared copied:
+    case True{} _:
       s
-    case 2:
+    case False{} True{}:
       ms.set(s, x, Mu{uses.m(rs, ut, s), 1})
-    case _:
+    case False{} False{}:
       mult.aff(List.length(&2, Ru, rs), x, rs, obs, us, s)
+
+# the sharing tested, not matched, so that a law can follow it (LAWS.bend,
+# `sharing.final`)
+def mult.of(+x: U32, +share: U32, +rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&2, Un>, +ut: Ht<Un>, +s: Ms) -> Ms:
+  mult.of.k(U32.is_eq(share, 1), U32.is_eq(share, 2), x, rs, obs, us, ut, s)
 
 # how x is shared: a definition of the module's as Bend's (1), else as
 # it is marked
