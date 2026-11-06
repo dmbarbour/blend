@@ -16,7 +16,9 @@ proof may sit apart, in an abstract root family and a child, across
 modules; then that the laws and the proofs be files of their own, as
 Bend's `LAWS.bend` and `PROOF.bend` are.
 
-**Decision.**
+**Decision.** Superseded (the maintainer, 2026-11-06) by
+`blend-laws-in-module`: this record describes the code until that is
+built, then goes.
 1. Three files, as Bend's convention keeps laws and proofs apart from
    the code and from each other (the maintainer, 2026-11-04), written
    by one emission, never one without the others (the maintainer,
