@@ -365,3 +365,38 @@ a unit's body written after the text before it, its head left out
   rls.put(un.lines(ec.un(e, s)), e, s, j, node.ind(un.node(ec.un(e, s))), True{}, unit.head(e, s, x, j, b))
 +++
   rls.put(un.lines(ec.un(e, s)), e, s, j, node.ind(un.node(ec.un(e, s))), True{}, b)
+
+=== lines_unsplit inline.lines
+a newline kept within a line, the line split at a tab instead
+--- blend.bend
+      when(List<&2, Ln>, U32.is_eq(b, 10), u => lines.go(t, Nil{}, (no + 1 : U32), Con{lines.line(cur, no), out}),
++++
+      when(List<&2, Ln>, U32.is_eq(b, 9), u => lines.go(t, Nil{}, (no + 1 : U32), Con{lines.line(cur, no), out}),
+
+=== law_colon_nl inline.items
+a law's header written with a newline after its colon
+--- blend.bend
+  when(Item, name.ok(name) && blank(trim(rest)), u => IDef{0, False{}, name, codes(":"), Nil{}, body, no, ind, 1}, u => IBad{txt, no, ind})
++++
+  when(Item, name.ok(name) && blank(trim(rest)), u => IDef{0, False{}, name, codes(":\n"), Nil{}, body, no, ind, 1}, u => IBad{txt, no, ind})
+
+=== witness_arrow_nl inline.items
+a witness's header broken before its arrow
+--- blend.bend
+    u => Con{IDef{0, False{}, List.append(&2, U32, name, [33]), List.append(&2, U32, Con{40, ps}, List.append(&2, U32, codes(") -> "), List.append(&2, U32, ret, codes(":")))),
++++
+    u => Con{IDef{0, False{}, List.append(&2, U32, name, [33]), List.append(&2, U32, Con{40, ps}, List.append(&2, U32, codes(")\n-> "), List.append(&2, U32, ret, codes(":")))),
+
+=== trim_newline inline.items
+a text trimmed with its first byte made a newline
+--- blend.bend
+      when(List<&2, U32>, U32.is_eq(h, 32), u => ltrim(t), u => Con{h, t})
++++
+      when(List<&2, U32>, U32.is_eq(h, 32), u => ltrim(t), u => Con{10, t})
+
+=== import_nl inline.tree
+an import's node made with a newline before its text
+--- blend.bend
+      close.into(st, NImport{txt, no})
++++
+      close.into(st, NImport{Con{10, txt}, no})

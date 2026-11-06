@@ -473,3 +473,36 @@ law markers.writer:
   for +hf: {B.ec.inline(e) == True{} : Bool}
   for +hl: {B.rls.from(B.un.lines(B.ec.un(e, s)), B.node.no(B.un.node(B.ec.un(e, s)))) == True{} : Bool}
   {B.wr.unit(e, s, x, j, b) == True{} : Bool}
+
+# LAW: a file's lines hold no newline: it splits them there.
+# Record: blend-adds-no-bend-logic
+law inline.lines:
+  for +bs: List<&2, U32>
+  for +base: U32
+  {B.lns.inline(B.lines.at(bs, base)) == True{} : Bool}
+
+# LAW: lines holding no newline read as items whose texts hold none: a
+# definition's name, the rest of its header and its body's lines, an
+# object's name, an import's text, each part of a line or a literal.
+# Record: blend-adds-no-bend-logic
+law inline.items:
+  for +ls: List<&2, B.Ln>
+  for +h: {B.lns.inline(ls) == True{} : Bool}
+  {B.items.inline(B.flat(ls)) == True{} : Bool}
+
+# LAW: and such items make a tree whose texts hold none, a body's tokens
+# spelling its lines (`tokens.spell`).
+# Record: blend-adds-no-bend-logic
+law inline.tree:
+  for +its: List<&2, B.Item>
+  for +h: {B.items.inline(its) == True{} : Bool}
+  {B.nodes.inline(B.tree(its)) == True{} : Bool}
+
+# LAW: so a file read gives the writer no newline within a line from
+# its definitions, objects and imports (`markers.writer`'s `ec.inline`
+# where they make its context).
+# Record: blend-adds-no-bend-logic
+law inline.read:
+  for +bs: List<&2, U32>
+  for +base: U32
+  {B.nodes.inline(B.read.at(bs, base)) == True{} : Bool}
