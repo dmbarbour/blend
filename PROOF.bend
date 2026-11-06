@@ -797,13 +797,12 @@ def uncr_k(+b: U32, +t: List<&2, U32>, +b2: Bool) -> List<&2, U32>:
   B.when(List<&2, U32>, b2, u => B.uncr(t), u => Con{b, B.uncr(t)})
 
 def lines_k(+b: U32, +t: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, +b1: Bool, +b2: Bool) -> List<&2, B.Ln>:
-  B.when(List<&2, B.Ln>, b1, u => B.lines.go(t, Nil{}, (no + 1 : U32), Con{B.lines.line(cur, no), out}),
-    u => B.when(List<&2, B.Ln>, b2, v => B.lines.go(t, cur, no, out), v => B.lines.go(t, Con{b, cur}, no, out)))
+  B.lines.go(t, B.lines.step(b1, b2, b, cur, no, out))
 
 # the last line
 def lines_end(+cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, +N: Nat, +hN: {N == Nat.pow(2n, 32n) : Nat}, +hl: MNat.lt(List.length(&2, U32, List.reverse(&2, U32, cur)), N)) ->
     {List.append(&2, U32, jl(List.reverse(&2, B.Ln, out)), List.append(&2, U32, List.reverse(&2, U32, cur), Nil{})) ==
-      B.lines.text(B.lines.go(Nil{}, cur, no, out)) : List<&2, U32>}:
+      B.lines.text(B.lines.go(Nil{}, B.Ls{cur, no, out})) : List<&2, U32>}:
   %revsl_snoc(out, B.lines.line(cur, no)) :
     {List.append(&2, U32, jl(List.reverse(&2, B.Ln, out)), List.append(&2, U32, List.reverse(&2, U32, cur), Nil{})) == B.lines.text(_) : List<&2, U32>}
   %text_lsnoc(List.reverse(&2, B.Ln, out), B.lines.line(cur, no)) :
@@ -819,11 +818,11 @@ def lines_step(+b: U32, +t: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: 
     b1: Bool, +e1: {b1 == U32.is_eq(b, 10) : Bool}, b2: Bool, +e2: {b2 == U32.is_eq(b, 13) : Bool},
     +hl: MNat.lt(List.length(&2, U32, List.reverse(&2, U32, cur)), N),
     ih_nl: {List.append(&2, U32, jl(List.reverse(&2, B.Ln, Con{B.lines.line(cur, no), out})), List.append(&2, U32, List.reverse(&2, U32, Nil{}), B.uncr(t))) ==
-      B.lines.text(B.lines.go(t, Nil{}, (no + 1 : U32), Con{B.lines.line(cur, no), out})) : List<&2, U32>},
+      B.lines.text(B.lines.go(t, B.Ls{Nil{}, (no + 1 : U32), Con{B.lines.line(cur, no), out}})) : List<&2, U32>},
     ih_cr: {List.append(&2, U32, jl(List.reverse(&2, B.Ln, out)), List.append(&2, U32, List.reverse(&2, U32, cur), B.uncr(t))) ==
-      B.lines.text(B.lines.go(t, cur, no, out)) : List<&2, U32>},
+      B.lines.text(B.lines.go(t, B.Ls{cur, no, out})) : List<&2, U32>},
     ih_ch: {List.append(&2, U32, jl(List.reverse(&2, B.Ln, out)), List.append(&2, U32, List.reverse(&2, U32, Con{b, cur}), B.uncr(t))) ==
-      B.lines.text(B.lines.go(t, Con{b, cur}, no, out)) : List<&2, U32>}) ->
+      B.lines.text(B.lines.go(t, B.Ls{Con{b, cur}, no, out})) : List<&2, U32>}) ->
     {List.append(&2, U32, jl(List.reverse(&2, B.Ln, out)), List.append(&2, U32, List.reverse(&2, U32, cur), uncr_k(b, t, b2))) ==
       B.lines.text(lines_k(b, t, cur, no, out, b1, b2)) : List<&2, U32>}:
   match b1:
@@ -837,7 +836,7 @@ def lines_step(+b: U32, +t: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: 
         case False{}:
           %Equal.sym(U32, b, 10, u32_eq_of_is_eq(b, 10, Equal.sym(Bool, True{}, U32.is_eq(b, 10), e1))) :
             {List.append(&2, U32, jl(List.reverse(&2, B.Ln, out)), List.append(&2, U32, List.reverse(&2, U32, cur), Con{_, B.uncr(t)})) ==
-              B.lines.text(B.lines.go(t, Nil{}, (no + 1 : U32), Con{B.lines.line(cur, no), out})) : List<&2, U32>}
+              B.lines.text(B.lines.go(t, B.Ls{Nil{}, (no + 1 : U32), Con{B.lines.line(cur, no), out}})) : List<&2, U32>}
           %ih_nl : {List.append(&2, U32, jl(List.reverse(&2, B.Ln, out)), List.append(&2, U32, List.reverse(&2, U32, cur), Con{10, B.uncr(t)})) == _ : List<&2, U32>}
           %revsl_snoc(out, B.lines.line(cur, no)) :
             {List.append(&2, U32, jl(List.reverse(&2, B.Ln, out)), List.append(&2, U32, List.reverse(&2, U32, cur), Con{10, B.uncr(t)})) == List.append(&2, U32, jl(_), B.uncr(t)) : List<&2, U32>}
@@ -866,7 +865,7 @@ def lines_step(+b: U32, +t: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: 
 
 def lines_spec(bs: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, +N: Nat, +hN: {N == Nat.pow(2n, 32n) : Nat}, +h: MNat.lt(Nat.add(List.length(&2, U32, cur), List.length(&2, U32, bs)), N)) ->
     {List.append(&2, U32, jl(List.reverse(&2, B.Ln, out)), List.append(&2, U32, List.reverse(&2, U32, cur), B.uncr(bs))) ==
-      B.lines.text(B.lines.go(bs, cur, no, out)) : List<&2, U32>}:
+      B.lines.text(B.lines.go(bs, B.Ls{cur, no, out})) : List<&2, U32>}:
   match bs:
     case Nil{}:
       lines_end(cur, no, out, N, hN, lim_rev(cur, N, lim_zero(List.length(&2, U32, cur), N, h)))
@@ -5153,9 +5152,9 @@ def desc_cons(+l: B.Ln, +out: List<&2, B.Ln>, +no: U32, +k: U32, hn: {no == lno(
   and_intro(U32.is_eq(U32.add(no, 1), U32.add(no, 1)), desc_to(out, no, k), u32_is_eq_refl(U32.add(no, 1)), hd)
 
 def lf_k(b1: Bool, b2: Bool, +b: U32, +t: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, +k: U32, +hd: {desc_to(out, no, k) == True{} : Bool},
-    ih1: {desc_to(Con{B.lines.line(cur, no), out}, U32.add(no, 1), k) == True{} : Bool} -> {B.ln.from(B.lines.go(t, Nil{}, U32.add(no, 1), Con{B.lines.line(cur, no), out}), k) == True{} : Bool},
-    ih2: {desc_to(out, no, k) == True{} : Bool} -> {B.ln.from(B.lines.go(t, cur, no, out), k) == True{} : Bool},
-    ih3: {desc_to(out, no, k) == True{} : Bool} -> {B.ln.from(B.lines.go(t, Con{b, cur}, no, out), k) == True{} : Bool}) ->
+    ih1: {desc_to(Con{B.lines.line(cur, no), out}, U32.add(no, 1), k) == True{} : Bool} -> {B.ln.from(B.lines.go(t, B.Ls{Nil{}, U32.add(no, 1), Con{B.lines.line(cur, no), out}}), k) == True{} : Bool},
+    ih2: {desc_to(out, no, k) == True{} : Bool} -> {B.ln.from(B.lines.go(t, B.Ls{cur, no, out}), k) == True{} : Bool},
+    ih3: {desc_to(out, no, k) == True{} : Bool} -> {B.ln.from(B.lines.go(t, B.Ls{Con{b, cur}, no, out}), k) == True{} : Bool}) ->
     {B.ln.from(lines_k(b, t, cur, no, out, b1, b2), k) == True{} : Bool}:
   match b1 b2:
     case True{} _:
@@ -5167,7 +5166,7 @@ def lf_k(b1: Bool, b2: Bool, +b: U32, +t: List<&2, U32>, +cur: List<&2, U32>, +n
 
 # the lines read, numbered on from the lines done
 def lines_from(bs: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, +k: U32, +hd: {desc_to(out, no, k) == True{} : Bool}) ->
-    {B.ln.from(B.lines.go(bs, cur, no, out), k) == True{} : Bool}:
+    {B.ln.from(B.lines.go(bs, B.Ls{cur, no, out}), k) == True{} : Bool}:
   match bs:
     case Nil{}:
       rev_asc(out, [B.lines.line(cur, no)], no, k, hd, one_from(B.lines.line(cur, no), no, lineof_no(List.reverse(&2, U32, cur), 0n, no)))
@@ -8343,9 +8342,9 @@ def lend_il(+cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, +hc: {B.inline(
   and_intro(B.ln.inline(B.lines.line(cur, no)), B.lns.inline(out), lineof_il(List.reverse(&2, U32, cur), 0n, no, il_rev(cur, hc)), ho)
 
 def lg_il(b1: Bool, +b2: Bool, +b: U32, +t: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, e1: {U32.is_eq(b, 10) == b1 : Bool},
-    ih1: {B.lns.inline(B.lines.go(t, Nil{}, U32.add(no, 1), Con{B.lines.line(cur, no), out})) == True{} : Bool},
-    ih2: {B.lns.inline(B.lines.go(t, cur, no, out)) == True{} : Bool},
-    ih3: @e:{U32.is_eq(b, 10) == False{} : Bool} -> {B.lns.inline(B.lines.go(t, Con{b, cur}, no, out)) == True{} : Bool}) ->
+    ih1: {B.lns.inline(B.lines.go(t, B.Ls{Nil{}, U32.add(no, 1), Con{B.lines.line(cur, no), out}})) == True{} : Bool},
+    ih2: {B.lns.inline(B.lines.go(t, B.Ls{cur, no, out})) == True{} : Bool},
+    ih3: @e:{U32.is_eq(b, 10) == False{} : Bool} -> {B.lns.inline(B.lines.go(t, B.Ls{Con{b, cur}, no, out})) == True{} : Bool}) ->
     {B.lns.inline(lines_k(b, t, cur, no, out, b1, b2)) == True{} : Bool}:
   match b1 b2:
     case True{} _:
@@ -8356,7 +8355,7 @@ def lg_il(b1: Bool, +b2: Bool, +b: U32, +t: List<&2, U32>, +cur: List<&2, U32>, 
       ih3(e1)
 
 def lines_il(bs: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, +hc: {B.inline(cur) == True{} : Bool}, +ho: {B.lns.inline(out) == True{} : Bool}) ->
-    {B.lns.inline(B.lines.go(bs, cur, no, out)) == True{} : Bool}:
+    {B.lns.inline(B.lines.go(bs, B.Ls{cur, no, out})) == True{} : Bool}:
   match bs:
     case Nil{}:
       lns_rev(Con{B.lines.line(cur, no), out}, lend_il(cur, no, out, hc, ho))
