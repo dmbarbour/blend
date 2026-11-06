@@ -377,6 +377,48 @@ law markers.items:
   for +h: {B.ln.from(ls, k) == True{} : Bool}
   {B.items.ok(B.flat(ls)) == True{} : Bool}
 
+# LAW: and any lines read as items, every definition's body is clear of
+# a marker's place: each line blank or deeper than its header, but a
+# type member's one line, numbered as its header (`ln.deep`), so that
+# the writer writes none at a line's start (`markers.unambiguous`).
+# Record: blend-adds-no-bend-logic
+law deep.items:
+  for +ls: List<&2, B.Ln>
+  {B.items.deep(B.flat(ls)) == True{} : Bool}
+
+# LAW: and items so make a tree whose definitions keep their bodies so,
+# each line's depth and blankness kept (`bl.deep`).
+# Record: blend-adds-no-bend-logic
+law deep.tree:
+  for +its: List<&2, B.Item>
+  for +h: {B.items.deep(its) == True{} : Bool}
+  {B.defs.deep(B.tree(its)) == True{} : Bool}
+
+# LAW: so a file read: every definition's body clear of a marker's place.
+# Record: blend-adds-no-bend-logic
+law deep.read:
+  for +bs: List<&2, U32>
+  for +base: U32
+  {B.defs.deep(B.read.at(bs, base)) == True{} : Bool}
+
+# LAW: and the units copied from trees so, each where its definition is
+# found, have lines so: its body's, line for line at the same depth, a
+# blank one blank, whatever object holds it (`rl.deep`), as
+# `markers.writer` and `markers.unambiguous` take them.
+# Record: blend-adds-no-bend-logic
+law deep.units:
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +fs: List<&2, Maybe<&2, B.Fd>>
+  for +als2: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +pss: List<&2, List<&2, U32>>
+  for +nxs: List<&2, B.Ht<B.En>>
+  for +h: {B.trees.deep(trees) == True{} : Bool}
+  {B.units.deep(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
+    B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))) == True{} : Bool}
+
 # LAW: each unit a module's objects copy has, where its definition is
 # found, one its objects' members hold: the member table finds among
 # them, and the copies make none. With `nodes.objects`, every unit's
@@ -713,6 +755,47 @@ law markers.emitted:
   for +ht: {B.trees.inline(trees) == True{} : Bool}
   for +hk: {B.trees.ok(trees) == True{} : Bool}
   {B.wr.unit(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als,
+    B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
+      B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
+      als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
+      B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
+      B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}),
+    res, paths, mode, rtypes, ux,
+    B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
+      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
+        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
+        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
+        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
+        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}, s, x, j, b) == True{} : Bool}
+
+# LAW: so every unit emission writes, for the code's file or the laws'
+# and proofs', any unit read, any copy, any text before it, has no line
+# after its marker's that where.sh reads as a marker
+# (`markers.unambiguous`): its hypotheses the reader's alone (the files'
+# names, `inline.files`; the trees as read, `inline.read` and
+# `deep.read`). With `markers.emitted`, the nearest marker above each
+# line of a definition is its own, naming its line.
+# Record: blend-adds-no-bend-logic
+law unambiguous.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +us: List<&2, B.Un>
+  for +res: List<&2, List<&2, U32>>
+  for +mode: U32
+  for +rtypes: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +mt: B.Wm<B.Mu>
+  for +laws: Bool
+  for +s: U32
+  for +x: U32
+  for +j: U32
+  for +b: B.Tb
+  for +hf: {B.inlines(files) == True{} : Bool}
+  for +ht: {B.trees.inline(trees) == True{} : Bool}
+  for +hd: {B.trees.deep(trees) == True{} : Bool}
+  {B.wr.clear(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als,
     B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
       B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
       als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
