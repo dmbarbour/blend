@@ -2478,12 +2478,37 @@ def kw(+upd: Bool) -> String:
 
 # a proof's name, its law's, or a witness's, its declaration's: the `#`
 # or `!` that keeps them apart dropped
+# a list's last byte, or d where it has none
+def last.or(xs: List<&2, U32>, +d: U32) -> U32:
+  match xs:
+    case Nil{}:
+      d
+    case Con{+h, t}:
+      last.or(t, h)
+
+# the name its mark dropped: its last byte read once, not each mark's
+# `ends` measuring it (`blend-perf.laws`)
+def name.plain.k(+c: Bool, +n: List<&2, U32>) -> List<&2, U32>:
+  match c:
+    case True{}:
+      List.take(&2, U32, n, Nat.sub(List.length(&2, U32, n), 1n))
+    case False{}:
+      n
+
 def name.plain(+n: List<&2, U32>) -> List<&2, U32>:
-  when(List<&2, U32>, ends(n, [35]) || ends(n, [33]), u => List.take(&2, U32, n, Nat.sub(List.length(&2, U32, n), 1n)), u => n)
+  +l = last.or(n, 0)
+  name.plain.k(U32.is_eq(l, 35) || U32.is_eq(l, 33), n)
 
 # the name emitted: a proof's its law's, a witness's `f.as_declared`
+def name.out.k(+c: Bool, +n: List<&2, U32>) -> List<&2, U32>:
+  match c:
+    case True{}:
+      List.append(&2, U32, name.plain(n), codes(".as_declared"))
+    case False{}:
+      name.plain(n)
+
 def name.out(+n: List<&2, U32>) -> List<&2, U32>:
-  when(List<&2, U32>, ends(n, [33]), u => List.append(&2, U32, name.plain(n), codes(".as_declared")), u => name.plain(n))
+  name.out.k(U32.is_eq(last.or(n, 0), 33), n)
 
 # a member as messages name it, by what it is: a proof, named `#` after
 # its law's name inside Blend, by its law
@@ -6612,13 +6637,30 @@ def emit.walk(+roots: List<&2, U32>, +rss: List<&2, List<&2, Ru>>, +obs: List<&2
 def emit.ms(+order: List<&2, U32>, +rss: List<&2, List<&2, Ru>>, +ut: Ht<Pk<Un>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Ms:
   mults(order, pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{WmNone{}, Nil{}}, WmNone{})
 
+# whether any unit is a law, a proof or a lemma: where none is, no unit
+# names one, so the check that none is named where a definition is
+# wanted, and the tables it reads, are skipped (`blend-perf.laws`)
+def units.lawful(us: List<&2, Un>) -> Bool:
+  match us:
+    case Nil{}:
+      False{}
+    case Con{u, t}:
+      U32.is_gt(node.what(un.node(u)), 0) || units.lawful(t)
+
+def er.laws.if(+c: Bool, +all: List<&2, Un>) -> List<&2, Er>:
+  match c:
+    case True{}:
+      er.laws(all, pt.of(Un, all), ux.of(all))
+    case False{}:
+      Nil{}
+
 # emission's errors: the walk's, the dispositions', a law named where a
 # definition is wanted, a name emitted twice (LAWS.bend,
 # `unique.emitted`), the laws' and the proofs'. Given the errors, not
 # the records holding them: a record passed whole into a segment of its
 # own costs (AGENTS.md, Measuring).
 def emit.ers(dse: List<&2, Er>, mse: List<&2, Er>, +all: List<&2, Un>, order: List<&2, U32>, e: Ec, lwe: List<&2, Er>, pfe: List<&2, Er>) -> List<&2, Er>:
-  List.append(&2, Er, dse, List.append(&2, Er, mse, List.append(&2, Er, er.laws(all, pt.of(Un, all), ux.of(all)),
+  List.append(&2, Er, dse, List.append(&2, Er, mse, List.append(&2, Er, er.laws.if(units.lawful(all), all),
     List.append(&2, Er, er.names.of(names.all(List.reverse(&2, U32, order), e)), List.append(&2, Er, lwe, pfe)))))
 
 # the writer's context for the code's file
