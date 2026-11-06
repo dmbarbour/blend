@@ -66,13 +66,11 @@ a unit popped into the order but not into the set of those walked
       Df{st, roots, Con{u, done}, Con{u, order}, ers, vd, vs.put(vo, u), ve}
 
 === fast_calls_swapped order.fast
-the calls table reading the even half where a bit is set
+the calls table reading the next unit's entry
 --- blend.bend
-                case PwNode{e, o}:
-                  pw.at(A, p, r, o)
+  pt.at(A, t, x)
 +++
-                case PwNode{e, o}:
-                  pw.at(A, p, r, e)
+  pt.at(A, t, (x + 1 : U32))
 
 === fast_trie_full order.fast
 a trie answering yes at an empty leaf

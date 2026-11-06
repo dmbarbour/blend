@@ -4817,88 +4817,15 @@ def vs.of(xs: List<&2, U32>) -> Wt:
     case Con{+x, t}:
       vs.put(vs.of(t), x)
 
-# a list split by position: the even, then the odd
-type Eo<-A: Data> is Data:
-  Eo{e: List<&2, A>, o: List<&2, A>}
+# A list by position: the table of its elements keyed by their
+# positions, as the units' is (`pt.of`; `blend-perf.tables`: a hash trie
+# as deep as the list's length has bits, where a trie on a U32's 32 bits
+# walked all 32)
+def pw.of(-A: Data, +xs: List<&2, A>) -> Ht<Pk<A>>:
+  pt.of(A, xs)
 
-def eo.cons(-A: Data, +x: A, p: Eo<A>) -> Eo<A>:
-  match p:
-    case Eo{e, o}:
-      Eo{Con{x, o}, e}
-
-def eo.split(-A: Data, xs: List<&2, A>) -> Eo<A>:
-  match xs:
-    case Nil{}:
-      Eo{Nil{}, Nil{}}
-    case Con{+x, t}:
-      eo.cons(A, x, eo.split(A, t))
-
-def eo.e(-A: Data, p: Eo<A>) -> List<&2, A>:
-  match p:
-    case Eo{e, o}:
-      e
-
-def eo.o(-A: Data, p: Eo<A>) -> List<&2, A>:
-  match p:
-    case Eo{e, o}:
-      o
-
-# a list's entries by their positions: a trie on the positions' bits, the
-# lowest first, n bits deep, the list split by its positions' bits at
-# each level; entry i found at the word whose value is i
-type Pw<-A: Data> is Data:
-  PwNone{}
-  PwLeaf{v: A}
-  PwNode{e: Pw<A>, o: Pw<A>}
-
-def pw.build(-A: Data, n: Nat, xs: List<&2, A>) -> Pw<A>:
-  match n:
-    case 0n:
-      match xs:
-        case Nil{}:
-          PwNone{}
-        case Con{x, t}:
-          PwLeaf{x}
-    case 1n+(+p):
-      match xs:
-        case Nil{}:
-          PwNone{}
-        case Con{+x, +t}:
-          PwNode{pw.build(A, p, eo.e(A, eo.split(A, Con{x, t}))), pw.build(A, p, eo.o(A, eo.split(A, Con{x, t})))}
-
-def pw.at(-A: Data, n: Nat, w: Word(n), t: Pw<A>) -> Maybe<&2, A>:
-  match n:
-    case 0n:
-      match t:
-        case PwLeaf{v}:
-          Some{v}
-        case _:
-          None{}
-    case 1n+p:
-      match w:
-        case WCon{b, r}:
-          match b:
-            case True{}:
-              match t:
-                case PwNode{e, o}:
-                  pw.at(A, p, r, o)
-                case _:
-                  None{}
-            case False{}:
-              match t:
-                case PwNode{e, o}:
-                  pw.at(A, p, r, e)
-                case _:
-                  None{}
-
-def pw.of(-A: Data, xs: List<&2, A>) -> Pw<A>:
-  pw.build(A, 32n, xs)
-
-# entry x, as List.get finds it at x's value
-def pw.get(-A: Data, +t: Pw<A>, x: U32) -> Maybe<&2, A>:
-  match x:
-    case U32{w}:
-      pw.at(A, 32n, w, t)
+def pw.get(-A: Data, +t: Ht<Pk<A>>, +x: U32) -> Maybe<&2, A>:
+  pt.at(A, t, x)
 
 # a table of values by a word's bits, the lowest first: put a value at
 # a word, and the word finds it
@@ -4964,11 +4891,11 @@ def um.get(-A: Data, +t: Wm<A>, x: U32) -> Maybe<&2, A>:
       wm.get(A, 32n, w, t)
 
 # each unit's calls by its position
-def ct.of(cal: List<&2, List<&2, U32>>) -> Pw<List<&2, U32>>:
+def ct.of(cal: List<&2, List<&2, U32>>) -> Ht<Pk<List<&2, U32>>>:
   pw.of(List<&2, U32>, cal)
 
 # unit x's calls, as ids.at finds them
-def cs.at(+t: Pw<List<&2, U32>>, +x: U32) -> List<&2, U32>:
+def cs.at(+t: Ht<Pk<List<&2, U32>>>, +x: U32) -> List<&2, U32>:
   ids.or(pw.get(List<&2, U32>, t, x))
 
 # the walk's state, and the sets of those walked (vd), ordered (vo) and
@@ -4985,7 +4912,7 @@ def df.ds(d: Df) -> Ds:
 # a call followed, as ds.call.k: a unit not walked is on the stack where
 # it was entered
 def df.call.k(+seen: Bool, +cyc: Bool, +c: U32, +u: U32, +rs: List<&2, U32>, +st: List<&2, Fm>, +roots: List<&2, U32>,
-    +done: List<&2, U32>, +order: List<&2, U32>, +ers: List<&2, Er>, +vd: Wt, +vo: Wt, +ve: Wt, +ct: Pw<List<&2, U32>>, +obs: List<&2, Ob>,
+    +done: List<&2, U32>, +order: List<&2, U32>, +ers: List<&2, Er>, +vd: Wt, +vo: Wt, +ve: Wt, +ct: Ht<Pk<List<&2, U32>>>, +obs: List<&2, Ob>,
     +us: List<&2, Un>) -> Df:
   match seen cyc:
     case True{} _:
@@ -5009,14 +4936,14 @@ def df.done.k(+ok: Bool, +u: U32, +st: List<&2, Fm>, +roots: List<&2, U32>, +don
 
 # a root, as ds.root.k
 def df.root.k(+seen: Bool, +r: U32, +rt: List<&2, U32>, +done: List<&2, U32>, +order: List<&2, U32>, +ers: List<&2, Er>,
-    +vd: Wt, +vo: Wt, +ve: Wt, +ct: Pw<List<&2, U32>>) -> Df:
+    +vd: Wt, +vo: Wt, +ve: Wt, +ct: Ht<Pk<List<&2, U32>>>) -> Df:
   match seen:
     case True{}:
       Df{Nil{}, rt, done, order, ers, vd, vo, ve}
     case False{}:
       Df{[Fm{r, cs.at(ct, r)}], rt, done, order, ers, vd, vo, vs.put(ve, r)}
 
-def df.step(s: Df, +ct: Pw<List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Df:
+def df.step(s: Df, +ct: Ht<Pk<List<&2, U32>>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Df:
   match s:
     case Df{stack, roots, +done, +order, +ers, +vd, +vo, +ve}:
       match stack:
@@ -5035,7 +4962,7 @@ def df.step(s: Df, +ct: Pw<List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>
                 case Con{+c, rs}:
                   df.call.k(vs.has(vd, c), vs.has(ve, c), c, u, rs, st, roots, done, order, ers, vd, vo, ve, ct, obs, us)
 
-def df.go(n: Nat, s: Df, +ct: Pw<List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Df:
+def df.go(n: Nat, s: Df, +ct: Ht<Pk<List<&2, U32>>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Df:
   match n:
     case 0n:
       s
@@ -5207,7 +5134,7 @@ def mult.share(+x: U32, +ut: Ht<Pk<Un>>) -> U32:
 # (`order.callees_first`), so that each hands its uses on to the units
 # it uses, its copies known, and a unit has all its uses when its turn
 # comes (p, each unit's so far)
-def mults(xs: List<&2, U32>, +rt: Pw<List<&2, Ru>>, +ut: Ht<Pk<Un>>, +obs: List<&2, Ob>, +us: List<&2, Un>, s: Ms,
+def mults(xs: List<&2, U32>, +rt: Ht<Pk<List<&2, Ru>>>, +ut: Ht<Pk<Un>>, +obs: List<&2, Ob>, +us: List<&2, Un>, s: Ms,
     +p: Wm<List<&2, Ru>>) -> Ms:
   match xs:
     case Nil{}:
