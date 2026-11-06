@@ -516,3 +516,22 @@ law inline.objects:
   for +als: List<&2, B.Al>
   for +h: {B.trees.inline(trees) == True{} : Bool}
   {B.obs.inline(B.obs.made(B.syn.of(als, B.obs(trees)))) == True{} : Bool}
+
+# LAW: the units copied from such objects, where the folds' maps name
+# definitions within a line, have names, heads and lines holding no
+# newline: each unit's definition one the trees hold (`nodes`), its
+# tokens resolved as written or to parts of its names.
+# Record: blend-adds-no-bend-logic
+law inline.units:
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +fs: List<&2, Maybe<&2, B.Fd>>
+  for +als2: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +pss: List<&2, List<&2, U32>>
+  for +nxs: List<&2, B.Ht<B.En>>
+  for +h: {B.trees.inline(trees) == True{} : Bool}
+  for +hf: {B.fds.inline(fs) == True{} : Bool}
+  {B.uns.inline(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
+    B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))) == True{} : Bool}

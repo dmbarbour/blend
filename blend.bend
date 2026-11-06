@@ -5656,6 +5656,32 @@ def trees.inline(ts: List<&2, List<&2, Node>>) -> Bool:
     case Con{tr, t}:
       nodes.inline(tr) && trees.inline(t)
 
+# the definitions' maps the folds made: each name within a line
+def ens.inline(es: List<&2, En>) -> Bool:
+  match es:
+    case Nil{}:
+      True{}
+    case Con{e, t}:
+      match e:
+        case En{name, chain, +no, +what}:
+          inline(name) && ens.inline(t)
+
+def fd.inline(m: Maybe<&2, Fd>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{d}:
+      match d:
+        case Fd{map, fes, ix}:
+          ens.inline(map)
+
+def fds.inline(fs: List<&2, Maybe<&2, Fd>>) -> Bool:
+  match fs:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      fd.inline(f) && fds.inline(t)
+
 # a body's lines numbered on from its header's line, or the line after
 def rls.from(+ls: List<&2, Rl>, +no: U32) -> Bool:
   rl.from(ls, no) || rl.from(ls, (no + 1 : U32))
