@@ -507,3 +507,31 @@ two body lines the same whatever their indentation
       U32.is_eq(n1, n2) && U32.is_eq(i1, i2) && toks.same(t1, t2)
 +++
       U32.is_eq(n1, n2) && toks.same(t1, t2)
+
+=== final_invented resolve.names
+a reference resolved to a name its token does not hold
+--- blend.bend
+    u => Rr{RR{mark, Rf{obj, n, False{}, obj}}, Nil{}, Nil{}})
++++
+    u => Rr{RR{mark, Rf{obj, Con{65, n}, False{}, obj}}, Nil{}, Nil{}})
+
+=== dotted_first resolve.names
+a dotted name's definition named by its first parts, not its last
+--- blend.bend
+          v => Some{Rf{x, dots(List.drop(&2, List<&2, U32>, ps, k)), False{}, x}},
++++
+          v => Some{Rf{x, dots(List.take(&2, List<&2, U32>, ps, k)), False{}, x}},
+
+=== prior_bang resolve.names
+a prior reached named with a byte its token does not end with
+--- blend.bend
+    +c => Rr{RR{0, Rf{o, n, True{}, c}}, Nil{}, [In{n, c, True{}}]})
++++
+    +c => Rr{RR{0, Rf{o, n, True{}, c}}, Nil{}, [In{List.append(&2, U32, n, [33]), c, True{}}]})
+
+=== foreign_alias resolve.names
+a name through another module's import kept as its alias, not its rest
+--- blend.bend
+      +p => Rr{RX{mark, p, drop(1n+List.length(&2, U32, List.head.or(parts(n))), n)}, Nil{}, Nil{}}),
++++
+      +p => Rr{RX{mark, p, List.head.or(parts(n))}, Nil{}, Nil{}}),

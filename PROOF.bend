@@ -10991,3 +10991,345 @@ def Laws.markers.inline(files, trees, als, paths, us, res, mode, rtypes, ux, mt,
           B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))), Laws.inline.members(trees, als, ht)))))
 
 
+
+# Resolution makes no names (`resolve.names`): along the resolver's
+# mirrors, each name a suffix of the token's text (`suffix_drop`, a
+# dotted name's last parts by `names.dots_parts`, `suffix_dots`), or
+# such a suffix and `#` (`suffix_hash`)
+
+def suffix_refl(xs: List<&2, U32>) -> {B.suffix(xs, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      or_l_true(B.same(Con{h, t}, Con{h, t}), B.suffix(Con{h, t}, t), Laws.names.same_refl(Con{h, t}))
+
+def suffix_nil(xs: List<&2, U32>) -> {B.suffix(Nil{}, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      suffix_nil(t)
+
+def suffix_tail(+h: U32, +t: List<&2, U32>) -> {B.suffix(t, Con{h, t}) == True{} : Bool}:
+  or_r_true(B.same(t, Con{h, t}), B.suffix(t, t), suffix_refl(t))
+
+def st_k(c: Bool, +a: List<&2, U32>, +b: List<&2, U32>, +h: U32, +t: List<&2, U32>, e: {B.same(b, Con{h, t}) == c : Bool},
+    hbc: {Bool.or(c, B.suffix(b, t)) == True{} : Bool}, +hab: {B.suffix(a, b) == True{} : Bool},
+    ih: @k:{B.suffix(b, t) == True{} : Bool} -> {B.suffix(a, t) == True{} : Bool}) -> {B.suffix(a, Con{h, t}) == True{} : Bool}:
+  match c:
+    case True{}:
+      %Laws.names.same_eq(b, Con{h, t}, e) : {B.suffix(a, _) == True{} : Bool}
+      hab
+    case False{}:
+      or_r_true(B.same(a, Con{h, t}), B.suffix(a, t), ih(hbc))
+
+def suffix_trans(+a: List<&2, U32>, +b: List<&2, U32>, c: List<&2, U32>, +hab: {B.suffix(a, b) == True{} : Bool}, +hbc: {B.suffix(b, c) == True{} : Bool}) ->
+    {B.suffix(a, c) == True{} : Bool}:
+  match c:
+    case Nil{}:
+      %Laws.names.same_eq(b, Nil{}, hbc) : {B.suffix(a, _) == True{} : Bool}
+      hab
+    case Con{+h, +t}:
+      st_k(B.same(b, Con{h, t}), a, b, h, t, {==}, hbc, hab, k => suffix_trans(a, b, t, hab, k))
+
+def suffix_bdrop(k: Nat, xs: List<&2, U32>) -> {B.suffix(B.drop(k, xs), xs) == True{} : Bool}:
+  match k:
+    case 0n:
+      suffix_refl(xs)
+    case 1n+(+j):
+      match xs:
+        case Nil{}:
+          {==}
+        case Con{+h, +t}:
+          suffix_trans(B.drop(j, t), t, Con{h, t}, suffix_bdrop(j, t), suffix_tail(h, t))
+
+def suffix_ldrop(xs: List<&2, U32>, k: Nat) -> {B.suffix(List.drop(&2, U32, xs, k), xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      match k:
+        case 0n:
+          suffix_refl(Con{h, t})
+        case 1n+(+j):
+          suffix_trans(List.drop(&2, U32, t, j), t, Con{h, t}, suffix_ldrop(t, j), suffix_tail(h, t))
+
+def suffix_app(a: List<&2, U32>, +b: List<&2, U32>) -> {B.suffix(b, List.append(&2, U32, a, b)) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      suffix_refl(b)
+    case Con{+x, +t}:
+      suffix_trans(b, List.append(&2, U32, t, b), Con{x, List.append(&2, U32, t, b)}, suffix_app(t, b), suffix_tail(x, List.append(&2, U32, t, b)))
+
+def dots_tail(+p: List<&2, U32>, t: List<&2, List<&2, U32>>) -> {B.suffix(B.dots(t), B.dots(Con{p, t})) == True{} : Bool}:
+  match t:
+    case Nil{}:
+      suffix_nil(p)
+    case Con{+q, +r}:
+      suffix_trans(B.dots(Con{q, r}), Con{46, B.dots(Con{q, r})}, List.append(&2, U32, p, Con{46, B.dots(Con{q, r})}),
+        suffix_tail(46, B.dots(Con{q, r})), suffix_app(p, Con{46, B.dots(Con{q, r})}))
+
+# a dotted name's last parts: a suffix of its parts joined
+def suffix_dots(ps: List<&2, List<&2, U32>>, k: Nat) -> {B.suffix(B.dots(List.drop(&2, List<&2, U32>, ps, k)), B.dots(ps)) == True{} : Bool}:
+  match ps:
+    case Nil{}:
+      {==}
+    case Con{+p, +t}:
+      match k:
+        case 0n:
+          suffix_refl(B.dots(Con{p, t}))
+        case 1n+(+j):
+          suffix_trans(B.dots(List.drop(&2, List<&2, U32>, t, j)), B.dots(t), B.dots(Con{p, t}), suffix_dots(t, j), dots_tail(p, t))
+
+def suffix_parts(+n: List<&2, U32>, +k: Nat) -> {B.suffix(B.dots(List.drop(&2, List<&2, U32>, B.parts(n), k)), n) == True{} : Bool}:
+  %Laws.names.dots_parts(n) : {B.suffix(B.dots(List.drop(&2, List<&2, U32>, B.parts(n), k)), _) == True{} : Bool}
+  suffix_dots(B.parts(n), k)
+
+def sh_k(c: Bool, +p: List<&2, U32>, +x: U32, +t: List<&2, U32>, e: {B.same(p, Con{x, t}) == c : Bool}, h: {Bool.or(c, B.suffix(p, t)) == True{} : Bool},
+    ih: @k:{B.suffix(p, t) == True{} : Bool} -> {B.suffix(List.append(&2, U32, p, [35]), List.append(&2, U32, t, [35])) == True{} : Bool}) ->
+    {B.suffix(List.append(&2, U32, p, [35]), Con{x, List.append(&2, U32, t, [35])}) == True{} : Bool}:
+  match c:
+    case True{}:
+      %Equal.sym(List<&2, U32>, p, Con{x, t}, Laws.names.same_eq(p, Con{x, t}, e)) : {B.suffix(List.append(&2, U32, _, [35]), Con{x, List.append(&2, U32, t, [35])}) == True{} : Bool}
+      suffix_refl(Con{x, List.append(&2, U32, t, [35])})
+    case False{}:
+      or_r_true(B.same(List.append(&2, U32, p, [35]), Con{x, List.append(&2, U32, t, [35])}), B.suffix(List.append(&2, U32, p, [35]), List.append(&2, U32, t, [35])), ih(h))
+
+# a suffix and `#`: a suffix of the text and `#`
+def suffix_hash(+p: List<&2, U32>, xs: List<&2, U32>, h: {B.suffix(p, xs) == True{} : Bool}) ->
+    {B.suffix(List.append(&2, U32, p, [35]), List.append(&2, U32, xs, [35])) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      %Equal.sym(List<&2, U32>, p, Nil{}, Laws.names.same_eq(p, Nil{}, h)) : {B.suffix(List.append(&2, U32, _, [35]), [35]) == True{} : Bool}
+      {==}
+    case Con{+x, +t}:
+      sh_k(B.same(p, Con{x, t}), p, x, t, {==}, h, k => suffix_hash(p, t, k))
+
+def made_s(+n: List<&2, U32>, +txt: List<&2, U32>, +h: {B.suffix(n, txt) == True{} : Bool}) -> {B.name.made(n, txt) == True{} : Bool}:
+  or_l_true(B.suffix(n, txt), B.suffix(n, List.append(&2, U32, txt, [35])), h)
+
+def made_h(+r: List<&2, U32>, +txt: List<&2, U32>, +h: {B.suffix(r, txt) == True{} : Bool}) -> {B.name.made(List.append(&2, U32, r, [35]), txt) == True{} : Bool}:
+  or_r_true(B.suffix(List.append(&2, U32, r, [35]), txt), B.suffix(List.append(&2, U32, r, [35]), List.append(&2, U32, txt, [35])), suffix_hash(r, txt, h))
+
+# The resolver's decisions, each making a name of the token's text
+
+def tok_mk(+t: B.Tok) -> {B.rr.made(B.rr.tok(t), t) == True{} : Bool}:
+  and_intro(B.tok.same(t, t), True{}, tok_refl(t), {==})
+
+def er_mk(+t: B.Tok, +no: U32, +msg: String) -> {B.rr.made(B.rr.er(t, no, msg), t) == True{} : Bool}:
+  and_intro(B.tok.same(t, t), True{}, tok_refl(t), {==})
+
+def rfn_mk(c: Bool, +cx: B.Cx, +obj: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rfn_k(c, cx, obj, mark, n, t, no), t) == True{} : Bool}:
+  match c:
+    case True{}:
+      er_mk(t, no, B.text(B.tok.txt(t)) ++ " names a definition of " ++ B.ob.name(B.cx.obs(cx), obj) ++ ", which is abstract and emits nothing")
+    case False{}:
+      and_intro(B.name.made(n, B.tok.bytes(t)), True{}, made_s(n, B.tok.bytes(t), hn), {==})
+
+def final_mk(+cx: B.Cx, +obj: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(B.rr.final(cx, obj, mark, n, t, no), t) == True{} : Bool}:
+  rfn_mk(B.ob.abs(B.ob.at(B.cx.obs(cx), obj)), cx, obj, mark, n, t, no, hn)
+
+def rhs_mk(c: Bool, +cx: B.Cx, +h: U32, +n: List<&2, U32>, +t: B.Tok, +whole: List<&2, U32>, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rhs_k(c, cx, h, n, t, whole, no), t) == True{} : Bool}:
+  match c:
+    case True{}:
+      final_mk(cx, h, 0, n, t, no, hn)
+    case False{}:
+      er_mk(t, no, B.text(whole) ++ ": " ++ B.ob.name(B.cx.obs(cx), h) ++ " has no " ++ B.text(n))
+
+def rh_mk(m: Maybe<&2, U32>, +cx: B.Cx, +n: List<&2, U32>, +t: B.Tok, +whole: List<&2, U32>, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rhk(m, cx, n, t, whole, no), t) == True{} : Bool}:
+  match m:
+    case None{}:
+      er_mk(t, no, B.text(whole) ++ " steps out of the module, which has no host")
+    case Some{+h}:
+      rhs_mk(B.cx.has(cx, h, n), cx, h, n, t, whole, no, hn)
+
+def host_mk(+cx: B.Cx, +o: U32, +q: U32, +k: Nat, +n: List<&2, U32>, +t: B.Tok, +whole: List<&2, U32>, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(B.rr.host(cx, o, q, k, n, t, whole, no), t) == True{} : Bool}:
+  rh_mk(List.get(&2, U32, B.hosts(B.cx.obs(cx), q), Nat.sub(k, 1n)), cx, n, t, whole, no, hn)
+
+def rfo1_mk(m: Maybe<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rfo1(m, mark, n, t), t) == True{} : Bool}:
+  match m:
+    case None{}:
+      tok_mk(t)
+    case Some{+p}:
+      and_intro(B.name.made(B.drop(1n+List.length(&2, U32, B.List.head.or(B.parts(n))), n), B.tok.bytes(t)), True{},
+        made_s(B.drop(1n+List.length(&2, U32, B.List.head.or(B.parts(n))), n), B.tok.bytes(t),
+          suffix_trans(B.drop(1n+List.length(&2, U32, B.List.head.or(B.parts(n))), n), n, B.tok.bytes(t), suffix_bdrop(1n+List.length(&2, U32, B.List.head.or(B.parts(n))), n), hn)), {==})
+
+def rfo2_mk(c: Bool, +cx: B.Cx, +m: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rfo2(c, cx, m, mark, n, t), t) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(B.name.made(n, B.tok.bytes(t)), True{}, made_s(n, B.tok.bytes(t), hn), {==})
+    case False{}:
+      tok_mk(t)
+
+def rfok_mk(c: Bool, +cx: B.Cx, +m: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rfok(c, cx, m, mark, n, t), t) == True{} : Bool}:
+  match c:
+    case True{}:
+      rfo1_mk(B.ci.find(B.mod.cis(cx, m), B.List.head.or(B.parts(n))), mark, n, t, hn)
+    case False{}:
+      rfo2_mk(B.names.has(B.tree.types(B.mod.tree(cx, m)), n), cx, m, mark, n, t, hn)
+
+def foreign_mk(+cx: B.Cx, +m: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(B.rr.foreign(cx, m, mark, n, t), t) == True{} : Bool}:
+  rfok_mk(Bool.not(B.blank.parts(List.tail(&2, List<&2, U32>, B.parts(n)))), cx, m, mark, n, t, hn)
+
+def rbs_mk(c: Bool, +n: List<&2, U32>, +t: B.Tok, +no: U32) -> {B.rr.made(rbs_k(c, n, t, no), t) == True{} : Bool}:
+  match c:
+    case True{}:
+      er_mk(t, no, B.text(n) ++ ": names beginning Blend_ are Blend's own")
+    case False{}:
+      tok_mk(t)
+
+def rbd_mk(c: Bool, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rbd_k(c, cx, q, mark, n, t, no), t) == True{} : Bool}:
+  match c:
+    case True{}:
+      rbs_mk(B.starts.s(n, "Blend_"), n, t, no)
+    case False{}:
+      foreign_mk(cx, B.loc.mod(B.ob.no(B.ob.at(B.cx.obs(cx), q))), mark, n, t, hn)
+
+def bend_mk(+cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(B.rr.bend(cx, q, mark, n, t, no), t) == True{} : Bool}:
+  rbd_mk(U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.cx.obs(cx), q))), 0), cx, q, mark, n, t, no, hn)
+
+def mrfmk(m: Maybe<&2, B.Rf>, +n: List<&2, U32>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{f}:
+      B.suffix(B.rf.name(f), n)
+
+def lox_mk(c: Bool, +x: U32, +j: Nat, +k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>, +ih: {mrfmk(B.look.obj(j, cx, q, ps), B.dots(ps)) == True{} : Bool}) ->
+    {mrfmk(lox_k(c, x, j, k, cx, q, ps), B.dots(ps)) == True{} : Bool}:
+  match c:
+    case True{}:
+      suffix_dots(ps, k)
+    case False{}:
+      ih
+
+def lok_mk(m: Maybe<&2, U32>, +j: Nat, +k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>, +ih: {mrfmk(B.look.obj(j, cx, q, ps), B.dots(ps)) == True{} : Bool}) ->
+    {mrfmk(lok(m, j, k, cx, q, ps), B.dots(ps)) == True{} : Bool}:
+  match m:
+    case None{}:
+      ih
+    case Some{+x}:
+      lox_mk(B.cx.has(cx, x, B.dots(List.drop(&2, List<&2, U32>, ps, k))), x, j, k, cx, q, ps, ih)
+
+def lo_mk(k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>) -> {mrfmk(B.look.obj(k, cx, q, ps), B.dots(ps)) == True{} : Bool}:
+  match k:
+    case 0n:
+      {==}
+    case 1n+(+j):
+      lok_mk(B.resolve(List.length(&2, B.Ob, B.cx.obs(cx)), B.cx.als(cx), B.cx.obs(cx), q, List.take(&2, List<&2, U32>, ps, 1n+j)), j, 1n+j, cx, q, ps, lo_mk(j, cx, q, ps))
+
+def lo_n(+k: Nat, +cx: B.Cx, +q: U32, +n: List<&2, U32>) -> {mrfmk(B.look.obj(k, cx, q, B.parts(n)), n) == True{} : Bool}:
+  %Laws.names.dots_parts(n) : {mrfmk(B.look.obj(k, cx, q, B.parts(n)), _) == True{} : Bool}
+  lo_mk(k, cx, q, B.parts(n))
+
+def rf_mk(+cx: B.Cx, +mark: U32, +t: B.Tok, +no: U32, f: B.Rf, +hf: {B.suffix(B.rf.name(f), B.tok.bytes(t)) == True{} : Bool}) -> {B.rr.made(B.rr.rf(cx, mark, t, no, f), t) == True{} : Bool}:
+  match f:
+    case B.Rf{+obj, +name, +prior, +origin}:
+      final_mk(cx, obj, mark, name, t, no, hf)
+
+def rd_mk(m: Maybe<&2, B.Rf>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hm: {mrfmk(m, n) == True{} : Bool},
+    +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) -> {B.rr.made(rdk(m, cx, q, mark, n, t, no), t) == True{} : Bool}:
+  match m:
+    case None{}:
+      bend_mk(cx, q, mark, n, t, no, hn)
+    case Some{+f}:
+      rf_mk(cx, mark, t, no, f, suffix_trans(B.rf.name(f), n, B.tok.bytes(t), hm, hn))
+
+def dotted_mk(+cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(B.rr.dotted(cx, q, mark, n, t, no), t) == True{} : Bool}:
+  rd_mk(B.look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, B.parts(n)), cx, q, mark, n, t, no,
+    lo_n(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, n), hn)
+
+def rp_mk(m: Maybe<&2, U32>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rpk(m, cx, q, mark, n, t, no), t) == True{} : Bool}:
+  match m:
+    case None{}:
+      dotted_mk(cx, q, mark, n, t, no, hn)
+    case Some{+h}:
+      final_mk(cx, h, mark, n, t, no, hn)
+
+def plaink_mk(local: Bool, +cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(B.rr.plain.k(local, cx, o, q, mark, n, t, no), t) == True{} : Bool}:
+  match local:
+    case True{}:
+      tok_mk(t)
+    case False{}:
+      rp_mk(B.look(cx, Con{o, B.hosts(B.cx.obs(cx), q)}, n), cx, q, mark, n, t, no, hn)
+
+def plain_mk(+cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32,
+    +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) -> {B.rr.made(B.rr.plain(cx, o, q, locals, mark, n, t, no), t) == True{} : Bool}:
+  plaink_mk(B.names.has(locals, n), cx, o, q, mark, n, t, no, hn)
+
+def rpo_mk(m: Maybe<&2, U32>, +cx: B.Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.name.made(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rpok(m, cx, o, q, n, t, no), t) == True{} : Bool}:
+  match m:
+    case None{}:
+      er_mk(t, no, "_" ++ B.text(B.name.plain(n)) ++ ": " ++ B.ob.name(B.cx.obs(cx), o) ++ " has no " ++
+        B.when(String, B.ends(n, [35]), v => "proof of ", v => "definition of ") ++ B.text(B.name.plain(n)) ++ " before " ++ B.ob.name(B.cx.obs(cx), q) ++ "'s")
+    case Some{+c}:
+      and_intro(B.name.made(n, B.tok.bytes(t)), Bool.and(B.name.made(n, B.tok.bytes(t)), True{}), hn, and_intro(B.name.made(n, B.tok.bytes(t)), True{}, hn, {==}))
+
+def prior_of_mk(+cx: B.Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.name.made(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(B.rr.prior.of(cx, o, q, n, t, no), t) == True{} : Bool}:
+  rpo_mk(B.prior.find(B.en.chain(B.cx.find(cx, o, n)), B.after(B.cx.ord(cx, o), q)), cx, o, q, n, t, no, hn)
+
+def rpr_mk(c: Bool, +cx: B.Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rprk(c, cx, o, q, n, t, no), t) == True{} : Bool}:
+  match c:
+    case True{}:
+      prior_of_mk(cx, o, q, List.append(&2, U32, n, [35]), t, no, made_h(n, B.tok.bytes(t), hn))
+    case False{}:
+      prior_of_mk(cx, o, q, n, t, no, made_s(n, B.tok.bytes(t), hn))
+
+def under_mk(local: Bool, +cx: B.Cx, +o: U32, +q: U32, +r: List<&2, U32>, +t: B.Tok, +no: U32, +hr: {B.suffix(r, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(B.rr.under(local, cx, o, q, r, t, no), t) == True{} : Bool}:
+  match local:
+    case True{}:
+      tok_mk(t)
+    case False{}:
+      rpr_mk(B.cx.has(cx, o, List.append(&2, U32, r, [35])), cx, o, q, r, t, no, hr)
+
+def markk_mk(up: Bool, tpl: Bool, under: Bool, +cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +h: U32, +r: List<&2, U32>, +no: U32) ->
+    {B.rr.made(B.rr.mark.k(up, tpl, under, cx, o, q, locals, h, r, B.TName{Con{h, r}}, no), B.TName{Con{h, r}}) == True{} : Bool}:
+  match up tpl under:
+    case True{} _ _:
+      host_mk(cx, o, q, B.carets(Con{h, r}), List.drop(&2, U32, Con{h, r}, B.carets(Con{h, r})), B.TName{Con{h, r}}, Con{h, r}, no,
+        suffix_ldrop(Con{h, r}, B.carets(Con{h, r})))
+    case False{} True{} _:
+      plain_mk(cx, o, q, locals, 126, r, B.TName{Con{h, r}}, no, suffix_tail(h, r))
+    case False{} False{} True{}:
+      under_mk(Bool.or(Bool.or(B.blank(r), B.names.has(locals, Con{h, r})), B.is.root(B.cx.obs(cx), o)), cx, o, q, r, B.TName{Con{h, r}}, no, suffix_tail(h, r))
+    case False{} False{} False{}:
+      plain_mk(cx, o, q, locals, 0, Con{h, r}, B.TName{Con{h, r}}, no, suffix_refl(Con{h, r}))
+
+def Laws.resolve.names(cx, o, q, locals, t, no):
+  match t:
+    case B.TName{+x}:
+      match x:
+        case Nil{}:
+          tok_mk(B.TName{Nil{}})
+        case Con{+h, +r}:
+          markk_mk(U32.is_eq(h, 94), U32.is_eq(h, 126), U32.is_eq(h, 95), cx, o, q, locals, h, r, no)
+    case B.TNum{+x}:
+      tok_mk(B.TNum{x})
+    case B.TStr{+x}:
+      tok_mk(B.TStr{x})
+    case B.TCom{+x}:
+      tok_mk(B.TCom{x})
+    case B.TSp{+x}:
+      tok_mk(B.TSp{x})
+    case B.TSym{+c}:
+      tok_mk(B.TSym{c})

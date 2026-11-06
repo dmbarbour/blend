@@ -5706,6 +5706,42 @@ def fds.inline(fs: List<&2, Maybe<&2, Fd>>) -> Bool:
     case Con{f, t}:
       fd.inline(f) && fds.inline(t)
 
+# The resolver's law's terms (LAWS.bend, `resolve.names`): a name a
+# token resolves to made of the token's text, a suffix of it, or a
+# suffix and `#`, a law's proof named
+def suffix(+p: List<&2, U32>, xs: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}:
+      same(p, Nil{})
+    case Con{+h, +t}:
+      same(p, Con{h, t}) || suffix(p, t)
+
+def name.made(+n: List<&2, U32>, +txt: List<&2, U32>) -> Bool:
+  suffix(n, txt) || suffix(n, List.append(&2, U32, txt, [35]))
+
+def rt.made(t: Rt, +tk: Tok) -> Bool:
+  match t:
+    case RT{x}:
+      tok.same(x, tk)
+    case RR{+mark, ref}:
+      name.made(rf.name(ref), tok.bytes(tk))
+    case RX{+mark, path, rest}:
+      name.made(rest, tok.bytes(tk))
+
+def ins.made(xs: List<&2, In>, +txt: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{i, t}:
+      match i:
+        case In{name, +q, +prior}:
+          name.made(name, txt) && ins.made(t, txt)
+
+def rr.made(r: Rr, +tk: Tok) -> Bool:
+  match r:
+    case Rr{rt, ers, ins}:
+      rt.made(rt, tk) && ins.made(ins, tok.bytes(tk))
+
 # a body's lines numbered on from its header's line, or the line after
 def rls.from(+ls: List<&2, Rl>, +no: U32) -> Bool:
   rl.from(ls, no) || rl.from(ls, (no + 1 : U32))
