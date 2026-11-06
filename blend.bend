@@ -1724,16 +1724,14 @@ def parts.lead(ss: List<&2, List<&2, U32>>, +ext: List<&2, U32>) -> Bool:
     case Con{+s, +t}:
       when(Bool, same(s, codes(".")) || same(s, codes("..")) || List.is_empty(&2, U32, s), u => parts.lead(t, ext), u => parts.plain(Con{s, t}, ext))
 
+# a path's parts at its slashes; the byte tested, not matched, so that a
+# law can follow it (LAWS.bend, `inline.files`)
 def split.slash(xs: List<&2, U32>, +cur: List<&2, U32>, +out: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
   match xs:
     case Nil{}:
       List.reverse(&2, List<&2, U32>, Con{List.reverse(&2, U32, cur), out})
-    case Con{+h, t}:
-      match h:
-        case 47:
-          split.slash(t, Nil{}, Con{List.reverse(&2, U32, cur), out})
-        case _:
-          split.slash(t, Con{h, cur}, out)
+    case Con{+h, +t}:
+      when(List<&2, List<&2, U32>>, U32.is_eq(h, 47), u => split.slash(t, Nil{}, Con{List.reverse(&2, U32, cur), out}), u => split.slash(t, Con{h, cur}, out))
 
 def import.parts(ss: List<&2, List<&2, U32>>, +ext: List<&2, U32>) -> Bool:
   match ss:
@@ -5656,6 +5654,32 @@ def trees.inline(ts: List<&2, List<&2, Node>>) -> Bool:
     case Con{tr, t}:
       nodes.inline(tr) && trees.inline(t)
 
+# each object's members within a line (LAWS.bend, `inline.members`)
+def ob.mems.inline(o: Ob) -> Bool:
+  match o:
+    case Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+      nodes.inline(mems)
+
+def obs.mems.inline(obs: List<&2, Ob>) -> Bool:
+  match obs:
+    case Nil{}:
+      True{}
+    case Con{o, t}:
+      ob.mems.inline(o) && obs.mems.inline(t)
+
+# an import's path and alias within a line; a module's path to read
+def im.inline(i: Im) -> Bool:
+  match i:
+    case Im{path, alias, +blend, +no}:
+      inline(path) && inline(alias)
+
+def ims.inline(xs: List<&2, Im>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{i, t}:
+      im.inline(i) && ims.inline(t)
+
 # the definitions' maps the folds made: each name within a line
 def ens.inline(es: List<&2, En>) -> Bool:
   match es:
@@ -6141,13 +6165,18 @@ def order.what(xs: List<&2, U32>, +us: List<&2, Un>, +mode: U32) -> List<&2, U32
     case Con{+x, +t}:
       when(List<&2, U32>, un.in(mode, un.at(us, x)), u => Con{x, order.what(t, us, mode)}, u => order.what(t, us, mode))
 
+# the root's imports, each its alias and file (LAWS.bend,
+# `markers.inline`)
+def emit.own(+cx: Cx) -> List<&2, Ci>:
+  cis.of(ims.of(ob.mems(ob.at(cx.obs(cx), 0))), path.at(cx.paths(cx), 0))
+
 def proof.parts(+mode: U32, +files: List<&2, List<&2, U32>>, +cx: Cx, +all: List<&2, Un>) -> Pf:
   +obs = cx.obs(cx)
   +us = units.of(all, True{})
   +ux = ux.of(us)
   +d = df.ds(walk.fast(roots.all(cx, ux), calls.laws(calls(refss(us, ux, 0)), pt.of(Un, us), ux, 0), obs, us))
   +order = List.reverse(&2, U32, ds.order(d))
-  +own = cis.of(ims.of(ob.mems(ob.at(obs, 0))), path.at(cx.paths(cx), 0))
+  +own = emit.own(cx)
   +res = need.uniq(need.us(units.what(us, mode), obs, cx.paths(cx)), own, Nil{})
   +e = {Ec{files, obs, us, cx.als(cx), own, res, cx.paths(cx), mode, tree.types(ob.mems(ob.at(obs, 0))), ux,
     pt.of(Un, us), WmNone{}} : Ec}
@@ -6171,7 +6200,7 @@ def emitted(+files: List<&2, List<&2, U32>>, +cx: Cx, +os: List<&2, Oc>) -> Out:
   +d = df.ds(walk.fast(roots.all(cx, ux), calls(rss), obs, us))
   +order = ds.order(d)
   +ms = mults(order, pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{WmNone{}, Nil{}}, WmNone{})
-  +own = cis.of(ims.of(ob.mems(ob.at(obs, 0))), path.at(cx.paths(cx), 0))
+  +own = emit.own(cx)
   +res = need.uniq(need.us(us, obs, cx.paths(cx)), own, Nil{})
   +e = {Ec{files, obs, us, cx.als(cx), own, res, cx.paths(cx), 0, Nil{}, ux, ut, ms.ms(ms)} : Ec}
   +lw = proof.parts(1, files, cx, all)
@@ -6625,6 +6654,26 @@ def md.path(m: Md) -> List<&2, U32>:
   match m:
     case Md{path, bs, +ok, +from}:
       path
+
+# the modules' paths and those to read within a line (LAWS.bend,
+# `inline.files`, `inline.imports`)
+def tds.inline(ts: List<&2, Td>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{d, t}:
+      match d:
+        case Td{path, +from}:
+          inline(path) && tds.inline(t)
+
+def mds.inline(ms: List<&2, Md>) -> Bool:
+  match ms:
+    case Nil{}:
+      True{}
+    case Con{m, t}:
+      match m:
+        case Md{path, bs, +ok, +from}:
+          inline(path) && mds.inline(t)
 
 def mds.paths(ms: List<&2, Md>) -> List<&2, List<&2, U32>>:
   match ms:

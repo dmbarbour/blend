@@ -535,3 +535,98 @@ law inline.units:
   for +hf: {B.fds.inline(fs) == True{} : Bool}
   {B.uns.inline(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
     B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))) == True{} : Bool}
+
+# LAW: the objects made from trees whose texts hold no newline have
+# members holding none: each object's its node's, a copy's its
+# template's, a made object's none.
+# Record: blend-adds-no-bend-logic
+law inline.members:
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +h: {B.trees.inline(trees) == True{} : Bool}
+  {B.obs.mems.inline(B.obs.made(B.syn.of(als, B.obs(trees)))) == True{} : Bool}
+
+# LAW: and the folds of objects whose members hold no newline make maps
+# of names holding none: each entry a member's name.
+# Record: blend-adds-no-bend-logic
+law inline.folds:
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +obs: List<&2, B.Ob>
+  for +bad: List<&2, U32>
+  for +h: {B.obs.mems.inline(obs) == True{} : Bool}
+  {B.fds.inline(B.folds(ls, obs, bad)) == True{} : Bool}
+
+# LAW: the imports read from members holding no newline give aliases
+# holding none, each a part of its line.
+# Record: blend-adds-no-bend-logic
+law inline.own:
+  for +ns: List<&2, B.Node>
+  for +mpath: List<&2, U32>
+  for +h: {B.nodes.inline(ns) == True{} : Bool}
+  {B.cis.inline(B.cis.of(B.ims.of(ns), mpath)) == True{} : Bool}
+
+# LAW: a table of a file's units, of units holding no newline, holds
+# none.
+# Record: blend-adds-no-bend-logic
+law inline.table:
+  for +us: List<&2, B.Un>
+  for +laws: Bool
+  for +h: {B.uns.inline(us) == True{} : Bool}
+  {B.ht.inline(B.pt.of(B.Un, B.units.of(us, laws))) == True{} : Bool}
+
+# LAW: modules whose paths hold no newline are named, in markers, by
+# paths holding none: parts of theirs, and `..`.
+# Record: blend-paths-no-newline
+law inline.files:
+  for +ms: List<&2, B.Md>
+  for +root: List<&2, U32>
+  for +h: {B.mds.inline(ms) == True{} : Bool}
+  {B.inlines(B.mds.names(ms, root)) == True{} : Bool}
+
+# LAW: a module whose path holds no newline imports modules whose paths
+# hold none: an import's path is its line's, joined to its importer's.
+# So, with a path from the command line refused where it holds one,
+# every module read has a path holding none (`load.go`, by inspection).
+# Record: blend-paths-no-newline
+law inline.imports:
+  for +path: List<&2, U32>
+  for +bs: List<&2, U32>
+  for +k: U32
+  for +h: {B.inline(path) == True{} : Bool}
+  {B.tds.inline(B.md.next(path, bs, k)) == True{} : Bool}
+
+# LAW: so the context emission gives the writer, for the code's file
+# and for the laws' and proofs' (`emitted`, `proof.parts`), holds no
+# newline where its files' names hold none (`inline.files`): its
+# objects' paths, its imports' aliases, its units' names and tokens;
+# `markers.writer`'s hypothesis discharged. As `objects` makes the
+# objects and the folds and `emitted` the table, composed as they
+# compose them.
+# Record: blend-adds-no-bend-logic
+law markers.inline:
+  for +files: List<&2, List<&2, U32>>
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +us: List<&2, B.Un>
+  for +res: List<&2, List<&2, U32>>
+  for +mode: U32
+  for +rtypes: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +mt: B.Wm<B.Mu>
+  for +laws: Bool
+  for +hf: {B.inlines(files) == True{} : Bool}
+  for +ht: {B.trees.inline(trees) == True{} : Bool}
+  {B.ec.inline(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als,
+    B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
+      B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
+      als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
+      B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
+      B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}),
+    res, paths, mode, rtypes, ux,
+    B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
+      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
+        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
+        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
+        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
+        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}) == True{} : Bool}

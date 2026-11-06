@@ -194,6 +194,12 @@ it alone taught. Add to this file what a new proof teaches.
   decisions and its layout, lemma for lemma (`inline.items`, 108
   lemmas written in a sitting); a pair's halves claimed by one `Bool`
   (`pil`) that a match on the pair reduces.
+- **A mutation that runs the checker out of memory**: a mutation caught
+  only inside a large proof term (a law joining others, its context
+  written out) failed by exhausting the checker's memory, 3 GB in 37 s,
+  rather than by a refutation; the part it breaks moved into a small
+  lemma over a variable (`eown_il`) fails there, cleanly
+  (`markers.inline`).
 - **A walk naming the code's own states**: a law that follows a fold
   step by step (`wr.at`) calls the code's own step on the code's own
   state, and ends by comparing with the code's own result (its `fin`),

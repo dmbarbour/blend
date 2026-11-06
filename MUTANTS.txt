@@ -435,3 +435,52 @@ a copy's header given a token holding a newline
       (Rd{i, nd, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
 +++
       (Rd{i, nd, Con{RT{TSp{[10]}}, rl.join(hl)}, ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
+
+=== member_nl inline.members
+an object's members given an import whose text is a newline
+--- blend.bend
+                        (next + 1 : U32), Con{Ob{next, host, List.append(&2, List<&2, U32>, path, [name]), abs, parents, kids, no, ob.kind.of(ext, path), next}, out})
++++
+                        (next + 1 : U32), Con{Ob{next, host, List.append(&2, List<&2, U32>, path, [name]), abs, parents, Con{NImport{[10], no}, kids}, no, ob.kind.of(ext, path), next}, out})
+
+=== fold_name_nl inline.folds
+a definition's entry in its object's map named after a newline
+--- blend.bend
+          v => Fd{Con{En{name, [q], no, what}, map}, fes, ix.put(ix, En{name, [q], no, what})}),
++++
+          v => Fd{Con{En{Con{10, name}, [q], no, what}, map}, fes, ix.put(ix, En{name, [q], no, what})}),
+
+=== alias_nl inline.own
+an import's alias read after a newline
+--- blend.bend
+    u => Some{Im{path, trim(drop(3n, rest)), ends(path, codes(".blend")), no}}, u => None{})
++++
+    u => Some{Im{path, Con{10, trim(drop(3n, rest))}, ends(path, codes(".blend")), no}}, u => None{})
+
+=== table_extra inline.table
+a file's units given one more, named a newline
+--- blend.bend
+      when(List<&2, Un>, Bool.not(Bool.xor(laws, U32.is_gt(node.what(un.node(u)), 0))), v => Con{u, units.of(t, laws)}, v => units.of(t, laws))
++++
+      when(List<&2, Un>, Bool.not(Bool.xor(laws, U32.is_gt(node.what(un.node(u)), 0))), v => Con{Un{0, In{[10], 0, False{}}, NBad{Nil{}, 0}, Nil{}, Nil{}}, Con{u, units.of(t, laws)}}, v => units.of(t, laws))
+
+=== file_name_nl inline.files
+a module named in markers after a newline
+--- blend.bend
+  slashes(path.rel(path.dir(root), split.slash(path, Nil{}, Nil{})))
++++
+  Con{10, slashes(path.rel(path.dir(root), split.slash(path, Nil{}, Nil{})))}
+
+=== import_path_nl inline.imports
+an absolute import's path begun with a newline, not its slash
+--- blend.bend
+  when(List<&2, U32>, starts(path, [47]), u => Con{47, path.from.k(path, rel)}, u => path.from.k(path, rel))
++++
+  when(List<&2, U32>, starts(path, [47]), u => Con{10, path.from.k(path, rel)}, u => path.from.k(path, rel))
+
+=== own_extra markers.inline
+the root's imports given one more, its alias a newline
+--- blend.bend
+  cis.of(ims.of(ob.mems(ob.at(cx.obs(cx), 0))), path.at(cx.paths(cx), 0))
++++
+  Con{Ci{[10], Nil{}, 0}, cis.of(ims.of(ob.mems(ob.at(cx.obs(cx), 0))), path.at(cx.paths(cx), 0))}
