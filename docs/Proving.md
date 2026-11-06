@@ -63,6 +63,11 @@ it alone taught. Add to this file what a new proof teaches.
   value both capture, and a drop, at every turn: in `lines.go`, 8 to 10%
   of Blend's instructions (`blend-perf.lines`). A proof's mirror of
   the `when` becomes the step, its cases as before.
+- **`&&` and `||` evaluate both sides**: Bend is strict, so a test
+  guarding an expensive one (`mode == 2 && proves.own(...)`) does not
+  spare it. Decide on the cheap test first, in a helper matching it
+  (`ref.put.m`): in the writer, 3 to 16% of Blend's instructions
+  (`blend-perf.lookups`).
 - **A result read twice is a datatype read by projections**, not
   destructured in a lambda (`on.r(r, a => b => ...)`), which sticks a
   proof until the result reduces.

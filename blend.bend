@@ -5413,17 +5413,27 @@ def rf.law(r: Rf) -> Rf:
 def proves.own(+ut: Ht<Pk<Un>>, +x: U32, +y: U32) -> Bool:
   U32.is_eq(ut.what(ut, x), 2) && U32.is_eq(ut.what(ut, y), 1) && rf.eq(rf.law(un.ref(ut.un(ut, x))), un.ref(ut.un(ut, y)))
 
+# a reference to a unit, decided on the file first: only the proofs'
+# reach a law through its alias, so that the code's file asks nothing
+# else of the table (`blend-perf.lookups`)
+def ref.put.m(+m2: Bool, +e: Ec, +x: U32, +j: U32, +mark: U32, +r: Rf, +y: U32, +b: Tb) -> Tb:
+  match m2:
+    case False{}:
+      ref.self(U32.is_eq(y, x), e, x, j, y, mark.put(mark, b))
+    case True{}:
+      when(Tb, proves.own(ec.ut(e), x, y),
+        u => tb.put(mark.put(mark, b), List.append(&2, U32, codes("Blend_Laws."), own.name(e, x, j))),
+        u => when(Tb, U32.is_eq(node.what(un.node(ec.un(e, y))), 1) || U32.is_eq(node.what(un.node(ec.un(e, y))), 2),
+          v => tb.put(mark.put(mark, b), List.append(&2, U32, codes("Blend_Laws."), rf.text(ec.obs(e), r))),
+          v => ref.self(U32.is_eq(y, x), e, x, j, y, mark.put(mark, b))))
+
 def ref.put(+e: Ec, +x: U32, +j: U32, +mark: U32, +r: Rf, m: Maybe<&2, U32>, +b: Tb) -> Tb:
   match m:
     case None{}:
       tb.put(mark.put(mark, b), when(List<&2, U32>, U32.is_gt(ec.mode(e), 0) && U32.is_eq(loc.mod(ob.no(ob.at(ec.obs(e), rf.obj(r)))), 0),
         u => List.append(&2, U32, codes("Blend_0."), rf.text(ec.obs(e), r)), u => rf.ext(e, r)))
     case Some{+y}:
-      when(Tb, U32.is_eq(ec.mode(e), 2) && proves.own(ec.ut(e), x, y),
-        u => tb.put(mark.put(mark, b), List.append(&2, U32, codes("Blend_Laws."), own.name(e, x, j))),
-        u => when(Tb, U32.is_eq(ec.mode(e), 2) && (U32.is_eq(node.what(un.node(ec.un(e, y))), 1) || U32.is_eq(node.what(un.node(ec.un(e, y))), 2)),
-          v => tb.put(mark.put(mark, b), List.append(&2, U32, codes("Blend_Laws."), rf.text(ec.obs(e), r))),
-          v => ref.self(U32.is_eq(y, x), e, x, j, y, mark.put(mark, b))))
+      ref.put.m(U32.is_eq(ec.mode(e), 2), e, x, j, mark, r, y, b)
 
 # a token as written; in the laws and proofs, a datatype's or a
 # constructor's name of the root's through the code's alias

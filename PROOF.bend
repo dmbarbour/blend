@@ -4297,9 +4297,7 @@ def ref_put_code(+e: B.Ec, hm: {B.ec.mode(e) == 0 : U32}, +x: U32, +j: U32, +mar
     {B.ref.self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b)) == B.ref.put(e, x, j, mark, r, Some{y}, b) : B.Tb}:
   %Equal.sym(U32, B.ec.mode(e), 0, hm) :
     {B.ref.self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b)) ==
-      rp_k(Bool.and(U32.is_eq(_, 2), B.proves.own(B.ec.ut(e), x, y)),
-        Bool.and(U32.is_eq(_, 2), Bool.or(U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 1), U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 2))),
-        e, x, j, mark, r, y, b) : B.Tb}
+      B.ref.put.m(U32.is_eq(_, 2), e, x, j, mark, r, y, b) : B.Tb}
   {==}
 
 def refput_none(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +b: B.Tb, +y: U32) -> {cy(b, y) == cy(B.ref.put(e, x, j, mark, r, None{}, b), y) : U32}:
@@ -7923,6 +7921,15 @@ def il_rnk(c: Bool, +e: B.Ec, +r: B.Rf, +hf: {B.ec.inline(e) == True{} : Bool}, 
     case False{}:
       il_rxk(U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0), e, r, hf, hr)
 
+# ref.put.m's first decision: the file
+def rpm_from(m2: Bool, +e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +y: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool},
+    +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) -> {B.tb.from(B.ref.put.m(m2, e, x, j, mark, r, y, b)) == B.tb.from(b) : List<&2, U32>}:
+  match m2:
+    case False{}:
+      rpk_from(False{}, False{}, e, x, j, mark, r, y, b, hf, hr)
+    case True{}:
+      rpk_from(B.proves.own(B.ec.ut(e), x, y), Bool.or(U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 1), U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 2)), e, x, j, mark, r, y, b, hf, hr)
+
 def rput_from(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, m: Maybe<&2, U32>, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool},
     +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) -> {B.tb.from(B.ref.put(e, x, j, mark, r, m, b)) == B.tb.from(b) : List<&2, U32>}:
   match m:
@@ -7930,9 +7937,7 @@ def rput_from(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, m: Maybe<&2, U32
       after_mark(mark, b, rn_k(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r),
         il_rnk(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r, hf, hr))
     case Some{+y}:
-      rpk_from(Bool.and(U32.is_eq(B.ec.mode(e), 2), B.proves.own(B.ec.ut(e), x, y)),
-        Bool.and(U32.is_eq(B.ec.mode(e), 2), Bool.or(U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 1), U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 2))),
-        e, x, j, mark, r, y, b, hf, hr)
+      rpm_from(U32.is_eq(B.ec.mode(e), 2), e, x, j, mark, r, y, b, hf, hr)
 
 # a body's tokens, each within a line, written after b: b's text from
 # its last newline kept
@@ -12127,6 +12132,14 @@ def uq_rpk(c1: Bool, c2: Bool, +e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf,
         uq_self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b), hf, uq_ne(uq_tf(B.mark.put(mark, b)), uq_tf(b), 10, uq_mark(U32.is_eq(mark, 126), b, hc), hc)),
         uq_mark(U32.is_eq(mark, 126), b, hc))
 
+def uq_rpm(m2: Bool, +e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +y: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool},
+    +hr: {B.inline(B.rf.name(r)) == True{} : Bool}, +hc: {U32.is_eq(uq_tf(b), 10) == False{} : Bool}) -> {uq_tf(B.ref.put.m(m2, e, x, j, mark, r, y, b)) == uq_tf(b) : U32}:
+  match m2:
+    case False{}:
+      uq_rpk(False{}, False{}, e, x, j, mark, r, y, b, hf, hr, hc)
+    case True{}:
+      uq_rpk(B.proves.own(B.ec.ut(e), x, y), Bool.or(U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 1), U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 2)), e, x, j, mark, r, y, b, hf, hr, hc)
+
 def uq_rput(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, m: Maybe<&2, U32>, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool},
     +hr: {B.inline(B.rf.name(r)) == True{} : Bool}, +hc: {U32.is_eq(uq_tf(b), 10) == False{} : Bool}) -> {uq_tf(B.ref.put(e, x, j, mark, r, m, b)) == uq_tf(b) : U32}:
   match m:
@@ -12134,9 +12147,7 @@ def uq_rput(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, m: Maybe<&2, U32>,
       uq_amark(mark, b, rn_k(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r),
         il_rnk(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r, hf, hr), hc)
     case Some{+y}:
-      uq_rpk(Bool.and(U32.is_eq(B.ec.mode(e), 2), B.proves.own(B.ec.ut(e), x, y)),
-        Bool.and(U32.is_eq(B.ec.mode(e), 2), Bool.or(U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 1), U32.is_eq(B.node.what(B.un.node(B.ec.un(e, y))), 2))),
-        e, x, j, mark, r, y, b, hf, hr, hc)
+      uq_rpm(U32.is_eq(B.ec.mode(e), 2), e, x, j, mark, r, y, b, hf, hr, hc)
 
 def uq_rts(ts: List<&2, B.Rt>, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool}, +ht: {B.rts.inline(ts) == True{} : Bool},
     +hc: {U32.is_eq(uq_tf(b), 10) == False{} : Bool}) -> {uq_tf(B.rts.put(ts, e, x, j, b)) == uq_tf(b) : U32}:
