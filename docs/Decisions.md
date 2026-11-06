@@ -43,6 +43,16 @@ body moves in here.
   a repository of its own, its history filtered from glam-in-bend's,
   which uses it as a submodule.
 
+## The command
+
+Blend is a command of its own, shaped as Bend's and installed beside it.
+
+- [`blend-command-mirrors-bend`](decisions/blend-command-mirrors-bend.md):
+  `blend` takes a file first as
+  `bend` does and hands the emitted module to Bend; errors in Bend's
+  shape; `deps` lists what `emit --tree` reaches and whether each is
+  current; `blend` lives in `$BEND_HOME/bin`.
+
 ## The model
 
 Blend translates static objects into Bend and adds no logic of its own;
@@ -78,8 +88,9 @@ its modules, namespaces and emitted names are Bend's.
   template is affine by default, as any definition; the guide explains
   `shared` against `copied` for templates.
 - [`blend-emit-verifies-imports`](decisions/blend-emit-verifies-imports.md):
-  emission writes only the modules a command names, and verifies each
-  import none names against its emission, unless `--alone`.
+  emission writes only the modules a command names, or with `--tree`
+  every import they reach short of a package, and verifies each import
+  none names against its emission, unless `--alone`.
 - [`blend-proofs-beside-code`](decisions/blend-proofs-beside-code.md): a
   Blend module's laws and proofs are written into files of their own
   beside its code, `X_LAWS.bend` and `X_PROOF.bend`, by the emission

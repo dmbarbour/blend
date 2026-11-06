@@ -339,11 +339,12 @@ does not fit its declaration, a type of another kind than declared.
   names, `Eager.go` (the maintainer, 2026-11-04). A module emits every
   definition, not only those some roots reach, so that a module several
   import is emitted once (the maintainer, 2026-11-04).
-- A `blend` command of its own, so that no script stands between the
-  user and the tool (`blend-cli`).
+- A `blend` command of its own, shaped as Bend's, so that no script
+  stands between the user and the tool (`blend-command-mirrors-bend`,
+  `blend-cli`).
 - Verifying an import costs its emission again. A stamp in each
   emitted file's header, a hash of the sources it comes from and of
-  Blend, would let verification read a line instead (`blend-cli`).
+  Blend, would let verification read a line instead (`blend-cli.stamps`).
 - Blend's own laws (`blend-laws`); what a declared definition must be,
   checked by a witness in the proof file (`blend-typed-declares`).
 - Theories, `theory` declarations as objects, should something more
