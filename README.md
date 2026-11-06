@@ -318,7 +318,8 @@ is inherited, `upd proof` with no proof to update, `upd` of an
 inherited law, a definition meeting an inherited law, code naming a
 lemma, `upd proof` of a definition, a declaration made again below, a
 typed declaration with no return type, a concrete object's law with no
-proof, a module's own law with no proof, a name with a part `LAW`, an
+proof, a module's own law with no proof, a name with a part `LAW` (an
+object's too), an
 import climbing out of its directory or naming a file by `/`, a
 package's Blend file.
 

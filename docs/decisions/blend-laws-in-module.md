@@ -72,6 +72,7 @@ a module's proofs at each load costs seconds (glam-in-bend's
   import, written by the Blend before, as no longer emitted.
 - The samples `laws`, `laws-imported`, `declares`, `templates`; the
   invalid `law-unproven`, `law-unproven-top`, `law-reserved`,
+  `law-reserved-object`,
   `proof-no-law`, `law-named`, `upd-law`, `proof-twice`,
   `upd-proof-undefined`, `law-updated`, `law-shadowed`, `lemma-named`,
   `upd-proof-def`.

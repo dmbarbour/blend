@@ -1,0 +1,10 @@
+# An object named LAW would put its members where the module's own laws
+# go, `LAW.f`: its names, too, are Blend's.
+import Base
+
+object LAW with
+  def first() -> Nat:
+    1n
+
+def main() -> Nat:
+  LAW.first()
