@@ -258,6 +258,17 @@ law c3.first:
   for ss: Maybe<&2, List<&2, B.Sq>>
   {List.head(&2, U32, B.lz.ord(Some{B.lin.of(id, ps, ss)})) == Some{id} : Maybe<&2, U32>}
 
+# LAW: and where an object's linearization succeeds, it is the object,
+# then an order holding each object once that keeps each of its parents'
+# linearizations and its list of parents, in their order: `lin.of`
+# merges what C3 says (`c3.sound` over those lists).
+# Record: blend-c3
+law c3.lin:
+  for +id: U32
+  for +ps: List<&2, U32>
+  for +seqs: List<&2, B.Sq>
+  {B.lz.sound(B.lin.of(id, ps, Some{seqs}), id, List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])) == True{} : Bool}
+
 # LAW: writing an order into the code's file, each copied unit's counter
 # of numbered calls rises by what its uses by the units written ask: at
 # each use, one for each of the user's copies, none from a module's

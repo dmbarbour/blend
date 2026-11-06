@@ -1899,6 +1899,16 @@ def c3.keep(+o: U32, xs: List<&2, U32>, rest: List<&2, Sq>) -> List<&2, Sq>:
     case Con{x, r}:
       Con{Sq{o, Con{x, r}}, rest}
 
+# the lists to merge, the empty ones dropped
+def c3.lists(ss: List<&2, Sq>) -> List<&2, Sq>:
+  match ss:
+    case Nil{}:
+      Nil{}
+    case Con{s, t}:
+      match s:
+        case Sq{+o, xs}:
+          c3.keep(o, xs, c3.lists(t))
+
 # the lists, h taken from their heads, the empty ones dropped
 def c3.take(ss: List<&2, Sq>, +h: U32) -> List<&2, Sq>:
   match ss:
@@ -1984,7 +1994,7 @@ def lin.of(+id: U32, +ps: List<&2, U32>, ss: Maybe<&2, List<&2, Sq>>) -> Lz:
     case None{}:
       Lz{False{}, [id]}
     case Some{+seqs}:
-      lin.mg(id, c3.merge(1n+sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.take(List.append(&2, Sq, seqs, [Sq{id, ps}]), 4294967295), Nil{}))
+      lin.mg(id, c3.merge(1n+sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.lists(List.append(&2, Sq, seqs, [Sq{id, ps}])), Nil{}))
 
 def lin.try(+id: U32, +ps: List<&2, U32>, m: Maybe<&2, Maybe<&2, List<&2, Sq>>>) -> Maybe<&2, Lz>:
   match m:
@@ -2076,7 +2086,7 @@ def c3.er(+obs: List<&2, Ob>, +id: U32, +ps: List<&2, U32>, ss: Maybe<&2, List<&
     case None{}:
       Nil{}
     case Some{+seqs}:
-      c3.why(obs, id, c3.merge(1n+sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.take(List.append(&2, Sq, seqs, [Sq{id, ps}]), 4294967295), Nil{}))
+      c3.why(obs, id, c3.merge(1n+sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.lists(List.append(&2, Sq, seqs, [Sq{id, ps}])), Nil{}))
 
 def c3.er.k(+obs: List<&2, Ob>, +id: U32, +ps: List<&2, U32>, m: Maybe<&2, Maybe<&2, List<&2, Sq>>>) -> List<&2, Er>:
   match m:
@@ -4488,6 +4498,21 @@ def mg.ok(m: Mg) -> Bool:
 
 # a merge's order, where it has one, keeps every list it merged and
 # holds each unit once
+# a linearization found sound: its object, then an order holding each
+# object once that keeps every list merged (LAWS.bend, `c3.lin`)
+def lz.sound(z: Lz, +id: U32, +ss: List<&2, Sq>) -> Bool:
+  match z:
+    case Lz{+ok, ord}:
+      match ok:
+        case True{}:
+          match ord:
+            case Nil{}:
+              False{}
+            case Con{+h, +t}:
+              U32.is_eq(h, id) && sqs.kept(ss, t) && distinct(t)
+        case False{}:
+          True{}
+
 def mg.sound(m: Mg, +ss: List<&2, Sq>) -> Bool:
   match m:
     case MOk{+ord}:
