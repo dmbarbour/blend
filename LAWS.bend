@@ -630,3 +630,14 @@ law markers.inline:
         als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
         B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
         B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}) == True{} : Bool}
+
+# LAW: two definitions the same field by field (`ndef.same`) are equal,
+# as two names the same are (`names.same_eq`): so a unit's definition
+# held by the trees' (`nodes`) is one of them, and what holds of every
+# tree's definition holds of every unit's.
+# Record: blend-adds-no-bend-logic
+law nodes.same_eq:
+  for +a: B.Node
+  for +b: B.Node
+  for h: {B.ndef.same(a, b) == True{} : Bool}
+  {a == b : B.Node}

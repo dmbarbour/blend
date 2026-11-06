@@ -484,3 +484,26 @@ the root's imports given one more, its alias a newline
   cis.of(ims.of(ob.mems(ob.at(cx.obs(cx), 0))), path.at(cx.paths(cx), 0))
 +++
   Con{Ci{[10], Nil{}, 0}, cis.of(ims.of(ob.mems(ob.at(cx.obs(cx), 0))), path.at(cx.paths(cx), 0))}
+
+=== same_rest nodes.same_eq
+two definitions the same whatever the rest of their headers
+--- blend.bend
+      U32.is_eq(s1, s2) && Bool.not(Bool.xor(u1, u2)) && same(n1, n2) && same(r1, r2) && names.eq(p1, p2) && bls.same(b1, b2) &&
++++
+      U32.is_eq(s1, s2) && Bool.not(Bool.xor(u1, u2)) && same(n1, n2) && names.eq(p1, p2) && bls.same(b1, b2) &&
+
+=== same_sym nodes.same_eq
+two symbol tokens the same whatever their bytes
+--- blend.bend
+    case TSym{+c} TSym{+d}:
+      U32.is_eq(c, d)
++++
+    case TSym{+c} TSym{+d}:
+      True{}
+
+=== same_indent nodes.same_eq
+two body lines the same whatever their indentation
+--- blend.bend
+      U32.is_eq(n1, n2) && U32.is_eq(i1, i2) && toks.same(t1, t2)
++++
+      U32.is_eq(n1, n2) && toks.same(t1, t2)

@@ -163,7 +163,10 @@ it alone taught. Add to this file what a new proof teaches.
   equality (`ndef.same`), with a "within" invariant kept by every
   builder on the way (`defs.within`, `objs.within`, a table's leaves
   `hw`). A generic form over any property is out of reach: a property
-  is a function, which a recursion cannot both use and pass on.
+  is a function, which a recursion cannot both use and pass on. Prove
+  the structural equality equality (`nodes.same_eq`): then each
+  property crosses it by one rewrite (`same_ok`, `same_il`), where
+  each took case work of its own.
 - **Name a function's locals to state them**: a law cannot name a
   `+x = ...` inside a definition; making the local a definition of its
   own (`syn.of`, `obs.made`) lets the law say what it computes, the
