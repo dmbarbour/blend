@@ -41,6 +41,12 @@ it alone taught. Add to this file what a new proof teaches.
   Bend's proofs, so a match on literals (`case 46:` ... `case _:`)
   leaves the `_` case a word partly known, on which the function's own
   match is stuck. Test (`U32.is_eq(h, 46)`) and branch on the `Bool`.
+- **A boundary tested apart costs its law an `and_l`.** Where a check
+  implies a property only through its parts (no plain name is `..`), a
+  test of the property beside it (`path.down`, `blend-imports-local`)
+  makes the law read the test off the check. The mutants then catch the
+  test's removal, never a fault in the test itself, which the plan
+  lists as the law's missing piece.
 - **A class of values is a datatype**, its tests `Bool`s: constructors
   match in proofs, literals do not.
 - **Branch in a named helper matching its `Bool` parameters**

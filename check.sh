@@ -18,10 +18,6 @@ BLEND_ROOT=$PWD
 . ./tools.sh
 BEND=${BEND:-$(command -v bend || echo "$HOME/.bend/bin/bend")}
 export BEND
-# no update check: Bend prints a newer release's notice beside each
-# output, which the samples compare (2.0.40's, 2026-11-06), and a gate
-# that asks the network is no repeatable check
-export BEND_NO_TELEMETRY=1
 status=0
 
 # the seconds since a mark, to a tenth

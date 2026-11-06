@@ -729,3 +729,39 @@ a put into a map drops the other keys its leaf holds
       HLeaf{Con{Pk{k, v}, pk.del(A, es, k)}}
 +++
       HLeaf{[Pk{k, v}]}
+
+=== local_climbs imports.local
+a local import's staying within is no longer tested: a path that climbs
+or starts from `/` would rest on the plain names alone
+--- blend.bend
+def import.plain.k(+ss: List<&2, List<&2, U32>>, +ext: List<&2, U32>) -> Bool:
+  path.down(ss) && import.parts(ss, ext)
++++
+def import.plain.k(+ss: List<&2, List<&2, U32>>, +ext: List<&2, U32>) -> Bool:
+  import.parts(ss, ext)
+
+=== package_joined imports.package
+a package's import joined to its importer's directory, as a local one
+--- blend.bend
+def ci.path(+pkg: Bool, +mpath: List<&2, U32>, +p: List<&2, U32>, +blend: Bool) -> List<&2, U32>:
+  match pkg:
+    case True{}:
+      p
++++
+def ci.path(+pkg: Bool, +mpath: List<&2, U32>, +p: List<&2, U32>, +blend: Bool) -> List<&2, U32>:
+  match pkg:
+    case True{}:
+      bendify(path.from(mpath, p), blend)
+
+=== package_rebased imports.package.root
+a package's import re-imported into the root's file as a local path
+--- blend.bend
+def rel.import.k(+pkg: Bool, +root: List<&2, U32>, +path: List<&2, U32>) -> List<&2, U32>:
+  match pkg:
+    case True{}:
+      path
++++
+def rel.import.k(+pkg: Bool, +root: List<&2, U32>, +path: List<&2, U32>) -> List<&2, U32>:
+  match pkg:
+    case True{}:
+      List.append(&2, U32, codes("./"), path)

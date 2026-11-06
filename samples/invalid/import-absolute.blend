@@ -1,0 +1,6 @@
+# An import's path is local: `/` names a file by where it is on this
+# machine, which a package shared elsewhere could not reach.
+import Base
+import /lib/shapes.blend as S
+
+object Big extends S.Square
