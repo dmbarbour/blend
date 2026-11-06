@@ -11836,3 +11836,92 @@ def Laws.markers.emitted(files, trees, als, paths, us, res, mode, rtypes, ux, mt
     Laws.markers.inline(files, trees, als, paths, us, res, mode, rtypes, ux, mt, laws, hf, ht),
     hl_at(B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws), s, unsl_filter(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws,
       unsl_of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), Laws.markers.units(trees, als, B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), hk), units_e(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), mcopies_e(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))))))
+
+# The dispositions joined at emission (`sharing.emitted`): the writer's
+# uses, read through the table, are those `mults` reads from the units'
+# references (`ue_of`), the table the list's (`units.positions`), each
+# unit's references taken with its own position (`get_refs`)
+
+def ufs(+u: B.Un, +ux: B.Ht<B.Xe>, +x: U32) -> List<&2, B.Ru>:
+  List.append(&2, B.Ru, B.refs.rts(B.un.hd(u), ux, x, B.node.no(B.un.node(u))), B.refs.rls(B.un.lines(u), ux, x))
+
+def get_refs(us: List<&2, B.Un>, d: Nat, +k: U32, +x: U32, +ux: B.Ht<B.Xe>, +hd: {Nat.add(d, U32.to_nat(k)) == U32.to_nat(x) : Nat}) ->
+    {B.rus.or(List.get(&2, List<&2, B.Ru>, B.refss(us, ux, k), d)) == ufs(B.un.or(List.get(&2, B.Un, us, d)), ux, x) : List<&2, B.Ru>}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      match d:
+        case 0n:
+          %MU.u32_to_nat_inj(k, x, hd) : {ufs(u, ux, k) == ufs(u, ux, _) : List<&2, B.Ru>}
+          {==}
+        case 1n+(+d2):
+          get_refs(t, d2, U32.add(k, 1), x, ux, hd_next(k, x, d2, hd))
+
+def ue_x(+files: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +us0: List<&2, B.Un>, +als: List<&2, B.Al>, +own: List<&2, B.Ci>, +res: List<&2, List<&2, U32>>,
+    +paths: List<&2, List<&2, U32>>, +mode: U32, +rtypes: List<&2, List<&2, U32>>, +ux: B.Ht<B.Xe>, +us: List<&2, B.Un>, +mt: B.Wm<B.Mu>, +x: U32) ->
+    {B.uses.e(B.Ec{files, obs, us0, als, own, res, paths, mode, rtypes, ux, B.pt.of(B.Un, us), mt}, x) == B.rus.at(B.refss(us, ux, 0), x) : List<&2, B.Ru>}:
+  %Equal.sym(B.Un, B.ut.un(B.pt.of(B.Un, us), x), B.un.at(us, x), Laws.units.positions(us, x)) : {ufs(_, ux, x) == B.rus.at(B.refss(us, ux, 0), x) : List<&2, B.Ru>}
+  Equal.sym(List<&2, B.Ru>, B.rus.or(List.get(&2, List<&2, B.Ru>, B.refss(us, ux, 0), U32.to_nat(x))), ufs(B.un.or(List.get(&2, B.Un, us, U32.to_nat(x))), ux, x),
+    get_refs(us, U32.to_nat(x), 0, x, ux, MNat.add_zero(U32.to_nat(x))))
+
+# the writer's uses of y by the units xs: those mults reads
+def ue_of(xs: List<&2, U32>, +files: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +us0: List<&2, B.Un>, +als: List<&2, B.Al>, +own: List<&2, B.Ci>,
+    +res: List<&2, List<&2, U32>>, +paths: List<&2, List<&2, U32>>, +mode: U32, +rtypes: List<&2, List<&2, U32>>, +ux: B.Ht<B.Xe>, +us: List<&2, B.Un>,
+    +mt: B.Wm<B.Mu>, +y: U32) -> {B.uses.of.e(xs, B.Ec{files, obs, us0, als, own, res, paths, mode, rtypes, ux, B.pt.of(B.Un, us), mt}, y) == B.uses.of(xs, B.refss(us, ux, 0), y) : List<&2, B.Ru>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      %Equal.sym(List<&2, B.Ru>, B.uses.e(B.Ec{files, obs, us0, als, own, res, paths, mode, rtypes, ux, B.pt.of(B.Un, us), mt}, x), B.rus.at(B.refss(us, ux, 0), x), ue_x(files, obs, us0, als, own, res, paths, mode, rtypes, ux, us, mt, x)) :
+        {List.append(&2, B.Ru, B.uses.in(_, x, y), B.uses.of.e(t, B.Ec{files, obs, us0, als, own, res, paths, mode, rtypes, ux, B.pt.of(B.Un, us), mt}, y)) == B.uses.of(Con{x, t}, B.refss(us, ux, 0), y) : List<&2, B.Ru>}
+      %Equal.sym(List<&2, B.Ru>, B.uses.of.e(t, B.Ec{files, obs, us0, als, own, res, paths, mode, rtypes, ux, B.pt.of(B.Un, us), mt}, y), B.uses.of(t, B.refss(us, ux, 0), y), ue_of(t, files, obs, us0, als, own, res, paths, mode, rtypes, ux, us, mt, y)) :
+        {List.append(&2, B.Ru, B.uses.in(B.rus.at(B.refss(us, ux, 0), x), x, y), _) == B.uses.of(Con{x, t}, B.refss(us, ux, 0), y) : List<&2, B.Ru>}
+      {==}
+
+def o_first(+roots: List<&2, U32>, +cal: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>) ->
+    {B.ordered(B.ds.order(B.df.ds(B.walk.fast(roots, cal, obs, us))), cal) == True{} : Bool}:
+  %Equal.sym(B.Ds, B.df.ds(B.walk.fast(roots, cal, obs, us)), B.walk(roots, cal, obs, us), Laws.order.fast(roots, cal, obs, us)) : {B.ordered(B.ds.order(_), cal) == True{} : Bool}
+  Laws.order.callees_first(roots, cal, obs, us)
+
+def o_once(+roots: List<&2, U32>, +cal: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>) ->
+    {B.distinct(B.ds.order(B.df.ds(B.walk.fast(roots, cal, obs, us)))) == True{} : Bool}:
+  %Equal.sym(B.Ds, B.df.ds(B.walk.fast(roots, cal, obs, us)), B.walk(roots, cal, obs, us), Laws.order.fast(roots, cal, obs, us)) : {B.distinct(B.ds.order(_)) == True{} : Bool}
+  Laws.order.once(roots, cal, obs, us)
+
+def Laws.sharing.emitted(files, obs, us, als, own, res, paths, ux, roots, acc, y, hy, hc):
+  Laws.sharing.copied(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us))), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}, B.Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, B.pt.of(B.Un, us), B.ms.ms(B.mults(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us))), B.pw.of(List<&2, B.Ru>, B.refss(us, ux, 0)), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}, {B.WmNone{} : B.Wm<List<&2, B.Ru>>}))}, acc, y,
+    o_first(roots, B.calls(B.refss(us, ux, 0)), obs, us), o_once(roots, B.calls(B.refss(us, ux, 0)), obs, us), hy, hc, {==}, {==}, {==},
+    ue_of(List.reverse(&2, U32, B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us)))), files, obs, us, als, own, res, paths, 0, Nil{}, ux, us, B.ms.ms(B.mults(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us))), B.pw.of(List<&2, B.Ru>, B.refss(us, ux, 0)), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}, {B.WmNone{} : B.Wm<List<&2, B.Ru>>})), y))
+
+# Emission's errors none, its names check's none (`unique.emitted`):
+# an append that is empty has each side empty
+
+def er_cons(+x: B.Er, +t: List<&2, B.Er>, h: {Con{x, t} == Nil{} : List<&2, B.Er>}) -> Empty:
+  %Equal.sym(List<&2, B.Er>, Con{x, t}, Nil{}, h) : nil_disc(B.Er, _)
+  Unit{}
+
+def app_nil_l(a: List<&2, B.Er>, +b: List<&2, B.Er>, h: {List.append(&2, B.Er, a, b) == Nil{} : List<&2, B.Er>}) -> {a == Nil{} : List<&2, B.Er>}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>}, er_cons(x, List.append(&2, B.Er, t, b), h))
+
+def app_nil_r(a: List<&2, B.Er>, +b: List<&2, B.Er>, h: {List.append(&2, B.Er, a, b) == Nil{} : List<&2, B.Er>}) -> {b == Nil{} : List<&2, B.Er>}:
+  match a:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      Empty.absurd({b == Nil{} : List<&2, B.Er>}, er_cons(x, List.append(&2, B.Er, t, b), h))
+
+def ers_names(+a: List<&2, B.Er>, +b: List<&2, B.Er>, +c: List<&2, B.Er>, +n: List<&2, B.Er>, +r: List<&2, B.Er>,
+    h: {List.append(&2, B.Er, a, List.append(&2, B.Er, b, List.append(&2, B.Er, c, List.append(&2, B.Er, n, r)))) == Nil{} : List<&2, B.Er>}) ->
+    {n == Nil{} : List<&2, B.Er>}:
+  app_nil_l(n, r, app_nil_r(c, List.append(&2, B.Er, n, r), app_nil_r(b, List.append(&2, B.Er, c, List.append(&2, B.Er, n, r)),
+    app_nil_r(a, List.append(&2, B.Er, b, List.append(&2, B.Er, c, List.append(&2, B.Er, n, r))), h))))
+
+def Laws.unique.emitted(files, obs, us, als, own, res, paths, ux, roots, dse, mse, all, lwe, pfe, h):
+  Laws.emit.unique(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))),
+    ers_names(dse, mse, B.er.laws(all, B.pt.of(B.Un, all), B.ux.of(all)),
+      B.er.names.of(B.names.all(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))))), List.append(&2, B.Er, lwe, pfe), h))

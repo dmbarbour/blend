@@ -96,6 +96,13 @@ generated check.
   Bend's version, the commit and the CPU.
 - Cap anything that may run away (`capped.sh MB SECONDS command`), near
   its normal cost: a hang is a fault to trace, not to wait out.
+- Pass a function the fields it reads, not records it projects: a call
+  in argument position makes the function a segment of its own, and a
+  record passed whole into one costs. `emit.ers` given the proof parts
+  (`Pf`, each holding a writer's context) to read their errors cost
+  0.6% at every shape, about 8,000 instructions a unit, the same with
+  every function forced inline; given the errors, nothing (runs 40 to
+  48, `blend-laws.emitted.sharing`).
 
 ## Setup
 

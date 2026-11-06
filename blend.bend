@@ -5951,10 +5951,16 @@ def datatypes(ns: List<&2, Node>, +files: List<&2, List<&2, U32>>) -> List<&2, U
         case _:
           datatypes(t, files)
 
+# the code's file's table: after its header (kept reversed), the units
+# of the walk's order, from the last walked to the first (LAWS.bend,
+# `sharing.emitted`)
+def module.table(+e: Ec, +order: List<&2, U32>, +acc: List<&2, U32>) -> Tb:
+  order.put(List.reverse(&2, U32, order), e, Tb{acc, WmNone{}})
+
 def module.bytes(+files: List<&2, List<&2, U32>>, +e: Ec, +order: List<&2, U32>, +tree: List<&2, Node>, +more: List<&2, U32>) -> List<&2, U32>:
-  tb.bytes(order.put(order, e, Tb{rev.onto(List.append(&2, U32, codes("# Written by Blend from "),
+  tb.bytes(module.table(e, order, rev.onto(List.append(&2, U32, codes("# Written by Blend from "),
     List.append(&2, U32, loc.file(files, 0), List.append(&2, U32, codes("; do not edit.\n"),
-    List.append(&2, U32, imports(tree), List.append(&2, U32, more, datatypes(tree, files)))))), Nil{}), WmNone{}}))
+    List.append(&2, U32, imports(tree), List.append(&2, U32, more, datatypes(tree, files)))))), Nil{})))
 
 def ds.order(d: Ds) -> List<&2, U32>:
   match d:
@@ -6017,7 +6023,7 @@ def pf.file(+files: List<&2, List<&2, U32>>, +tree: List<&2, Node>, +name: List<
 def emit.out(+files: List<&2, List<&2, U32>>, +e: Ec, +order: List<&2, U32>, +tree: List<&2, Node>, +more: List<&2, U32>, +lw: Pf, +pf: Pf, es: List<&2, Er>) -> Out:
   match es:
     case Nil{}:
-      Outs{Con{Fo{root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, List.reverse(&2, U32, order), tree, more)},
+      Outs{Con{Fo{root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more)},
         List.append(&2, Fo,
           when(List<&2, Fo>, pf.has(lw), u => [pf.file(files, tree, root.file(path.at(ec.paths(e), 0), codes("_LAWS.bend")), True{}, lw)], u => Nil{}),
           when(List<&2, Fo>, pf.has(lw) || pf.has(pf), u => [pf.file(files, tree, root.file(path.at(ec.paths(e), 0), codes("_PROOF.bend")), pf.has(lw), pf)], u => Nil{}))}}
@@ -6237,6 +6243,29 @@ def order.what(xs: List<&2, U32>, +us: List<&2, Un>, +mode: U32) -> List<&2, U32
 def emit.own(+cx: Cx) -> List<&2, Ci>:
   cis.of(ims.of(ob.mems(ob.at(cx.obs(cx), 0))), path.at(cx.paths(cx), 0))
 
+# the walk of the units from the roots, along their calls (LAWS.bend,
+# `order.fast`, `sharing.emitted`)
+def emit.walk(+roots: List<&2, U32>, +rss: List<&2, List<&2, Ru>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Ds:
+  df.ds(walk.fast(roots, calls(rss), obs, us))
+
+# the dispositions of the units of the walk's order
+def emit.ms(+order: List<&2, U32>, +rss: List<&2, List<&2, Ru>>, +ut: Ht<Pk<Un>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Ms:
+  mults(order, pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{WmNone{}, Nil{}}, WmNone{})
+
+# emission's errors: the walk's, the dispositions', a law named where a
+# definition is wanted, a name emitted twice (LAWS.bend,
+# `unique.emitted`), the laws' and the proofs'. Given the errors, not
+# the records holding them: a record passed whole into a segment of its
+# own costs (AGENTS.md, Measuring).
+def emit.ers(dse: List<&2, Er>, mse: List<&2, Er>, +all: List<&2, Un>, order: List<&2, U32>, e: Ec, lwe: List<&2, Er>, pfe: List<&2, Er>) -> List<&2, Er>:
+  List.append(&2, Er, dse, List.append(&2, Er, mse, List.append(&2, Er, er.laws(all, pt.of(Un, all), ux.of(all)),
+    List.append(&2, Er, er.names.of(names.all(List.reverse(&2, U32, order), e)), List.append(&2, Er, lwe, pfe)))))
+
+# the writer's context for the code's file
+def emit.ec(+files: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>, +als: List<&2, Al>, +own: List<&2, Ci>, +res: List<&2, List<&2, U32>>,
+    +paths: List<&2, List<&2, U32>>, +ux: Ht<Xe>, +ut: Ht<Pk<Un>>, +mt: Wm<Mu>) -> Ec:
+  Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, ut, mt}
+
 def proof.parts(+mode: U32, +files: List<&2, List<&2, U32>>, +cx: Cx, +all: List<&2, Un>) -> Pf:
   +obs = cx.obs(cx)
   +us = units.of(all, True{})
@@ -6264,17 +6293,15 @@ def emitted(+files: List<&2, List<&2, U32>>, +cx: Cx, +os: List<&2, Oc>) -> Out:
   +ux = ux.of(us)
   +ut = pt.of(Un, us)
   +rss = refss(us, ux, 0)
-  +d = df.ds(walk.fast(roots.all(cx, ux), calls(rss), obs, us))
+  +d = emit.walk(roots.all(cx, ux), rss, obs, us)
   +order = ds.order(d)
-  +ms = mults(order, pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{WmNone{}, Nil{}}, WmNone{})
+  +ms = emit.ms(order, rss, ut, obs, us)
   +own = emit.own(cx)
   +res = need.uniq(need.us(us, obs, cx.paths(cx)), own, Nil{})
-  +e = {Ec{files, obs, us, cx.als(cx), own, res, cx.paths(cx), 0, Nil{}, ux, ut, ms.ms(ms)} : Ec}
+  +e = emit.ec(files, obs, us, cx.als(cx), own, res, cx.paths(cx), ux, ut, ms.ms(ms))
   +lw = proof.parts(1, files, cx, all)
   +pf = proof.parts(2, files, cx, all)
-  emit.out(files, e, order, ob.mems(ob.at(obs, 0)), res.lines(path.at(cx.paths(cx), 0), res, 1), lw, pf,
-    List.append(&2, Er, ds.ers(d), List.append(&2, Er, ms.ers(ms), List.append(&2, Er, er.laws(all, pt.of(Un, all), ux.of(all)),
-      List.append(&2, Er, er.names.of(names.all(List.reverse(&2, U32, order), e)), List.append(&2, Er, pf.ers(lw), pf.ers(pf)))))))
+  emit.out(files, e, order, ob.mems(ob.at(obs, 0)), res.lines(path.at(cx.paths(cx), 0), res, 1), lw, pf, emit.ers(ds.ers(d), ms.ers(ms), all, order, e, pf.ers(lw), pf.ers(pf)))
 
 # The laws and the proofs
 # -----------------------

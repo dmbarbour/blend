@@ -706,3 +706,53 @@ law markers.emitted:
         als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
         B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
         B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}, s, x, j, b) == True{} : Bool}
+
+# LAW: so in the code's file as emitted, each copied unit of the walk's
+# order ends with its counter one more than its numbered copies, each
+# numbered copy one caller (`sharing.copied`), its hypotheses met by
+# emission's own parts: the walk's order after its callees and once
+# (`order.fast`, `order.callees_first`, `order.once`), the dispositions
+# `mults` makes, and the writer reading the uses `mults` reads, its
+# table the units' list's (`units.positions`). The units, their index,
+# the roots and the rest of the context are any.
+# Record: blend-copies-keep-their-name
+law sharing.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +als: List<&2, B.Al>
+  for +own: List<&2, B.Ci>
+  for +res: List<&2, List<&2, U32>>
+  for +paths: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +roots: List<&2, U32>
+  for +acc: List<&2, U32>
+  for +y: U32
+  for +hy: {B.has(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), y) == True{} : Bool}
+  for +hc: {B.mult.share(y, B.pt.of(B.Un, us)) == 2 : U32}
+  {B.ctr.at(B.tb.ctrs(B.module.table(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), acc)), y) == U32.add(1, B.mu.m(B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y))) : U32}
+
+# LAW: and where emission reports no error, the definitions the code's
+# file is written with (`module.table`, by `emit.defs` those of the
+# walk's order reversed) are named each by a name of its own
+# (`emit.unique`): emission checks the names of that order, in the
+# context it writes. The errors of the walk, the dispositions, the laws
+# and the proofs are any.
+# Record: blend-namespaces-as-bends, blend-copies-keep-their-name
+law unique.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +als: List<&2, B.Al>
+  for +own: List<&2, B.Ci>
+  for +res: List<&2, List<&2, U32>>
+  for +paths: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +roots: List<&2, U32>
+  for +dse: List<&2, B.Er>
+  for +mse: List<&2, B.Er>
+  for +all: List<&2, B.Un>
+  for +lwe: List<&2, B.Er>
+  for +pfe: List<&2, B.Er>
+  for +h: {B.emit.ers(dse, mse, all, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), lwe, pfe) == Nil{} : List<&2, B.Er>}
+  {B.nms.distinct(B.defs.names(B.defs.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))))) == True{} : Bool}
