@@ -1,0 +1,7 @@
+# A Bend file's import is local too, or a package's: `../` reaches a file
+# outside the directory, which a package of it would not hold.
+import Base
+import ../units.bend as U
+
+def one() -> U32:
+  U.cm2(1)

@@ -1,1 +1,1 @@
-import-unplain.blend:4: import ../lib/../lib/shapes.blend: an import path is plain names, letters, digits, _ and -, with ./ and ../ leading only, as Bend's
+import-unplain.blend:5: import ../lib/../lib/shapes.blend: an import path is local, plain names (letters, digits, _ and -) led by ./ at most, never ../ or /, or a package's on Bend's hub

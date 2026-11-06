@@ -722,6 +722,37 @@ law inline.files:
   for +h: {B.mds.inline(ms) == True{} : Bool}
   {B.inlines(B.mds.names(ms, root)) == True{} : Bool}
 
+# LAW: an import Blend reads as local stays within its importer's
+# directory, no part of its path `..` and none from `/`, so that a
+# directory holds all its modules import and may be shared as a package.
+# Record: blend-imports-local
+law imports.local:
+  for +p: List<&2, U32>
+  for +ext: List<&2, U32>
+  for +h: {B.import.plain(p, ext) == True{} : Bool}
+  {B.path.down(B.split.slash(p, Nil{}, Nil{})) == True{} : Bool}
+
+# LAW: a package's import keeps its path as written among its importer's
+# imports, never joined to the importer's directory: Bend's to find.
+# Record: blend-imports-local
+law imports.package:
+  for +mpath: List<&2, U32>
+  for +p: List<&2, U32>
+  for +alias: List<&2, U32>
+  for +blend: Bool
+  for +no: U32
+  for +h: {B.path.pkg(p) == True{} : Bool}
+  {B.cis.of(Con{B.Im{p, alias, blend, no}, Nil{}}, mpath) == Con{B.Ci{alias, p, no}, Nil{}} : List<&2, B.Ci>}
+
+# LAW: and re-imported into the root's file, for the bodies it copies,
+# a package's import keeps its path as written.
+# Record: blend-imports-local
+law imports.package.root:
+  for +root: List<&2, U32>
+  for +p: List<&2, U32>
+  for +h: {B.path.pkg(p) == True{} : Bool}
+  {B.rel.import(root, p) == p : List<&2, U32>}
+
 # LAW: a module whose path holds no newline imports modules whose paths
 # hold none: an import's path is its line's, joined to its importer's.
 # So, with a path from the command line refused where it holds one,

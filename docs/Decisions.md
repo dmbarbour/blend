@@ -69,6 +69,9 @@ its modules, namespaces and emitted names are Bend's.
   Blend's namespaces are Bend's, a file's own names and its imports' by
   local aliases, the same however imports reach them; `extend` stays out
   of the top level.
+- [`blend-imports-local`](decisions/blend-imports-local.md): a `.blend`
+  file's imports are local, never `../` or `/`, or a package's on Bend's
+  hub, passed to Bend as written.
 - [`blend-paths-no-newline`](decisions/blend-paths-no-newline.md): a path
   holding a newline is refused, as it would break each line naming it.
 - [`blend-c3`](decisions/blend-c3.md): inheritance is linearized by C3,

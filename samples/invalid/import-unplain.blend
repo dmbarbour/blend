@@ -1,5 +1,6 @@
-# An import's path is as Bend's: `./` and `../` leading only, then plain
-# names; `lib/../lib` names a directory after a name, which Bend refuses.
+# An import's path is local: plain names led by `./` at most, never `../`
+# or `/`, so that a directory holds all it imports and may be shared as a
+# package; `../lib/../lib` climbs out, and back.
 import Base
 import ../lib/../lib/shapes.blend as S
 

@@ -199,9 +199,12 @@ Bend's imports pass through.
   S`, name their objects `S.Square`, to extend and to call. Imports form
   a DAG, each file read once, a cycle an error, and an object means the
   same however an import reaches it, the module being no object
-  (`blend-module-is-bend`). An import's path is as Bend's: `./` and
-  `../` leading only, then plain names (letters, digits, `_`, `-`), no
-  absolute path; Blend refuses the paths Bend would. Each module emits its own `.bend`; the
+  (`blend-module-is-bend`). An import's path, of a `.blend` file or a
+  `.bend`, is local: plain names (letters, digits, `_`, `-`) led by `./`
+  at most, never `../` or `/`, so that a directory holds all it imports
+  and may be shared as a package; or a package's on Bend's hub,
+  `0x<hash>/...` or `<name>@<version>/...`, passed to Bend as written,
+  its Blend files not read yet (`blend-imports-local`). Each module emits its own `.bend`; the
   root's import of one names it. An object extending another module's
   copies what it inherits, and the bodies copied name that module's
   definitions through its alias.

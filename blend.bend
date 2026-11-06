@@ -1791,7 +1791,7 @@ def parts.lead(ss: List<&2, List<&2, U32>>, +ext: List<&2, U32>) -> Bool:
     case Nil{}:
       False{}
     case Con{+s, +t}:
-      when(Bool, same(s, codes(".")) || same(s, codes("..")) || List.is_empty(&2, U32, s), u => parts.lead(t, ext), u => parts.plain(Con{s, t}, ext))
+      when(Bool, same(s, codes(".")), u => parts.lead(t, ext), u => parts.plain(Con{s, t}, ext))
 
 # a path's parts at its slashes; the byte tested, not matched, so that a
 # law can follow it (LAWS.bend, `inline.files`)
@@ -1807,22 +1807,71 @@ def import.parts(ss: List<&2, List<&2, U32>>, +ext: List<&2, U32>) -> Bool:
     case Nil{}:
       False{}
     case Con{+s, +t}:
-      when(Bool, List.is_empty(&2, U32, s), u => False{},
-        u => when(Bool, same(s, codes(".")) || same(s, codes("..")), v => parts.lead(t, ext), v => parts.plain(Con{s, t}, ext)))
+      when(Bool, same(s, codes(".")), u => parts.lead(t, ext), u => parts.plain(Con{s, t}, ext))
 
+# whether a path's parts stay within its directory: none `..`, the first
+# not empty, as from `/` (`blend-imports-local`)
+def parts.down(ss: List<&2, List<&2, U32>>) -> Bool:
+  match ss:
+    case Nil{}:
+      True{}
+    case Con{+s, t}:
+      Bool.not(same(s, codes(".."))) && parts.down(t)
+
+def path.down(+ss: List<&2, List<&2, U32>>) -> Bool:
+  match ss:
+    case Nil{}:
+      True{}
+    case Con{+s, t}:
+      Bool.not(List.is_empty(&2, U32, s)) && parts.down(Con{s, t})
+
+def import.plain.k(+ss: List<&2, List<&2, U32>>, +ext: List<&2, U32>) -> Bool:
+  path.down(ss) && import.parts(ss, ext)
+
+# a local import: plain names led by `./` at most, never `../` or `/`, so
+# that a directory holds all it imports and may be shared as a package
+# (`blend-imports-local`); its staying within is tested apart, the
+# boundary the law `imports.local` reads, though no plain name is `..`
 def import.plain(+p: List<&2, U32>, +ext: List<&2, U32>) -> Bool:
-  import.parts(split.slash(p, Nil{}, Nil{}), ext)
+  import.plain.k(split.slash(p, Nil{}, Nil{}), ext)
+
+# an import of a package on Bend's hub, as Bend reads one: its first part
+# the package's hash, `0x...`, or its name, `name@version`; Bend checks
+# the rest
+def path.pkg.at(r: List<&2, U32> & List<&2, U32>) -> Bool:
+  (+first, rest) = r
+  starts.s(first, "0x") || has(first, 64)
+
+def path.pkg(+p: List<&2, U32>) -> Bool:
+  path.pkg.at(until(p, 47))
 
 # an import: its path as written, its alias, whether it is Blend's
 type Im is Data:
   Im{path: List<&2, U32>, alias: List<&2, U32>, +blend: Bool, +no: U32}
 
+def ext.of(+blend: Bool) -> List<&2, U32>:
+  match blend:
+    case True{}:
+      codes(".blend")
+    case False{}:
+      codes(".bend")
+
+# a package's import passed to Bend, but its Blend files, not read yet
+# (`blend-packages`); a local one plain
+def im.path.ers(+pkg: Bool, +blend: Bool, +path: List<&2, U32>, +no: U32) -> List<&2, Er>:
+  match pkg:
+    case True{}:
+      when(List<&2, Er>, blend, u => [Er{no, "import " ++ text(path) ++ ": a package's Blend files are not read yet; import the .bend files it emits"}],
+        u => Nil{})
+    case False{}:
+      when(List<&2, Er>, Bool.not(import.plain(path, ext.of(blend))),
+        u => [Er{no, "import " ++ text(path) ++ ": an import path is local, plain names (letters, digits, _ and -) led by ./ at most, never ../ or /, or a package's on Bend's hub"}],
+        u => Nil{})
+
 def im.plain.ers(i: Im) -> List<&2, Er>:
   match i:
     case Im{+path, alias, +blend, +no}:
-      when(List<&2, Er>, blend && Bool.not(import.plain(path, codes(".blend"))),
-        u => [Er{no, "import " ++ text(path) ++ ": an import path is plain names, letters, digits, _ and -, with ./ and ../ leading only, as Bend's"}],
-        u => Nil{})
+      im.path.ers(path.pkg(path), blend, path, no)
 
 def im.made(r: List<&2, U32> & List<&2, U32>, +no: U32) -> Maybe<&2, Im>:
   (+path, +rest) = r
@@ -3317,6 +3366,15 @@ def path.plain(+p: List<&2, U32>) -> List<&2, U32>:
   when(List<&2, U32>, starts(p, [47]), u => Con{47, slashes(path.norm(split.slash(p, Nil{}, Nil{}), Nil{}))},
     u => slashes(path.norm(split.slash(p, Nil{}, Nil{}), Nil{})))
 
+# an import's file from where the root was read; a package's as written,
+# Bend's to find
+def ci.path(+pkg: Bool, +mpath: List<&2, U32>, +p: List<&2, U32>, +blend: Bool) -> List<&2, U32>:
+  match pkg:
+    case True{}:
+      p
+    case False{}:
+      bendify(path.from(mpath, p), blend)
+
 def cis.of(xs: List<&2, Im>, +mpath: List<&2, U32>) -> List<&2, Ci>:
   match xs:
     case Nil{}:
@@ -3324,7 +3382,7 @@ def cis.of(xs: List<&2, Im>, +mpath: List<&2, U32>) -> List<&2, Ci>:
     case Con{i, t}:
       match i:
         case Im{+p, +alias, +blend, +no}:
-          Con{Ci{alias, bendify(path.from(mpath, p), blend), no}, cis.of(t, mpath)}
+          Con{Ci{alias, ci.path(path.pkg(p), mpath, p, blend), no}, cis.of(t, mpath)}
 
 # module m's imports, by alias and file
 def mod.cis(+cx: Cx, +m: U32) -> List<&2, Ci>:
@@ -6016,9 +6074,17 @@ def path.rel(from: List<&2, List<&2, U32>>, to: List<&2, List<&2, U32>>) -> List
 def md.name(+root: List<&2, U32>, +path: List<&2, U32>) -> List<&2, U32>:
   slashes(path.rel(path.dir(root), split.slash(path, Nil{}, Nil{})))
 
-# a path from the root's directory, as an import writes it
+# a path from the root's directory, as an import writes it; a package's
+# as written
+def rel.import.k(+pkg: Bool, +root: List<&2, U32>, +path: List<&2, U32>) -> List<&2, U32>:
+  match pkg:
+    case True{}:
+      path
+    case False{}:
+      when(List<&2, U32>, starts.s(md.name(root, path), ".."), u => md.name(root, path), u => List.append(&2, U32, codes("./"), md.name(root, path)))
+
 def rel.import(+root: List<&2, U32>, +path: List<&2, U32>) -> List<&2, U32>:
-  when(List<&2, U32>, starts.s(md.name(root, path), ".."), u => md.name(root, path), u => List.append(&2, U32, codes("./"), md.name(root, path)))
+  rel.import.k(path.pkg(path), root, path)
 
 def need.rts(ts: List<&2, Rt>, +obs: List<&2, Ob>, +paths: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
   match ts:

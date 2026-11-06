@@ -14214,3 +14214,33 @@ def Laws.bends.members(trees, als, h):
 
 def Laws.datatypes.emitted(files, trees, als, hf, hb):
   Laws.markers.datatypes(B.ob.mems(B.ob.at(B.obs.made(B.syn.of(als, B.obs(trees))), 0)), files, hf, bm_at(B.obs.made(B.syn.of(als, B.obs(trees))), 0, Laws.bends.members(trees, als, hb)))
+
+# Imports local, or a package's (`imports.local`, `imports.package`,
+# `imports.package.root`): the boundary read off `import.plain`, which
+# tests it apart from the plain names; a package's path kept by a case
+# split on the test that found it, the test a `Bool` parameter of the
+# function that decides on it.
+
+def Laws.imports.local(p, ext, h):
+  and_l(B.path.down(B.split.slash(p, Nil{}, Nil{})), B.import.parts(B.split.slash(p, Nil{}, Nil{}), ext), h)
+
+def cip_pkg(+c: Bool, +mpath: List<&2, U32>, +p: List<&2, U32>, +alias: List<&2, U32>, +blend: Bool, +no: U32, h: {c == True{} : Bool}) ->
+    {Con{B.Ci{alias, B.ci.path(c, mpath, p, blend), no}, Nil{}} == Con{B.Ci{alias, p, no}, Nil{}} : List<&2, B.Ci>}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({Con{B.Ci{alias, B.ci.path(False{}, mpath, p, blend), no}, Nil{}} == Con{B.Ci{alias, p, no}, Nil{}} : List<&2, B.Ci>}, MB.false_ne_true()(h))
+
+def Laws.imports.package(mpath, p, alias, blend, no, h):
+  cip_pkg(B.path.pkg(p), mpath, p, alias, blend, no, h)
+
+def rik_pkg(+c: Bool, +root: List<&2, U32>, +p: List<&2, U32>, h: {c == True{} : Bool}) -> {B.rel.import.k(c, root, p) == p : List<&2, U32>}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({B.rel.import.k(False{}, root, p) == p : List<&2, U32>}, MB.false_ne_true()(h))
+
+def Laws.imports.package.root(root, p, h):
+  rik_pkg(B.path.pkg(p), root, p, h)
