@@ -20,13 +20,13 @@ concrete object's definitions, then its laws and their proofs where it
 has any, beside the module or into DIR, printing each path; or, writing nothing at all, the errors of
 any (on stderr, the status 1). A module's emission depends on nothing
 that imports it (every definition emitted, no top-level object
-extended), so modules emit independently. Only the modules named are
-written (`blend-emit-verifies-imports`): an import none names is
-verified instead, emitted again in memory and compared with its files
-beside it, each byte, a file stale, missing or no longer emitted an
-error that writes nothing; `--alone` leaves the imports unverified
-(`bend blend.bend -- emit --alone ...` under Bend, which takes a dashed
-argument as its own). DIR takes every file flat, for checking: two
+extended), so modules emit independently. `emit` writes a module's
+tree, the imports none names written too, first, each beside its
+`.blend` (imports are local, so the tree is the user's own); `--alone`
+writes the modules named, and no other (`blend-emit-verifies-imports`;
+`bend blend.bend -- emit --alone ...` under Bend, which takes a dashed
+argument as its own). Where the modules named have errors, nothing is
+written. DIR takes every file flat, for checking: two
 modules writing one name there are an error. A path holding a newline
 is refused, as it would break each line naming it
 (`blend-paths-no-newline`). The

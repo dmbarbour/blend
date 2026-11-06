@@ -7274,7 +7274,7 @@ def basename(path: String) -> String:
   base.k(until(List.reverse(&2, U32, codes(path)), 47))
 
 def usage() -> String:
-  "usage:\n  blend emit [--alone] FILE.blend... [DIR]  write each module's .bend beside it, or into DIR\n  blend read|objects|resolve FILE.blend     print a stage\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
+  "usage:\n  blend emit [--alone] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR; --alone those named alone\n  blend read|objects|resolve FILE.blend     print a stage\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
 
 # 1 read, 2 objects, 3 resolve, 4 emit
 def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
@@ -7606,6 +7606,8 @@ def verify.cks(cks: List<&2, Ck>, +errs: List<&2, U32>, fs: List<&2, Fo>) -> IO(
           verify.cks(ct, List.append(&2, U32, errs, msg), fs)
 
 # each import emitted again in memory, its checks gathered; then made
+# (`emit` no longer verifies, writing the tree; kept for `deps`,
+# blend-cli.deps)
 def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>) -> IO(Unit):
   match ds:
     case Nil{}:
@@ -7614,20 +7616,44 @@ def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
         +ms => verify.deps(dt, List.append(&2, Ck, acc, dep.checks(run.mods(4, ms), d)), fs))
 
-def emit.end(+alone: Bool, ds: List<&2, List<&2, U32>>, o: Out) -> IO(Unit):
+# the imports none names, each read with its own and emitted in turn,
+# into the directory given, else beside it (`blend-emit-verifies-imports`)
+def emit.deps(ds: List<&2, List<&2, U32>>, +dir: Maybe<&2, List<&2, U32>>, acc: Out) -> IO(Out):
+  match ds:
+    case Nil{}:
+      IO.pure(Out, acc)
+    case Con{+d, dt}:
+      IO.bind(List<&2, Md>, Out, load.go(4096n, [Td{d, 0}], Nil{}),
+        +ms => emit.deps(dt, dir, out.join(acc, out.at(run.mods(4, ms), dir.or(dir, d)))))
+
+def emit.write(o: Out) -> IO(Unit):
   match o:
     case Outs{+fs}:
-      when(IO(Unit), alone, u => write.all(fs), u => verify.deps(ds, Nil{}, fs))
+      write.all(fs)
     case Out{+ok, text}:
       main.out(Out{ok, text})
 
+# the modules named alone, or with the imports they reach, written
+# first; where the modules named have errors, those alone, nothing
+# written
+def emit.end(o: Out, +alone: Bool, +dir: Maybe<&2, List<&2, U32>>, ds: List<&2, List<&2, U32>>) -> IO(Unit):
+  match o:
+    case Out{+ok, text}:
+      main.out(Out{ok, text})
+    case Outs{+fs}:
+      match alone:
+        case True{}:
+          emit.write(out.once(Outs{fs}))
+        case False{}:
+          IO.bind(Out, Unit, emit.deps(ds, dir, Outs{Nil{}}), d => emit.write(out.once(out.join(d, Outs{fs}))))
+
 # each module emitted in turn, each read with its imports, into the
-# directory given, else its own; then the imports none names verified,
-# unless alone; then every module's files written, or none
+# directory given, else its own; then, unless alone, the imports none
+# names emitted too, its tree; then every file written, or none
 def main.emit.go(ps: List<&2, String>, +dir: Maybe<&2, List<&2, U32>>, +alone: Bool, +named: List<&2, List<&2, U32>>, deps: List<&2, List<&2, U32>>, acc: Out) -> IO(Unit):
   match ps:
     case Nil{}:
-      emit.end(alone, deps.missed(deps, named, Nil{}), out.once(acc))
+      emit.end(acc, alone, dir, deps.missed(deps, named, Nil{}))
     case Con{+p, t}:
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{codes(p), 0}], Nil{}),
         +ms => main.emit.go(t, dir, alone, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
