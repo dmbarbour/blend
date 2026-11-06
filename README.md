@@ -23,7 +23,11 @@ that imports it (every definition emitted, no top-level object
 extended), so modules emit independently. `emit` writes a module's
 tree, the imports none names written too, first, each beside its
 `.blend` (imports are local, so the tree is the user's own); `--alone`
-writes the modules named, and no other (`blend-emit-verifies-imports`;
+writes the modules named, and no other. `blend deps [--make]
+FILE.blend...` lists the modules `emit` would write, imports first, each
+current, stale, missing or refused, the status 1 where any is not
+current; `--make` prints each as a makefile's rule instead
+(`blend-emit-verifies-imports`;
 `bend blend.bend -- emit --alone ...` under Bend, which takes a dashed
 argument as its own). Where the modules named have errors, nothing is
 written. DIR takes every file flat, for checking: two

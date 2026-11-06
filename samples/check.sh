@@ -88,9 +88,39 @@ elif ! cmp -s "$v/lib/shapes.bend" lib/shapes.bend || ! cmp -s "$v/imports.bend"
   echo "blend: emit of a tree writes other than the samples' files"
   status=1
 fi
+# `deps`: the tree as emit writes it, imports first, each current
+want="current lib/shapes.blend
+current imports.blend"
+got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps imports.blend 2>&1) || { echo "blend: deps of a current tree fails"; status=1; }
+[ "$got" = "$want" ] || { echo "blend: deps of a current tree says '$got', not '$want'"; status=1; }
+want="lib/shapes.bend: lib/shapes.blend
+	blend emit --alone lib/shapes.blend
+
+imports.bend: imports.blend lib/shapes.blend
+	blend emit --alone imports.blend"
+got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps --make imports.blend 2>&1) || { echo "blend: deps --make fails"; status=1; }
+[ "$got" = "$want" ] || { echo "blend: deps --make says '$got', not '$want'"; status=1; }
 echo "# stale" > "$v/lib/shapes.bend" || exit 1
 (cd "$v" && "$CAPPED" 500 30 "$BLEND" emit --alone imports.blend >/dev/null) || { echo "blend: emit --alone fails"; status=1; }
 [ "$(cat "$v/lib/shapes.bend")" = "# stale" ] || { echo "blend: emit --alone writes an import"; status=1; }
+# a stale import, the status 1; a module with errors refused, the errors
+# on standard error
+want="stale lib/shapes.blend
+current imports.blend"
+if got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps imports.blend 2>&1); then
+  echo "blend: deps of a stale tree succeeds"
+  status=1
+elif [ "$got" != "$want" ]; then
+  echo "blend: deps of a stale tree says '$got', not '$want'"
+  status=1
+fi
+if got=$(cd invalid && "$CAPPED" 500 30 "$BLEND" deps law-unproven.blend 2>/dev/null); then
+  echo "blend: deps of a module with errors succeeds"
+  status=1
+elif [ "$got" != "refused law-unproven.blend" ]; then
+  echo "blend: deps of a module with errors says '$got'"
+  status=1
+fi
 mkdir -p ../results/absolute || exit 1
 "$CAPPED" 500 30 "$BLEND" emit "$PWD/imports.blend" ../results/absolute >/dev/null ||
   { echo "blend: a module named by its absolute path fails"; status=1; }
