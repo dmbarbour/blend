@@ -67,6 +67,10 @@
 #   at its own result (`at_new`); a remainder below ten through the
 #   hub's division invariant (`mod10_lt`), a number and the next unequal
 #   past 2^32 (`u32_succ_ne`).
+# - The reader's text within a line (`inline.read`): the lines split at
+#   newlines, each item builder keeping its line's bytes or adding
+#   literals, a pair's halves claimed together (`pil`), the items and
+#   tree proofs' layout and mirrors reused.
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -8009,3 +8013,896 @@ def Laws.markers.writer(e, s, x, j, b, hf, hl):
     wh_ok(e, s, x, j, b, hf),
     ul_k(B.rl.from(B.un.lines(B.ec.un(e, s)), B.node.no(B.un.node(B.ec.un(e, s)))), B.rl.from(B.un.lines(B.ec.un(e, s)), U32.add(B.node.no(B.un.node(B.ec.un(e, s))), 1)),
       B.un.lines(B.ec.un(e, s)), e, s, j, B.node.ind(B.un.node(B.ec.un(e, s))), B.unit.head(e, s, x, j, b), hf, un_ls(B.ec.un(e, s), il_un(e, s, hf)), hl, {==}, {==}))
+
+# The reader's text within a line
+# -------------------------------
+#
+# A file's lines hold no newline, lines.go splitting there (`inline.lines`);
+# each item's texts are parts of its line or literals (`inline.items`);
+# the tree keeps them, a body's tokens spelling its lines
+# (`inline.tree`).
+
+def il_cons(+x: U32, +t: List<&2, U32>, e: {U32.is_eq(x, 10) == False{} : Bool}, +h: {B.inline(t) == True{} : Bool}) -> {B.inline(Con{x, t}) == True{} : Bool}:
+  and_intro(Bool.not(U32.is_eq(x, 10)), B.inline(t), not_false(U32.is_eq(x, 10), e), h)
+
+def il_hd(+x: U32, +t: List<&2, U32>, h: {B.inline(Con{x, t}) == True{} : Bool}) -> {Bool.not(U32.is_eq(x, 10)) == True{} : Bool}:
+  and_l(Bool.not(U32.is_eq(x, 10)), B.inline(t), h)
+
+def il_rgo(xs: List<&2, U32>, +acc: List<&2, U32>, +hx: {B.inline(xs) == True{} : Bool}, +ha: {B.inline(acc) == True{} : Bool}) ->
+    {B.inline(List.reverse.go(&2, U32, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+x, +t}:
+      il_rgo(t, Con{x, acc}, il_tail(x, t, hx), and_intro(Bool.not(U32.is_eq(x, 10)), B.inline(acc), il_hd(x, t, hx), ha))
+
+def il_rev(+xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(List.reverse(&2, U32, xs)) == True{} : Bool}:
+  il_rgo(xs, Nil{}, h, {==})
+
+def il_drop(n: Nat, xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(B.drop(n, xs)) == True{} : Bool}:
+  match n:
+    case 0n:
+      h
+    case 1n+(+k):
+      match xs:
+        case Nil{}:
+          {==}
+        case Con{+x, +t}:
+          il_drop(k, t, il_tail(x, t, h))
+
+def il_ltail(xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(List.tail(&2, U32, xs)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      il_tail(x, t, h)
+
+# A file's lines
+
+def lo_il(c: Bool, +h: U32, +t: List<&2, U32>, +n: Nat, +no: U32, +hx: {B.inline(Con{h, t}) == True{} : Bool},
+    ih: {B.ln.inline(B.line.of(t, 1n+n, no)) == True{} : Bool}) -> {B.ln.inline(lo_k(c, h, t, n, no)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih
+    case False{}:
+      hx
+
+def lineof_il(xs: List<&2, U32>, +n: Nat, +no: U32, +hx: {B.inline(xs) == True{} : Bool}) -> {B.ln.inline(B.line.of(xs, n, no)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      lo_il(U32.is_eq(x, 32), x, t, n, no, hx, lineof_il(t, 1n+n, no, il_tail(x, t, hx)))
+
+def lns_rgo(xs: List<&2, B.Ln>, +acc: List<&2, B.Ln>, +hx: {B.lns.inline(xs) == True{} : Bool}, +ha: {B.lns.inline(acc) == True{} : Bool}) ->
+    {B.lns.inline(List.reverse.go(&2, B.Ln, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+l, +t}:
+      lns_rgo(t, Con{l, acc}, and_r(B.ln.inline(l), B.lns.inline(t), hx), and_intro(B.ln.inline(l), B.lns.inline(acc), and_l(B.ln.inline(l), B.lns.inline(t), hx), ha))
+
+def lns_rev(+xs: List<&2, B.Ln>, +h: {B.lns.inline(xs) == True{} : Bool}) -> {B.lns.inline(List.reverse(&2, B.Ln, xs)) == True{} : Bool}:
+  lns_rgo(xs, Nil{}, h, {==})
+
+# a line ended: its text, the bytes kept, held within it
+def lend_il(+cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, +hc: {B.inline(cur) == True{} : Bool}, +ho: {B.lns.inline(out) == True{} : Bool}) ->
+    {B.lns.inline(Con{B.lines.line(cur, no), out}) == True{} : Bool}:
+  and_intro(B.ln.inline(B.lines.line(cur, no)), B.lns.inline(out), lineof_il(List.reverse(&2, U32, cur), 0n, no, il_rev(cur, hc)), ho)
+
+def lg_il(b1: Bool, +b2: Bool, +b: U32, +t: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, e1: {U32.is_eq(b, 10) == b1 : Bool},
+    ih1: {B.lns.inline(B.lines.go(t, Nil{}, U32.add(no, 1), Con{B.lines.line(cur, no), out})) == True{} : Bool},
+    ih2: {B.lns.inline(B.lines.go(t, cur, no, out)) == True{} : Bool},
+    ih3: @e:{U32.is_eq(b, 10) == False{} : Bool} -> {B.lns.inline(B.lines.go(t, Con{b, cur}, no, out)) == True{} : Bool}) ->
+    {B.lns.inline(lines_k(b, t, cur, no, out, b1, b2)) == True{} : Bool}:
+  match b1 b2:
+    case True{} _:
+      ih1
+    case False{} True{}:
+      ih2
+    case False{} False{}:
+      ih3(e1)
+
+def lines_il(bs: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, B.Ln>, +hc: {B.inline(cur) == True{} : Bool}, +ho: {B.lns.inline(out) == True{} : Bool}) ->
+    {B.lns.inline(B.lines.go(bs, cur, no, out)) == True{} : Bool}:
+  match bs:
+    case Nil{}:
+      lns_rev(Con{B.lines.line(cur, no), out}, lend_il(cur, no, out, hc, ho))
+    case Con{+b, +t}:
+      lg_il(U32.is_eq(b, 10), U32.is_eq(b, 13), b, t, cur, no, out, {==},
+        lines_il(t, Nil{}, U32.add(no, 1), Con{B.lines.line(cur, no), out}, {==}, lend_il(cur, no, out, hc, ho)),
+        lines_il(t, cur, no, out, hc, ho),
+        e => lines_il(t, Con{b, cur}, no, out, il_cons(b, cur, e, hc), ho))
+
+def Laws.inline.lines(bs, base):
+  lines_il(bs, Nil{}, U32.add(base, 1), Nil{}, {==}, {==})
+
+# Parts of lines: a pair's halves each within a line
+
+def pil(p: List<&2, U32> & List<&2, U32>) -> Bool:
+  match p:
+    case (a, b):
+      Bool.and(B.inline(a), B.inline(b))
+
+def ugk(+cond: Bool, +h: U32, +t: List<&2, U32>, +c: U32, +acc: List<&2, U32>) -> List<&2, U32> & List<&2, U32>:
+  B.when(List<&2, U32> & List<&2, U32>, cond, u => (List.reverse(&2, U32, acc), t), u => B.until.go(t, c, Con{h, acc}))
+
+def ug_k(cond: Bool, +h: U32, +t: List<&2, U32>, +c: U32, +acc: List<&2, U32>, +ha: {B.inline(acc) == True{} : Bool}, +ht: {B.inline(t) == True{} : Bool},
+    ih: {pil(B.until.go(t, c, Con{h, acc})) == True{} : Bool}) -> {pil(ugk(cond, h, t, c, acc)) == True{} : Bool}:
+  match cond:
+    case True{}:
+      and_intro(B.inline(List.reverse(&2, U32, acc)), B.inline(t), il_rev(acc, ha), ht)
+    case False{}:
+      ih
+
+def ug_il(xs: List<&2, U32>, +c: U32, +acc: List<&2, U32>, +hx: {B.inline(xs) == True{} : Bool}, +ha: {B.inline(acc) == True{} : Bool}) ->
+    {pil(B.until.go(xs, c, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      and_intro(B.inline(List.reverse(&2, U32, acc)), True{}, il_rev(acc, ha), {==})
+    case Con{+h, +t}:
+      ug_k(U32.is_eq(h, c), h, t, c, acc, ha, il_tail(h, t, hx), ug_il(t, c, Con{h, acc}, il_tail(h, t, hx), il_cons(h, acc, ne10(h, t, hx), ha)))
+
+def il_until(+xs: List<&2, U32>, +c: U32, +hx: {B.inline(xs) == True{} : Bool}) -> {pil(B.until(xs, c)) == True{} : Bool}:
+  ug_il(xs, c, Nil{}, hx, {==})
+
+def ltk(+c: Bool, +h: U32, +t: List<&2, U32>) -> List<&2, U32>:
+  B.when(List<&2, U32>, c, u => B.ltrim(t), u => Con{h, t})
+
+def lt_il(c: Bool, +h: U32, +t: List<&2, U32>, +hx: {B.inline(Con{h, t}) == True{} : Bool}, ih: {B.inline(B.ltrim(t)) == True{} : Bool}) ->
+    {B.inline(ltk(c, h, t)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih
+    case False{}:
+      hx
+
+def il_ltrim(xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(B.ltrim(xs)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      lt_il(U32.is_eq(x, 32), x, t, h, il_ltrim(t, il_tail(x, t, h)))
+
+def il_rtrim(+xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(B.rtrim(xs)) == True{} : Bool}:
+  il_rev(B.ltrim(List.reverse(&2, U32, xs)), il_ltrim(List.reverse(&2, U32, xs), il_rev(xs, h)))
+
+def il_trim(+xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(B.trim(xs)) == True{} : Bool}:
+  il_rtrim(B.ltrim(xs), il_ltrim(xs, h))
+
+def sak(+cond: Bool, +h: U32, +t: List<&2, U32>, +p: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32> & List<&2, U32>:
+  B.when(List<&2, U32> & List<&2, U32>, cond, u => (List.reverse(&2, U32, acc), B.drop(List.length(&2, U32, p), Con{h, t})), u => B.split.at(t, p, Con{h, acc}))
+
+def sa_k(cond: Bool, +h: U32, +t: List<&2, U32>, +p: List<&2, U32>, +acc: List<&2, U32>, +ha: {B.inline(acc) == True{} : Bool},
+    +hx: {B.inline(Con{h, t}) == True{} : Bool}, ih: {pil(B.split.at(t, p, Con{h, acc})) == True{} : Bool}) -> {pil(sak(cond, h, t, p, acc)) == True{} : Bool}:
+  match cond:
+    case True{}:
+      and_intro(B.inline(List.reverse(&2, U32, acc)), B.inline(B.drop(List.length(&2, U32, p), Con{h, t})), il_rev(acc, ha), il_drop(List.length(&2, U32, p), Con{h, t}, hx))
+    case False{}:
+      ih
+
+def sa_il(xs: List<&2, U32>, +p: List<&2, U32>, +acc: List<&2, U32>, +hx: {B.inline(xs) == True{} : Bool}, +ha: {B.inline(acc) == True{} : Bool}) ->
+    {pil(B.split.at(xs, p, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      and_intro(B.inline(List.reverse(&2, U32, acc)), True{}, il_rev(acc, ha), {==})
+    case Con{+h, +t}:
+      sa_k(B.starts(Con{h, t}, p), h, t, p, acc, ha, hx, sa_il(t, p, Con{h, acc}, il_tail(h, t, hx), il_cons(h, acc, ne10(h, t, hx), ha)))
+
+def nsk(+cond: Bool, +h: U32, +t: List<&2, U32>, +ct: List<&2, B.Cl>, +acc: List<&2, U32>) -> List<&2, U32> & List<&2, U32>:
+  B.when(List<&2, U32> & List<&2, U32>, cond, u => B.name.split(t, ct, Con{h, acc}), u => (List.reverse(&2, U32, acc), Con{h, t}))
+
+def ns_k(cond: Bool, +h: U32, +t: List<&2, U32>, +ct: List<&2, B.Cl>, +acc: List<&2, U32>, +ha: {B.inline(acc) == True{} : Bool},
+    +hx: {B.inline(Con{h, t}) == True{} : Bool}, ih: {pil(B.name.split(t, ct, Con{h, acc})) == True{} : Bool}) -> {pil(nsk(cond, h, t, ct, acc)) == True{} : Bool}:
+  match cond:
+    case True{}:
+      ih
+    case False{}:
+      and_intro(B.inline(List.reverse(&2, U32, acc)), B.inline(Con{h, t}), il_rev(acc, ha), hx)
+
+def ns_il(xs: List<&2, U32>, cs: List<&2, B.Cl>, +acc: List<&2, U32>, +hx: {B.inline(xs) == True{} : Bool}, +ha: {B.inline(acc) == True{} : Bool}) ->
+    {pil(B.name.split(xs, cs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      match cs:
+        case Nil{}:
+          and_intro(B.inline(List.reverse(&2, U32, acc)), True{}, il_rev(acc, ha), {==})
+        case Con{c, ct}:
+          and_intro(B.inline(List.reverse(&2, U32, acc)), True{}, il_rev(acc, ha), {==})
+    case Con{+h, +t}:
+      match cs:
+        case Nil{}:
+          and_intro(B.inline(List.reverse(&2, U32, acc)), True{}, il_rev(acc, ha), {==})
+        case Con{c, +ct}:
+          ns_k(B.cl.name(c), h, t, ct, acc, ha, hx, ns_il(t, ct, Con{h, acc}, il_tail(h, t, hx), il_cons(h, acc, ne10(h, t, hx), ha)))
+
+def pgk(+cond: Bool, +h: U32, +t: List<&2, U32>, +prev: U32, +depth: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  B.when(List<&2, U32>, cond, u => List.reverse(&2, U32, acc), u => B.parens.go(t, h, B.depth.next(prev, h, depth), Con{h, acc}))
+
+def pg_k(cond: Bool, +h: U32, +t: List<&2, U32>, +prev: U32, +depth: U32, +acc: List<&2, U32>, +ha: {B.inline(acc) == True{} : Bool},
+    ih: {B.inline(B.parens.go(t, h, B.depth.next(prev, h, depth), Con{h, acc})) == True{} : Bool}) -> {B.inline(pgk(cond, h, t, prev, depth, acc)) == True{} : Bool}:
+  match cond:
+    case True{}:
+      il_rev(acc, ha)
+    case False{}:
+      ih
+
+def pg_il(xs: List<&2, U32>, +prev: U32, +depth: U32, +acc: List<&2, U32>, +hx: {B.inline(xs) == True{} : Bool}, +ha: {B.inline(acc) == True{} : Bool}) ->
+    {B.inline(B.parens.go(xs, prev, depth, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      il_rev(acc, ha)
+    case Con{+h, +t}:
+      pg_k(Bool.and(U32.is_eq(h, 41), U32.is_eq(depth, 0)), h, t, prev, depth, acc, ha,
+        pg_il(t, h, B.depth.next(prev, h, depth), Con{h, acc}, il_tail(h, t, hx), il_cons(h, acc, ne10(h, t, hx), ha)))
+
+def il_parens(+xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(B.parens(xs)) == True{} : Bool}:
+  pg_il(xs, 0, 0, Nil{}, h, {==})
+
+def tkk(+c: Bool, +r: List<&2, U32>) -> List<&2, U32>:
+  B.when(List<&2, U32>, c, u => B.trim(B.drop(1n, r)), u => B.codes("Type"))
+
+def tk_il(c: Bool, +r: List<&2, U32>, +h: {B.inline(r) == True{} : Bool}) -> {B.inline(tkk(c, r)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_trim(B.drop(1n, r), il_drop(1n, r, h))
+    case False{}:
+      {==}
+
+def il_kind(+r: List<&2, U32>, +h: {B.inline(r) == True{} : Bool}) -> {B.inline(B.type.kind(r)) == True{} : Bool}:
+  tk_il(B.starts.s(r, ":"), r, h)
+
+def udk(+c: Bool, +xs: List<&2, U32>) -> List<&2, U32>:
+  B.when(List<&2, U32>, c, u => B.drop(4n, xs), u => xs)
+
+def ud_il(c: Bool, +xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(udk(c, xs)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_drop(4n, xs, h)
+    case False{}:
+      h
+
+def il_upd(+xs: List<&2, U32>, +h: {B.inline(xs) == True{} : Bool}) -> {B.inline(B.upd.def(xs)) == True{} : Bool}:
+  ud_il(B.starts.s(xs, "def "), xs, h)
+
+# Items: each text a part of its line, or a literal
+
+def idef_il(+name: List<&2, U32>, +rest: List<&2, U32>, +body: List<&2, B.Ln>, +hn: {B.inline(name) == True{} : Bool}, +hr: {B.inline(rest) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {Bool.and(Bool.and(B.inline(name), B.inline(rest)), B.lns.inline(body)) == True{} : Bool}:
+  and_intro(Bool.and(B.inline(name), B.inline(rest)), B.lns.inline(body), and_intro(B.inline(name), B.inline(rest), hn, hr), hb)
+
+def lm_il(c: Bool, +name: List<&2, U32>, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hn: {B.inline(name) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(lm_k(c, name, txt, body, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      idef_il(name, B.codes(":"), body, hn, {==}, hb)
+    case False{}:
+      {==}
+
+def law_il(p: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hp: {pil(p) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(B.law.r(p, txt, body, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      lm_il(Bool.and(B.name.ok(B.trim(name)), B.blank(B.trim(rest))), B.trim(name), txt, body, no, ind, il_trim(name, and_l(B.inline(name), B.inline(rest), hp)), hb)
+
+def pr_il(c1: Bool, c2: Bool, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32,
+    +hn: {B.inline(name) == True{} : Bool}, +hr: {B.inline(rest) == True{} : Bool}, +hb: {B.lns.inline(body) == True{} : Bool}) ->
+    {B.item.inline(pr_k(c1, c2, upd, name, rest, txt, body, no, ind)) == True{} : Bool}:
+  match c1 c2:
+    case True{} True{}:
+      idef_il(B.trim(name), Con{40, rest}, body, il_trim(name, hn), hr, hb)
+    case True{} False{}:
+      idef_il(List.append(&2, U32, B.trim(name), [35]), Con{40, rest}, body, il_app(B.trim(name), [35], il_trim(name, hn), {==}), hr, hb)
+    case False{} _:
+      {==}
+
+def proofr_il(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hp: {pil(p) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(B.proof.r(p, upd, txt, body, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      pr_il(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), B.holds(rest, B.codes(") ->")), upd, name, rest, txt, body, no, ind,
+        and_l(B.inline(name), B.inline(rest), hp), and_r(B.inline(name), B.inline(rest), hp), hb)
+
+def proof_il(+txt: List<&2, U32>, upd: Bool, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hx: {B.inline(txt) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(B.proof.item(txt, upd, body, no, ind)) == True{} : Bool}:
+  match upd:
+    case True{}:
+      proofr_il(B.until(B.drop(10n, txt), 40), True{}, txt, body, no, ind, il_until(B.drop(10n, txt), 40, il_drop(10n, txt, hx)), hb)
+    case False{}:
+      proofr_il(B.until(B.drop(6n, txt), 40), False{}, txt, body, no, ind, il_until(B.drop(6n, txt), 40, il_drop(6n, txt, hx)), hb)
+
+def named_il(ok: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +xs: List<&2, U32>, +share: U32, +upd: Bool, +body: List<&2, B.Ln>, +no: U32, +ind: U32,
+    +hn: {B.inline(name) == True{} : Bool}, +hr: {B.inline(rest) == True{} : Bool}, +hb: {B.lns.inline(body) == True{} : Bool}) ->
+    {B.item.inline(B.def.named(ok, name, rest, xs, share, upd, body, no, ind)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      idef_il(name, Con{40, rest}, body, hn, hr, hb)
+    case False{}:
+      {==}
+
+def dr_il(p: List<&2, U32> & List<&2, U32>, +xs: List<&2, U32>, +share: U32, +upd: Bool, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hp: {pil(p) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(B.def.r(p, xs, share, upd, body, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      named_il(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), B.trim(name), rest, xs, share, upd, body, no, ind,
+        il_trim(name, and_l(B.inline(name), B.inline(rest), hp)), and_r(B.inline(name), B.inline(rest), hp), hb)
+
+def kwd_il(d: Bool, u: Bool, +xs: List<&2, U32>, +share: U32, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hx: {B.inline(xs) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(B.def.kw.d(d, u, xs, share, body, no, ind)) == True{} : Bool}:
+  match d u:
+    case True{} _:
+      dr_il(B.until(B.drop(4n, xs), 40), B.drop(4n, xs), share, False{}, body, no, ind, il_until(B.drop(4n, xs), 40, il_drop(4n, xs, hx)), hb)
+    case False{} True{}:
+      dr_il(B.until(B.upd.def(B.drop(4n, xs)), 40), B.upd.def(B.drop(4n, xs)), share, True{}, body, no, ind,
+        il_until(B.upd.def(B.drop(4n, xs)), 40, il_upd(B.drop(4n, xs), il_drop(4n, xs, hx))), hb)
+    case False{} False{}:
+      {==}
+
+def shs_il(s: Bool, c: Bool, +xs: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hx: {B.inline(xs) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(B.def.share.s(s, c, xs, body, no, ind)) == True{} : Bool}:
+  match s c:
+    case True{} _:
+      kwd_il(B.starts.s(B.drop(7n, xs), "def "), B.starts.s(B.drop(7n, xs), "upd "), B.drop(7n, xs), 1, body, no, ind, il_drop(7n, xs, hx), hb)
+    case False{} True{}:
+      kwd_il(B.starts.s(B.drop(7n, xs), "def "), B.starts.s(B.drop(7n, xs), "upd "), B.drop(7n, xs), 2, body, no, ind, il_drop(7n, xs, hx), hb)
+    case False{} False{}:
+      kwd_il(B.starts.s(xs, "def "), B.starts.s(xs, "upd "), xs, 0, body, no, ind, hx, hb)
+
+def fb_il(c1: Bool, c2: Bool, c3: Bool, c4: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hx: {B.inline(txt) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(fbk(c1, c2, c3, c4, txt, body, no, ind)) == True{} : Bool}:
+  match c1 c2 c3 c4:
+    case True{} _ _ _:
+      {==}
+    case False{} True{} _ _:
+      law_il(B.until(B.drop(4n, txt), 58), txt, body, no, ind, il_until(B.drop(4n, txt), 58, il_drop(4n, txt, hx)), hb)
+    case False{} False{} True{} _:
+      {==}
+    case False{} False{} False{} True{}:
+      proof_il(txt, B.starts.s(txt, "upd "), body, no, ind, hx, hb)
+    case False{} False{} False{} False{}:
+      shs_il(B.starts.s(txt, "shared "), B.starts.s(txt, "copied "), txt, body, no, ind, hx, hb)
+
+def block_il(+txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hx: {B.inline(txt) == True{} : Bool}, +hb: {B.lns.inline(body) == True{} : Bool}) ->
+    {B.item.inline(B.flat.block(txt, body, no, ind)) == True{} : Bool}:
+  fb_il(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), Bool.or(B.starts.s(txt, "proof "), B.starts.s(txt, "upd proof ")), txt, body, no, ind, hx, hb)
+
+def onamed_il(ok: Bool, +with: Bool, +ext: Bool, +name: List<&2, U32>, +ps: List<&2, List<&2, U32>>, +xs: List<&2, U32>, +abs: Bool, +no: U32, +ind: U32,
+    +hn: {B.inline(name) == True{} : Bool}) -> {B.item.inline(B.obj.named(ok, with, ext, name, ps, xs, abs, no, ind)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      hn
+    case False{}:
+      {==}
+
+def oe_il(p: List<&2, U32> & List<&2, U32>, +xs: List<&2, U32>, +abs: Bool, +ext: Bool, +no: U32, +ind: U32, +hp: {pil(p) == True{} : Bool}) ->
+    {B.item.inline(B.obj.ext(p, xs, abs, ext, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      onamed_il(Bool.and(B.name.ok(name), Bool.or(Bool.or(B.blank(B.rtrim(rest)), B.same(B.rtrim(rest), B.codes("with"))),
+          Bool.and(B.starts.s(B.rtrim(rest), "extends "), B.names.ok(B.obj.parents(B.rtrim(rest)))))),
+        Bool.or(B.same(B.rtrim(rest), B.codes("with")), B.starts.s(List.reverse(&2, U32, B.rtrim(rest)), "htiw ")), ext,
+        name, B.obj.parents(B.rtrim(rest)), xs, abs, no, ind, and_l(B.inline(name), B.inline(rest), hp))
+
+def obj_il(+xs: List<&2, U32>, +line: List<&2, U32>, +abs: Bool, +ext: Bool, +no: U32, +ind: U32, +hx: {B.inline(xs) == True{} : Bool}) ->
+    {B.item.inline(B.obj.item(xs, line, abs, ext, no, ind)) == True{} : Bool}:
+  oe_il(B.until(xs, 32), line, abs, ext, no, ind, il_until(xs, 32, hx))
+
+def dnamed_il(ok: Bool, +ns: List<&2, List<&2, U32>>, +line: List<&2, U32>, +no: U32, +ind: U32) -> {B.item.inline(B.decl.named(ok, ns, line, no, ind)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def ditem_il(+ns: List<&2, List<&2, U32>>, +line: List<&2, U32>, +no: U32, +ind: U32) -> {B.item.inline(B.decl.item(ns, line, no, ind)) == True{} : Bool}:
+  dnamed_il(Bool.and(B.decl.some(ns), B.names.ok(ns)), ns, line, no, ind)
+
+def dw_il(c: Bool, +name: List<&2, U32>, +ps: List<&2, U32>, +ret: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    +hn: {B.inline(name) == True{} : Bool}, +hp: {B.inline(ps) == True{} : Bool}, +hr: {B.inline(ret) == True{} : Bool}, +ho: {B.items.inline(out) == True{} : Bool}) ->
+    {B.items.inline(dwk(c, name, ps, ret, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(Bool.and(Bool.and(B.inline(List.append(&2, U32, name, [33])),
+          B.inline(List.append(&2, U32, Con{40, ps}, List.append(&2, U32, B.codes(") -> "), List.append(&2, U32, ret, B.codes(":")))))), True{}),
+        B.items.inline(out),
+        idef_il(List.append(&2, U32, name, [33]), List.append(&2, U32, Con{40, ps}, List.append(&2, U32, B.codes(") -> "), List.append(&2, U32, ret, B.codes(":")))), Nil{},
+          il_app(name, [33], hn, {==}),
+          il_app(Con{40, ps}, List.append(&2, U32, B.codes(") -> "), List.append(&2, U32, ret, B.codes(":"))), hp,
+            il_app(B.codes(") -> "), List.append(&2, U32, ret, B.codes(":")), {==}, il_app(ret, B.codes(":"), hr, {==}))), {==}),
+        ho)
+    case False{}:
+      ho
+
+def witness_il(+name: List<&2, U32>, +ps: List<&2, U32>, +ret: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    +hn: {B.inline(name) == True{} : Bool}, +hp: {B.inline(ps) == True{} : Bool}, +hr: {B.inline(ret) == True{} : Bool}, +ho: {B.items.inline(out) == True{} : Bool}) ->
+    {B.items.inline(B.decl.witness(name, ps, ret, txt, no, ind, out)) == True{} : Bool}:
+  dw_il(Bool.and(B.name.ok(name), Bool.not(B.blank(ret))), name, ps, ret, txt, no, ind, out, hn, hp, hr, ho)
+
+def dtk_il(c: Bool, +name: List<&2, U32>, +after: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    +hn: {B.inline(name) == True{} : Bool}, +ha: {B.inline(after) == True{} : Bool}, +ho: {B.items.inline(out) == True{} : Bool}) ->
+    {B.items.inline(dtk(c, name, after, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      witness_il(name, B.parens(List.tail(&2, U32, after)),
+        B.type.kind(B.trim(B.drop(Nat.add(List.length(&2, U32, B.parens(List.tail(&2, U32, after))), 2n), after))), txt, no, ind, out, hn,
+        il_parens(List.tail(&2, U32, after), il_ltail(after, ha)),
+        il_kind(B.trim(B.drop(Nat.add(List.length(&2, U32, B.parens(List.tail(&2, U32, after))), 2n), after)),
+          il_trim(B.drop(Nat.add(List.length(&2, U32, B.parens(List.tail(&2, U32, after))), 2n), after),
+            il_drop(Nat.add(List.length(&2, U32, B.parens(List.tail(&2, U32, after))), 2n), after, ha))), ho)
+    case False{}:
+      witness_il(name, Nil{}, B.type.kind(B.trim(after)), txt, no, ind, out, hn, {==}, il_kind(B.trim(after), il_trim(after, ha)), ho)
+
+def dtype_il(p: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +hp: {pil(p) == True{} : Bool},
+    +ho: {B.items.inline(out) == True{} : Bool}) -> {B.items.inline(B.decl.type.k(p, txt, no, ind, out)) == True{} : Bool}:
+  match p:
+    case (+name, +after):
+      dtk_il(B.starts.s(after, "("), name, after, txt, no, ind, out, and_l(B.inline(name), B.inline(after), hp), and_r(B.inline(name), B.inline(after), hp), ho)
+
+def dtl_il(c: Bool, +r: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +hr: {B.inline(r) == True{} : Bool},
+    +ho: {B.items.inline(out) == True{} : Bool}) -> {B.items.inline(dtl(c, r, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      dtype_il(B.name.split(r, B.classes(r), Nil{}), txt, no, ind, out, ns_il(r, B.classes(r), Nil{}, hr, {==}), ho)
+    case False{}:
+      and_intro(B.item.inline(B.decl.item(B.commas(r), txt, no, ind)), B.items.inline(out), ditem_il(B.commas(r), txt, no, ind), ho)
+
+def ddk_il(c: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    +hn: {B.inline(name) == True{} : Bool}, +hr: {B.inline(rest) == True{} : Bool}, +ho: {B.items.inline(out) == True{} : Bool}) ->
+    {B.items.inline(ddk(c, name, rest, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      witness_il(B.trim(name), B.parens(rest), B.trim(B.drop(Nat.add(List.length(&2, U32, B.parens(rest)), 4n), rest)), txt, no, ind, out,
+        il_trim(name, hn), il_parens(rest, hr),
+        il_trim(B.drop(Nat.add(List.length(&2, U32, B.parens(rest)), 4n), rest), il_drop(Nat.add(List.length(&2, U32, B.parens(rest)), 4n), rest, hr)), ho)
+    case False{}:
+      ho
+
+def ddef_il(p: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +hp: {pil(p) == True{} : Bool},
+    +ho: {B.items.inline(out) == True{} : Bool}) -> {B.items.inline(B.decl.def.k(p, txt, no, ind, out)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      ddk_il(B.holds(rest, B.codes(") ->")), name, rest, txt, no, ind, out, and_l(B.inline(name), B.inline(rest), hp), and_r(B.inline(name), B.inline(rest), hp), ho)
+
+def dl_il(c1: Bool, c2: Bool, +rest: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +hr: {B.inline(rest) == True{} : Bool},
+    +ho: {B.items.inline(out) == True{} : Bool}) -> {B.items.inline(dlk(c1, c2, rest, txt, no, ind, out)) == True{} : Bool}:
+  match c1 c2:
+    case True{} _:
+      dtl_il(Bool.or(B.holds(B.trim(B.drop(5n, rest)), B.codes(":")), B.holds(B.trim(B.drop(5n, rest)), B.codes("("))), B.trim(B.drop(5n, rest)), txt, no, ind, out,
+        il_trim(B.drop(5n, rest), il_drop(5n, rest, hr)), ho)
+    case False{} True{}:
+      ddef_il(B.until(B.when(List<&2, U32>, B.starts.s(rest, "def "), w => B.drop(4n, rest), w => rest), 40), txt, no, ind, out,
+        il_until(B.when(List<&2, U32>, B.starts.s(rest, "def "), w => B.drop(4n, rest), w => rest), 40, ud_il(B.starts.s(rest, "def "), rest, hr)), ho)
+    case False{} False{}:
+      and_intro(B.item.inline(B.decl.item(B.commas(rest), txt, no, ind)), B.items.inline(out), ditem_il(B.commas(rest), txt, no, ind), ho)
+
+def decl_il(+rest: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +hr: {B.inline(rest) == True{} : Bool},
+    +ho: {B.items.inline(out) == True{} : Bool}) -> {B.items.inline(B.decl.line(rest, txt, no, ind, out)) == True{} : Bool}:
+  dl_il(B.starts.s(rest, "type "), B.holds(rest, B.codes("(")), rest, txt, no, ind, out, hr, ho)
+
+def fl_il(skip: Bool, imp: Bool, abs: Bool, obj: Bool, decl: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    +hx: {B.inline(txt) == True{} : Bool}, +ho: {B.items.inline(out) == True{} : Bool}) ->
+    {B.items.inline(B.flat.line(skip, imp, abs, obj, decl, txt, no, ind, out)) == True{} : Bool}:
+  match skip imp abs obj decl:
+    case True{} _ _ _ _:
+      ho
+    case False{} True{} _ _ _:
+      and_intro(B.inline(txt), B.items.inline(out), hx, ho)
+    case False{} False{} True{} _ _:
+      and_intro(B.item.inline(B.obj.item(B.drop(16n, txt), txt, True{}, False{}, no, ind)), B.items.inline(out),
+        obj_il(B.drop(16n, txt), txt, True{}, False{}, no, ind, il_drop(16n, txt, hx)), ho)
+    case False{} False{} False{} True{} _:
+      and_intro(B.item.inline(B.obj.item(B.drop(7n, txt), txt, False{}, False{}, no, ind)), B.items.inline(out),
+        obj_il(B.drop(7n, txt), txt, False{}, False{}, no, ind, il_drop(7n, txt, hx)), ho)
+    case False{} False{} False{} False{} True{}:
+      decl_il(B.drop(8n, txt), txt, no, ind, out, il_drop(8n, txt, hx), ho)
+    case False{} False{} False{} False{} False{}:
+      ho
+
+def ex_il(c: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32, +hx: {B.inline(txt) == True{} : Bool}) -> {B.item.inline(exk(c, txt, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      obj_il(B.drop(16n, txt), txt, True{}, True{}, no, ind, il_drop(16n, txt, hx))
+    case False{}:
+      obj_il(B.drop(7n, txt), txt, False{}, True{}, no, ind, il_drop(7n, txt, hx))
+
+def fik_il(c: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +hx: {B.inline(txt) == True{} : Bool},
+    +ho: {B.items.inline(out) == True{} : Bool}) -> {B.items.inline(fik(c, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(B.item.inline(B.ext.item(txt, no, ind)), B.items.inline(out), ex_il(B.starts.s(txt, "extend abstract "), txt, no, ind, hx), ho)
+    case False{}:
+      fl_il(Bool.or(B.blank(txt), B.comment(txt)), B.starts.s(txt, "import "), B.starts.s(txt, "abstract object "), B.starts.s(txt, "object "),
+        B.starts.s(txt, "declare "), txt, no, ind, out, hx, ho)
+
+def tm_il(c: Bool, +upd: Bool, +name: List<&2, U32>, +ps: List<&2, U32>, +after: List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32,
+    +hn: {B.inline(name) == True{} : Bool}, +hp: {B.inline(ps) == True{} : Bool}, +ha: {B.inline(after) == True{} : Bool}, +hty: {B.inline(ty) == True{} : Bool}) ->
+    {B.item.inline(tmk(c, upd, name, ps, after, ty, xs, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      idef_il(name, List.append(&2, U32, Con{40, ps}, List.append(&2, U32, B.codes(") -> "), List.append(&2, U32, B.type.kind(B.trim(after)), B.codes(":")))),
+        [B.Ln{no, U32.add(ind, 2), ty}], hn,
+        il_app(Con{40, ps}, List.append(&2, U32, B.codes(") -> "), List.append(&2, U32, B.type.kind(B.trim(after)), B.codes(":"))), hp,
+          il_app(B.codes(") -> "), List.append(&2, U32, B.type.kind(B.trim(after)), B.codes(":")), {==},
+            il_app(B.type.kind(B.trim(after)), B.codes(":"), il_kind(B.trim(after), il_trim(after, ha)), {==}))),
+        and_intro(B.ln.inline(B.Ln{no, U32.add(ind, 2), ty}), True{}, hty, {==}))
+    case False{}:
+      {==}
+
+def made_il(+upd: Bool, +name: List<&2, U32>, +ps: List<&2, U32>, +after: List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32,
+    +hn: {B.inline(name) == True{} : Bool}, +hp: {B.inline(ps) == True{} : Bool}, +ha: {B.inline(after) == True{} : Bool}, +hty: {B.inline(ty) == True{} : Bool}) ->
+    {B.item.inline(B.type.made(upd, name, ps, after, ty, xs, no, ind)) == True{} : Bool}:
+  tm_il(Bool.and(B.name.ok(name), Bool.not(B.blank(ty))), upd, name, ps, after, ty, xs, no, ind, hn, hp, ha, hty)
+
+def tl_il(c: Bool, +upd: Bool, +name: List<&2, U32>, +after: List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32,
+    +hn: {B.inline(name) == True{} : Bool}, +ha: {B.inline(after) == True{} : Bool}, +hty: {B.inline(ty) == True{} : Bool}) ->
+    {B.item.inline(tlk(c, upd, name, after, ty, xs, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      made_il(upd, name, B.parens(List.tail(&2, U32, after)), B.drop(Nat.add(List.length(&2, U32, B.parens(List.tail(&2, U32, after))), 2n), after), ty, xs, no, ind,
+        hn, il_parens(List.tail(&2, U32, after), il_ltail(after, ha)), il_drop(Nat.add(List.length(&2, U32, B.parens(List.tail(&2, U32, after))), 2n), after, ha), hty)
+    case False{}:
+      made_il(upd, name, Nil{}, after, ty, xs, no, ind, hn, {==}, ha, hty)
+
+def lhs_il(+upd: Bool, p: List<&2, U32> & List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32, +hp: {pil(p) == True{} : Bool},
+    +hty: {B.inline(ty) == True{} : Bool}) -> {B.item.inline(B.type.lhs(upd, p, ty, xs, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +after):
+      tl_il(B.starts.s(after, "("), upd, name, after, ty, xs, no, ind, and_l(B.inline(name), B.inline(after), hp), and_r(B.inline(name), B.inline(after), hp), hty)
+
+def teq_il(+upd: Bool, p: List<&2, U32> & List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32, +hp: {pil(p) == True{} : Bool}) ->
+    {B.item.inline(B.type.eq(upd, p, xs, no, ind)) == True{} : Bool}:
+  match p:
+    case (+lhs, +ty):
+      lhs_il(upd, B.name.split(B.trim(lhs), B.classes(B.trim(lhs)), Nil{}), B.trim(ty), xs, no, ind,
+        ns_il(B.trim(lhs), B.classes(B.trim(lhs)), Nil{}, il_trim(lhs, and_l(B.inline(lhs), B.inline(ty), hp)), {==}), il_trim(ty, and_r(B.inline(lhs), B.inline(ty), hp)))
+
+def ti_il(c: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32, +hx: {B.inline(txt) == True{} : Bool}) -> {B.item.inline(tik(c, txt, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      teq_il(True{}, B.split.at(B.drop(9n, txt), B.codes(" = "), Nil{}), txt, no, ind, sa_il(B.drop(9n, txt), B.codes(" = "), Nil{}, il_drop(9n, txt, hx), {==}))
+    case False{}:
+      teq_il(False{}, B.split.at(B.drop(5n, txt), B.codes(" = "), Nil{}), txt, no, ind, sa_il(B.drop(5n, txt), B.codes(" = "), Nil{}, il_drop(5n, txt, hx), {==}))
+
+def plain_il(c: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +hx: {B.inline(txt) == True{} : Bool},
+    +ho: {B.items.inline(out) == True{} : Bool}) -> {B.items.inline(plk(c, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(B.item.inline(B.type.item(txt, no, ind)), B.items.inline(out), ti_il(B.starts.s(txt, "upd "), txt, no, ind, hx), ho)
+    case False{}:
+      fik_il(B.starts.s(txt, "extend "), txt, no, ind, out, hx, ho)
+
+# A header's body: lines of the file
+
+def lpil(p: List<&2, B.Ln> & List<&2, B.Ln>) -> Bool:
+  match p:
+    case (a, b):
+      Bool.and(B.lns.inline(a), B.lns.inline(b))
+
+def lpil_a(p: List<&2, B.Ln> & List<&2, B.Ln>, h: {lpil(p) == True{} : Bool}) -> {B.lns.inline(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, p)) == True{} : Bool}:
+  match p:
+    case (+a, +b):
+      and_l(B.lns.inline(a), B.lns.inline(b), h)
+
+def lpil_b(p: List<&2, B.Ln> & List<&2, B.Ln>, h: {lpil(p) == True{} : Bool}) -> {B.lns.inline(Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, p)) == True{} : Bool}:
+  match p:
+    case (+a, +b):
+      and_r(B.lns.inline(a), B.lns.inline(b), h)
+
+def bgi_k(c: Bool, +no: U32, +li: U32, +txt: List<&2, U32>, +t: List<&2, B.Ln>, +ind: U32, +acc: List<&2, B.Ln>, +ha: {B.lns.inline(acc) == True{} : Bool},
+    +hl: {B.lns.inline(Con{B.Ln{no, li, txt}, t}) == True{} : Bool}, ih: {lpil(B.body.go(t, ind, Con{B.Ln{no, li, txt}, acc})) == True{} : Bool}) ->
+    {lpil(bgk(c, no, li, txt, t, ind, acc)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih
+    case False{}:
+      and_intro(B.lns.inline(List.reverse(&2, B.Ln, acc)), B.lns.inline(Con{B.Ln{no, li, txt}, t}), lns_rev(acc, ha), hl)
+
+def bg_il(ls: List<&2, B.Ln>, +ind: U32, +acc: List<&2, B.Ln>, +hx: {B.lns.inline(ls) == True{} : Bool}, +ha: {B.lns.inline(acc) == True{} : Bool}) ->
+    {lpil(B.body.go(ls, ind, acc)) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      and_intro(B.lns.inline(List.reverse(&2, B.Ln, acc)), True{}, lns_rev(acc, ha), {==})
+    case Con{l, +t}:
+      match l:
+        case B.Ln{+no, +li, +txt}:
+          bgi_k(Bool.or(B.blank(txt), U32.is_gt(li, ind)), no, li, txt, t, ind, acc, ha, hx,
+            bg_il(t, ind, Con{B.Ln{no, li, txt}, acc}, and_r(B.inline(txt), B.lns.inline(t), hx),
+              and_intro(B.inline(txt), B.lns.inline(acc), and_l(B.inline(txt), B.lns.inline(t), hx), ha)))
+
+def bl_il(c: Bool, +no: U32, +ind: U32, +txt: List<&2, U32>, +t: List<&2, B.Ln>, +hl: {B.lns.inline(Con{B.Ln{no, ind, txt}, t}) == True{} : Bool},
+    ih: {B.lns.inline(B.body.lead(t)) == True{} : Bool}) -> {B.lns.inline(blk(c, no, ind, txt, t)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih
+    case False{}:
+      hl
+
+def blead_il(ls: List<&2, B.Ln>, +h: {B.lns.inline(ls) == True{} : Bool}) -> {B.lns.inline(B.body.lead(ls)) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +t}:
+      match l:
+        case B.Ln{+no, +ind, +txt}:
+          bl_il(B.blank(txt), no, ind, txt, t, h, blead_il(t, and_r(B.inline(txt), B.lns.inline(t), h)))
+
+def btrim_il(+xs: List<&2, B.Ln>, +h: {B.lns.inline(xs) == True{} : Bool}) -> {B.lns.inline(B.body.trim(xs)) == True{} : Bool}:
+  lns_rev(B.body.lead(List.reverse(&2, B.Ln, xs)), blead_il(List.reverse(&2, B.Ln, xs), lns_rev(xs, h)))
+
+def its_rgo(xs: List<&2, B.Item>, +acc: List<&2, B.Item>, +hx: {B.items.inline(xs) == True{} : Bool}, +ha: {B.items.inline(acc) == True{} : Bool}) ->
+    {B.items.inline(List.reverse.go(&2, B.Item, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+i, +t}:
+      its_rgo(t, Con{i, acc}, and_r(B.item.inline(i), B.items.inline(t), hx), and_intro(B.item.inline(i), B.items.inline(acc), and_l(B.item.inline(i), B.items.inline(t), hx), ha))
+
+def fg_il(c: Bool, +m: Nat, +txt: List<&2, U32>, +t: List<&2, B.Ln>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    ht: {B.items.inline(B.flat.go(m, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out})) == True{} : Bool},
+    hf: {B.items.inline(B.flat.go(m, t, plk(B.is.member.type(txt), txt, no, ind, out))) == True{} : Bool}) ->
+    {B.items.inline(fgk(c, m, txt, t, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      %Equal.sym(List<&2, B.Item>, B.on.pair(List<&2, B.Ln>, List<&2, B.Ln>, List<&2, B.Item>, B.body.go(t, ind, Nil{}), body => rest => B.flat.go(m, rest, Con{B.flat.block(txt, B.body.trim(body), no, ind), out})), B.flat.go(m, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out}), pair_eta(B.body.go(t, ind, Nil{}), body => rest => B.flat.go(m, rest, Con{B.flat.block(txt, B.body.trim(body), no, ind), out}))) :
+        {B.items.inline(_) == True{} : Bool}
+      ht
+    case False{}:
+      hf
+
+# the items read from lines holding no newline: texts holding none
+def flat_il(n: Nat, ls: List<&2, B.Ln>, +out: List<&2, B.Item>, +hl: {B.lns.inline(ls) == True{} : Bool}, +ho: {B.items.inline(out) == True{} : Bool}) ->
+    {B.items.inline(B.flat.go(n, ls, out)) == True{} : Bool}:
+  match n:
+    case 0n:
+      its_rgo(out, Nil{}, ho, {==})
+    case 1n+(+m):
+      match ls:
+        case Nil{}:
+          its_rgo(out, Nil{}, ho, {==})
+        case Con{l, +t}:
+          match l:
+            case B.Ln{+no, +ind, +txt}:
+              fg_il(Bool.and(Bool.not(B.is.member.type(txt)), Bool.or(B.is_def(txt), B.is.datatype(txt))), m, txt, t, no, ind, out,
+                flat_il(m, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})),
+                  Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out},
+                  lpil_b(B.body.go(t, ind, Nil{}), bg_il(t, ind, Nil{}, and_r(B.inline(txt), B.lns.inline(t), hl), {==})),
+                  and_intro(B.item.inline(B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind)), B.items.inline(out),
+                    block_il(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind, and_l(B.inline(txt), B.lns.inline(t), hl),
+                      btrim_il(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})),
+                        lpil_a(B.body.go(t, ind, Nil{}), bg_il(t, ind, Nil{}, and_r(B.inline(txt), B.lns.inline(t), hl), {==})))),
+                    ho)),
+                flat_il(m, t, plk(B.is.member.type(txt), txt, no, ind, out), and_r(B.inline(txt), B.lns.inline(t), hl),
+                  plain_il(B.is.member.type(txt), txt, no, ind, out, and_l(B.inline(txt), B.lns.inline(t), hl), ho)))
+
+def Laws.inline.items(ls, h):
+  flat_il(List.length(&2, B.Ln, ls), ls, Nil{}, h, {==})
+
+# The tree: a body's tokens spell its lines (`tokens.spell`), each open
+# object's name and members held within a line (`fril`)
+
+def il_appl(a: List<&2, U32>, +b: List<&2, U32>, +h: {B.inline(List.append(&2, U32, a, b)) == True{} : Bool}) -> {B.inline(a) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(Bool.not(U32.is_eq(x, 10)), B.inline(t), and_l(Bool.not(U32.is_eq(x, 10)), B.inline(List.append(&2, U32, t, b)), h),
+        il_appl(t, b, and_r(Bool.not(U32.is_eq(x, 10)), B.inline(List.append(&2, U32, t, b)), h)))
+
+def il_appr(a: List<&2, U32>, +b: List<&2, U32>, +h: {B.inline(List.append(&2, U32, a, b)) == True{} : Bool}) -> {B.inline(b) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      il_appr(t, b, and_r(Bool.not(U32.is_eq(x, 10)), B.inline(List.append(&2, U32, t, b)), h))
+
+def tt_il(ts: List<&2, B.Tok>, +h: {B.inline(B.toks.text(ts)) == True{} : Bool}) -> {B.toks.inline(ts) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      {==}
+    case Con{+t, +r}:
+      and_intro(B.inline(B.tok.bytes(t)), B.toks.inline(r), il_appl(B.tok.bytes(t), B.toks.text(r), h), tt_il(r, il_appr(B.tok.bytes(t), B.toks.text(r), h)))
+
+def il_spell(+txt: List<&2, U32>, h: {B.inline(txt) == True{} : Bool}) -> {B.inline(B.toks.text(B.toks(txt))) == True{} : Bool}:
+  %Equal.sym(List<&2, U32>, B.toks.text(B.toks(txt)), txt, Laws.tokens.spell(txt)) : {B.inline(_) == True{} : Bool}
+  h
+
+def tln_il(ls: List<&2, B.Ln>, +h: {B.lns.inline(ls) == True{} : Bool}) -> {B.bls.inline(B.toks.lines(ls)) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +t}:
+      match l:
+        case B.Ln{+no, +ind, +txt}:
+          and_intro(B.toks.inline(B.toks(txt)), B.bls.inline(B.toks.lines(t)), tt_il(B.toks(txt), il_spell(txt, and_l(B.inline(txt), B.lns.inline(t), h))),
+            tln_il(t, and_r(B.inline(txt), B.lns.inline(t), h)))
+
+def fril(st: List<&2, B.Fr>) -> Bool:
+  match st:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      match f:
+        case B.Fr{+top, +ind, +abs, +with, +ext, name, parents, kids, +no}:
+          Bool.and(Bool.and(B.inline(name), B.nodes.inline(kids)), fril(t))
+
+def ncons_il(n: B.Node, +ks: List<&2, B.Node>, +hn: {B.nodes.inline(Con{n, Nil{}}) == True{} : Bool}, +hk: {B.nodes.inline(ks) == True{} : Bool}) ->
+    {B.nodes.inline(Con{n, ks}) == True{} : Bool}:
+  match n:
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      and_intro(Bool.and(B.inline(name), B.nodes.inline(kids)), B.nodes.inline(ks), and_l(Bool.and(B.inline(name), B.nodes.inline(kids)), True{}, hn), hk)
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      and_intro(Bool.and(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(body)), B.nodes.inline(ks),
+        and_l(Bool.and(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(body)), True{}, hn), hk)
+    case B.NImport{+txt, +no}:
+      and_intro(B.inline(txt), B.nodes.inline(ks), and_l(B.inline(txt), True{}, hn), hk)
+    case B.NDecl{+names, +no}:
+      hk
+    case B.NBad{+txt, +no}:
+      hk
+    case B.NErr{+msg, +no}:
+      hk
+    case B.NBend{+lines, +no}:
+      hk
+
+def nhead_il(n: B.Node, +t: List<&2, B.Node>, +h: {B.nodes.inline(Con{n, t}) == True{} : Bool}) -> {B.nodes.inline(Con{n, Nil{}}) == True{} : Bool}:
+  match n:
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      and_intro(Bool.and(B.inline(name), B.nodes.inline(kids)), True{}, and_l(Bool.and(B.inline(name), B.nodes.inline(kids)), B.nodes.inline(t), h), {==})
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      and_intro(Bool.and(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(body)), True{},
+        and_l(Bool.and(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(body)), B.nodes.inline(t), h), {==})
+    case B.NImport{+txt, +no}:
+      and_intro(B.inline(txt), True{}, and_l(B.inline(txt), B.nodes.inline(t), h), {==})
+    case B.NDecl{+names, +no}:
+      {==}
+    case B.NBad{+txt, +no}:
+      {==}
+    case B.NErr{+msg, +no}:
+      {==}
+    case B.NBend{+lines, +no}:
+      {==}
+
+def ntail_il(n: B.Node, +t: List<&2, B.Node>, +h: {B.nodes.inline(Con{n, t}) == True{} : Bool}) -> {B.nodes.inline(t) == True{} : Bool}:
+  match n:
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      and_r(Bool.and(B.inline(name), B.nodes.inline(kids)), B.nodes.inline(t), h)
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      and_r(Bool.and(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(body)), B.nodes.inline(t), h)
+    case B.NImport{+txt, +no}:
+      and_r(B.inline(txt), B.nodes.inline(t), h)
+    case B.NDecl{+names, +no}:
+      h
+    case B.NBad{+txt, +no}:
+      h
+    case B.NErr{+msg, +no}:
+      h
+    case B.NBend{+lines, +no}:
+      h
+
+def nrev_il(xs: List<&2, B.Node>, +acc: List<&2, B.Node>, +hx: {B.nodes.inline(xs) == True{} : Bool}, +ha: {B.nodes.inline(acc) == True{} : Bool}) ->
+    {B.nodes.inline(List.reverse.go(&2, B.Node, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+n, +t}:
+      nrev_il(t, Con{n, acc}, ntail_il(n, t, hx), ncons_il(n, acc, nhead_il(n, t, hx), ha))
+
+def into_il(st: List<&2, B.Fr>, +n: B.Node, +hn: {B.nodes.inline(Con{n, Nil{}}) == True{} : Bool}, +hs: {fril(st) == True{} : Bool}) ->
+    {fril(B.close.into(st, n)) == True{} : Bool}:
+  match st:
+    case Nil{}:
+      {==}
+    case Con{f, +rest}:
+      match f:
+        case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+          and_intro(Bool.and(B.inline(name), B.nodes.inline(Con{n, kids})), fril(rest),
+            and_intro(B.inline(name), B.nodes.inline(Con{n, kids}), and_l(B.inline(name), B.nodes.inline(kids), and_l(Bool.and(B.inline(name), B.nodes.inline(kids)), fril(rest), hs)),
+              ncons_il(n, kids, hn, and_r(B.inline(name), B.nodes.inline(kids), and_l(Bool.and(B.inline(name), B.nodes.inline(kids)), fril(rest), hs)))),
+            and_r(Bool.and(B.inline(name), B.nodes.inline(kids)), fril(rest), hs))
+
+def with_il(with: Bool, kids: List<&2, B.Node>, +name: List<&2, U32>, +no: U32, +st: List<&2, B.Fr>, +hs: {fril(st) == True{} : Bool}) ->
+    {fril(B.close.with(with, kids, name, no, st)) == True{} : Bool}:
+  match with:
+    case True{}:
+      hs
+    case False{}:
+      match kids:
+        case Nil{}:
+          hs
+        case Con{k, t}:
+          into_il(st, B.NErr{List.append(&2, U32, B.codes("object "), List.append(&2, U32, name, B.codes(" has members, so its header ends with `with`"))), no}, {==}, hs)
+
+def cgo_il(c: Bool, +k: Nat, +top: Bool, +ind: U32, +abs: Bool, +with: Bool, +ext: Bool, +name: List<&2, U32>, +parents: List<&2, List<&2, U32>>,
+    +kids: List<&2, B.Node>, +no: U32, +rest: List<&2, B.Fr>, +i: U32,
+    ih: {fril(B.close.go(k, B.close.into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no}), i)) == True{} : Bool},
+    hs: {fril(Con{B.Fr{top, ind, abs, with, ext, name, parents, kids, no}, rest}) == True{} : Bool}) ->
+    {fril(cgo(c, k, top, ind, abs, with, ext, name, parents, kids, no, rest, i)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih
+    case False{}:
+      hs
+
+def close_il(n: Nat, st: List<&2, B.Fr>, +i: U32, +hs: {fril(st) == True{} : Bool}) -> {fril(B.close.go(n, st, i)) == True{} : Bool}:
+  match n:
+    case 0n:
+      hs
+    case 1n+(+k):
+      match st:
+        case Nil{}:
+          {==}
+        case Con{f, +rest}:
+          match f:
+            case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+              cgo_il(Bool.and(Bool.not(top), U32.is_ge(ind, i)), k, top, ind, abs, with, ext, name, parents, kids, no, rest, i,
+                close_il(k, B.close.into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no}), i,
+                  into_il(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no},
+                    and_intro(Bool.and(B.inline(name), B.nodes.inline(List.reverse(&2, B.Node, kids))), True{},
+                      and_intro(B.inline(name), B.nodes.inline(List.reverse(&2, B.Node, kids)),
+                        and_l(B.inline(name), B.nodes.inline(kids), and_l(Bool.and(B.inline(name), B.nodes.inline(kids)), fril(rest), hs)),
+                        nrev_il(kids, Nil{}, and_r(B.inline(name), B.nodes.inline(kids), and_l(Bool.and(B.inline(name), B.nodes.inline(kids)), fril(rest), hs)), {==})), {==}),
+                    with_il(with, kids, name, no, rest, and_r(Bool.and(B.inline(name), B.nodes.inline(kids)), fril(rest), hs)))),
+                hs)
+
+def close_all_il(+st: List<&2, B.Fr>, +i: U32, +hs: {fril(st) == True{} : Bool}) -> {fril(B.close(st, i)) == True{} : Bool}:
+  close_il(List.length(&2, B.Fr, st), st, i, hs)
+
+def put_il(st: List<&2, B.Fr>, it: B.Item, +hi: {B.item.inline(it) == True{} : Bool}, +hs: {fril(st) == True{} : Bool}) -> {fril(B.tree.put(st, it)) == True{} : Bool}:
+  match it:
+    case B.IObj{+abs, +with, +ext, +name, +parents, +no, +ind}:
+      and_intro(Bool.and(B.inline(name), True{}), fril(st), and_intro(B.inline(name), True{}, hi, {==}), hs)
+    case B.IDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      into_il(st, B.NDef{share, upd, name, rest, params, B.toks.lines(body), no, ind, what},
+        and_intro(Bool.and(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(B.toks.lines(body))), True{},
+          and_intro(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(B.toks.lines(body)),
+            and_l(Bool.and(B.inline(name), B.inline(rest)), B.lns.inline(body), hi),
+            tln_il(body, and_r(Bool.and(B.inline(name), B.inline(rest)), B.lns.inline(body), hi))), {==}), hs)
+    case B.IImport{+txt, +no, +ind}:
+      into_il(st, B.NImport{txt, no}, and_intro(B.inline(txt), True{}, hi, {==}), hs)
+    case B.IDecl{+names, +no, +ind}:
+      into_il(st, B.NDecl{names, no}, {==}, hs)
+    case B.IBad{+txt, +no, +ind}:
+      into_il(st, B.NBad{txt, no}, {==}, hs)
+    case B.IBend{+lines, +no, +ind}:
+      into_il(st, B.NBend{lines, no}, {==}, hs)
+
+def tree_go_il(its: List<&2, B.Item>, +st: List<&2, B.Fr>, +hi: {B.items.inline(its) == True{} : Bool}, +hs: {fril(st) == True{} : Bool}) ->
+    {fril(B.tree.go(its, st)) == True{} : Bool}:
+  match its:
+    case Nil{}:
+      close_all_il(st, 0, hs)
+    case Con{it, +t}:
+      match it:
+        case B.IImport{+txt, +no, +ind}:
+          tree_go_il(t, B.tree.put(B.close(st, ind), B.IImport{txt, no, ind}), and_r(B.item.inline(B.IImport{txt, no, ind}), B.items.inline(t), hi),
+            put_il(B.close(st, ind), B.IImport{txt, no, ind}, and_l(B.item.inline(B.IImport{txt, no, ind}), B.items.inline(t), hi), close_all_il(st, ind, hs)))
+        case B.IObj{+abs, +with, +ext, +name, +parents, +no, +ind}:
+          tree_go_il(t, B.tree.put(B.close(st, ind), B.IObj{abs, with, ext, name, parents, no, ind}), and_r(B.item.inline(B.IObj{abs, with, ext, name, parents, no, ind}), B.items.inline(t), hi),
+            put_il(B.close(st, ind), B.IObj{abs, with, ext, name, parents, no, ind}, and_l(B.item.inline(B.IObj{abs, with, ext, name, parents, no, ind}), B.items.inline(t), hi), close_all_il(st, ind, hs)))
+        case B.IDecl{+names, +no, +ind}:
+          tree_go_il(t, B.tree.put(B.close(st, ind), B.IDecl{names, no, ind}), and_r(B.item.inline(B.IDecl{names, no, ind}), B.items.inline(t), hi),
+            put_il(B.close(st, ind), B.IDecl{names, no, ind}, and_l(B.item.inline(B.IDecl{names, no, ind}), B.items.inline(t), hi), close_all_il(st, ind, hs)))
+        case B.IDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          tree_go_il(t, B.tree.put(B.close(st, ind), B.IDef{share, upd, name, rest, params, body, no, ind, what}), and_r(B.item.inline(B.IDef{share, upd, name, rest, params, body, no, ind, what}), B.items.inline(t), hi),
+            put_il(B.close(st, ind), B.IDef{share, upd, name, rest, params, body, no, ind, what}, and_l(B.item.inline(B.IDef{share, upd, name, rest, params, body, no, ind, what}), B.items.inline(t), hi), close_all_il(st, ind, hs)))
+        case B.IBad{+txt, +no, +ind}:
+          tree_go_il(t, B.tree.put(B.close(st, ind), B.IBad{txt, no, ind}), and_r(B.item.inline(B.IBad{txt, no, ind}), B.items.inline(t), hi),
+            put_il(B.close(st, ind), B.IBad{txt, no, ind}, and_l(B.item.inline(B.IBad{txt, no, ind}), B.items.inline(t), hi), close_all_il(st, ind, hs)))
+        case B.IBend{+lines, +no, +ind}:
+          tree_go_il(t, B.tree.put(B.close(st, ind), B.IBend{lines, no, ind}), and_r(B.item.inline(B.IBend{lines, no, ind}), B.items.inline(t), hi),
+            put_il(B.close(st, ind), B.IBend{lines, no, ind}, and_l(B.item.inline(B.IBend{lines, no, ind}), B.items.inline(t), hi), close_all_il(st, ind, hs)))
+
+def fin_il(st: List<&2, B.Fr>, +hs: {fril(st) == True{} : Bool}) -> {B.nodes.inline(B.tree.fin(st)) == True{} : Bool}:
+  match st:
+    case Nil{}:
+      {==}
+    case Con{f, +rest}:
+      match f:
+        case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+          nrev_il(kids, Nil{}, and_r(B.inline(name), B.nodes.inline(kids), and_l(Bool.and(B.inline(name), B.nodes.inline(kids)), fril(rest), hs)), {==})
+
+def Laws.inline.tree(its, h):
+  fin_il(B.tree.go(its, [B.Fr{True{}, 0, False{}, True{}, False{}, Nil{}, Nil{}, Nil{}, 0}]), tree_go_il(its, [B.Fr{True{}, 0, False{}, True{}, False{}, Nil{}, Nil{}, Nil{}, 0}], h, {==}))
+
+def Laws.inline.read(bs, base):
+  Laws.inline.tree(B.flat(B.lines.at(bs, base)), Laws.inline.items(B.lines.at(bs, base), Laws.inline.lines(bs, base)))

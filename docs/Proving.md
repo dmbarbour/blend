@@ -188,6 +188,12 @@ it alone taught. Add to this file what a new proof teaches.
   newline starts it over, and such equations chain by `Equal.trans`,
   with no arithmetic; the newlines counted follow from it
   (`nls_from`).
+- **A second invariant along a proved walk**: where a law already
+  follows a pass (`markers.items` its numbering), a law of another
+  invariant over the same pass reuses its mirrors of the code's
+  decisions and its layout, lemma for lemma (`inline.items`, 108
+  lemmas written in a sitting); a pair's halves claimed by one `Bool`
+  (`pil`) that a match on the pair reduces.
 - **A walk naming the code's own states**: a law that follows a fold
   step by step (`wr.at`) calls the code's own step on the code's own
   state, and ends by comparing with the code's own result (its `fin`),

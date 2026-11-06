@@ -103,24 +103,14 @@ def drop(n: Nat, xs: List<&2, U32>) -> List<&2, U32>:
         case Con{h, t}:
           drop(k, t)
 
-# xs without its leading spaces, and how many there were
-def ltrim.go(xs: List<&2, U32>, +n: U32) -> U32 & List<&2, U32>:
+# xs without its leading spaces; the byte tested, not matched, so that a
+# law can follow it (LAWS.bend, `inline.items`)
+def ltrim(xs: List<&2, U32>) -> List<&2, U32>:
   match xs:
     case Nil{}:
-      (n, Nil{})
-    case Con{+h, t}:
-      match h:
-        case 32:
-          ltrim.go(t, (n + 1 : U32))
-        case _:
-          (n, Con{h, t})
-
-def ltrim.fin(r: U32 & List<&2, U32>) -> List<&2, U32>:
-  (+n, xs) = r
-  xs
-
-def ltrim(xs: List<&2, U32>) -> List<&2, U32>:
-  ltrim.fin(ltrim.go(xs, 0))
+      Nil{}
+    case Con{+h, +t}:
+      when(List<&2, U32>, U32.is_eq(h, 32), u => ltrim(t), u => Con{h, t})
 
 # xs without its trailing spaces
 def rtrim(xs: List<&2, U32>) -> List<&2, U32>:
@@ -5591,6 +5581,73 @@ def ec.inline(e: Ec) -> Bool:
   match e:
     case Ec{files, obs, us, als, own, res, paths, +mode, rtypes, ux, ut, mt}:
       inlines(files) && obs.inline(obs) && cis.inline(own) && ht.inline(ut)
+
+# The reader's (LAWS.bend, `inline.read`): what each definition, object
+# and import read gives the writer, held within a line
+def ln.inline(l: Ln) -> Bool:
+  match l:
+    case Ln{+no, +ind, txt}:
+      inline(txt)
+
+def lns.inline(ls: List<&2, Ln>) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{l, t}:
+      ln.inline(l) && lns.inline(t)
+
+def item.inline(it: Item) -> Bool:
+  match it:
+    case IImport{txt, +no, +ind}:
+      inline(txt)
+    case IObj{+abs, +with, +ext, name, parents, +no, +ind}:
+      inline(name)
+    case IDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+      inline(name) && inline(rest) && lns.inline(body)
+    case _:
+      True{}
+
+def items.inline(its: List<&2, Item>) -> Bool:
+  match its:
+    case Nil{}:
+      True{}
+    case Con{it, t}:
+      item.inline(it) && items.inline(t)
+
+def toks.inline(ts: List<&2, Tok>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{t, r}:
+      inline(tok.bytes(t)) && toks.inline(r)
+
+def bl.inline(b: Bl) -> Bool:
+  match b:
+    case Bl{+no, +ind, ts}:
+      toks.inline(ts)
+
+def bls.inline(bs: List<&2, Bl>) -> Bool:
+  match bs:
+    case Nil{}:
+      True{}
+    case Con{b, t}:
+      bl.inline(b) && bls.inline(t)
+
+# a tree's nodes, its objects' members' too
+def nodes.inline(ns: List<&2, Node>) -> Bool:
+  match ns:
+    case Nil{}:
+      True{}
+    case Con{nd, t}:
+      match nd:
+        case NImport{txt, +no}:
+          inline(txt) && nodes.inline(t)
+        case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          inline(name) && inline(rest) && bls.inline(body) && nodes.inline(t)
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          inline(name) && nodes.inline(kids) && nodes.inline(t)
+        case _:
+          nodes.inline(t)
 
 # a body's lines numbered on from its header's line, or the line after
 def rls.from(+ls: List<&2, Rl>, +no: U32) -> Bool:
