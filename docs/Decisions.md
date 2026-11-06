@@ -86,7 +86,7 @@ its modules, namespaces and emitted names are Bend's.
   provably the list's.
 - [`blend-declares-witnessed`](decisions/blend-declares-witnessed.md): a
   typed declaration is bound in each concrete object to its own types
-  and checked by a witness Bend checks, in the proofs' file.
+  and checked by a witness Bend checks, in the module's own file.
 - [`blend-templates-affine`](decisions/blend-templates-affine.md): a
   template is affine by default, as any definition; the guide explains
   `shared` against `copied` for templates.
@@ -95,14 +95,10 @@ its modules, namespaces and emitted names are Bend's.
   every import they reach short of a package, and verifies each import
   none names against its emission, unless `--alone`.
 - [`blend-laws-in-module`](decisions/blend-laws-in-module.md): a module's
-  laws and proofs written into its own file, `Obj.LAW.name` and
-  `LAW.name`, a law unproven only an abstract object's; replaces
-  `blend-proofs-beside-code` once built.
-- [`blend-proofs-beside-code`](decisions/blend-proofs-beside-code.md): a
-  Blend module's laws and proofs are written into files of their own
-  beside its code, `X_LAWS.bend` and `X_PROOF.bend`, by the emission
-  that writes the code; a law is a claim stated once, its proof a member
-  `upd proof` may replace, a typed proof a lemma.
+  laws and proofs written into its own file after its code, `Obj.LAW.name`
+  and `LAW.name`; a law a claim stated once, its proof a member `upd
+  proof` may replace, a typed proof a lemma, a law unproven only an
+  abstract object's.
 - [`blend-no-shadowing`](decisions/blend-no-shadowing.md): within a
   `.blend` file or object, a bare name is a local or a definition, never
   both, as glam's `shadowing-is-an-error` has it.

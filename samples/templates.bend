@@ -24,3 +24,9 @@ def Twice.doubled(x: U32) -> U32:
 # blend: templates.blend:28
 def main() -> IO(Unit):
   IO.print(U32.show(Twice.bumped(1)) ++ " " ++ U32.show(Twice.doubled(1)) ++ " " ++ U32.show(Twice.count(U32, [7, 8])))
+
+# blend: templates.blend:13
+def Twice.LAW.apply.as_declared(~f: U32 -> U32, x: U32) -> U32: Twice.apply(~f, x)
+
+# blend: templates.blend:14
+def Twice.LAW.count.as_declared(-A: Data, xs: List<&2, A>) -> U32: Twice.count(A, xs)

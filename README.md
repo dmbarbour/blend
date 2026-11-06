@@ -12,9 +12,8 @@ threaded through every signature (`docs/plans/Codegen_2026-11-04.md`,
 
 Status: the tool emits. `run.sh emit [--alone] FILE.blend...
 [DIR]` writes, for each module named, the `.bend` it makes, every
-concrete object's definitions, and where it has laws its laws and its
-proofs, each a file of its own beside the code, beside the module or
-into DIR, printing each path; or, writing nothing at all, the errors of
+concrete object's definitions, then its laws and their proofs where it
+has any, beside the module or into DIR, printing each path; or, writing nothing at all, the errors of
 any (on stderr, the status 1). A module's emission depends on nothing
 that imports it (every definition emitted, no top-level object
 extended), so modules emit independently. Only the modules named are
@@ -142,10 +141,10 @@ Bend's imports pass through.
   transparent, the type it computes: `Sum.S()` is `U32` wherever it
   meets one, no type of its own as a datatype is (Bend's datatypes are
   nominal, by file and name).
-- **Laws and proofs** are members too (`blend-proofs-beside-code`):
+- **Laws and proofs** are members too (`blend-laws-in-module`):
   `law name:` with its `for` lines and its claim, Bend's, stated over
   the object's definitions and types, each concrete object getting its
-  own instance, `NatAdd.right_id`, bound to its own finals; `proof
+  own instance, `NatAdd.LAW.right_id`, bound to its own finals; `proof
   name(params):` proves the law `name`, where the law is stated or in
   any object below it, and `upd proof` proves it again where a family
   needs its own, `_name` its prior proof. A typed proof, `proof
@@ -157,10 +156,13 @@ Bend's imports pass through.
   kind holds down the linearization: `upd` updates a definition,
   `upd proof` a proof or a lemma. An inherited proof, a prior's too, is
   checked against the family's finals, as any inherited body is: a
-  family that changes what a proof relies on proves it again. An
-  unproved law is an open claim, which the gate's proof step reports.
-  The module's own laws and proofs, at its top level, are Bend's, as
-  its definitions are, written beside the code as an object's are.
+  family that changes what a proof relies on proves it again. A law not
+  yet proven belongs in an abstract object: a concrete object proves
+  every law it has, and the module every law of its own, a law unproven
+  there an error, as it would stop every run of the file. The module's
+  own laws and proofs, at its top level, are Bend's, as its definitions
+  are, `LAW.name`, written as an object's are. A name the code writes
+  with a part `LAW` is an error, kept for the laws.
 - **Declarations** say what a family must give (`blend-declares-witnessed`):
   `declare after` a name, untyped; `declare def push(st: S(), +x: U32)
   -> S()`, or `declare push(...) -> S()` for short, what the definition
@@ -168,11 +170,10 @@ Bend's imports pass through.
   declaration is bound in each concrete object to its own finals, so
   that a family's types flow into it, and is fixed where first made, the
   families varying by their types. Blend has no type checker: for each
-  concrete object it writes a witness into the proofs' file,
-  `def Listed.push.as_declared(st: Blend_0.Listed.S(), +x: U32) ->
-  Blend_0.Listed.S(): Blend_0.Listed.push(st, x)`, and Bend checks it;
-  never into the program, where a witness would be a second caller,
-  splitting the definition into a segment of its own.
+  concrete object it writes a witness with the laws,
+  `def Listed.LAW.push.as_declared(st: Listed.S(), +x: U32) ->
+  Listed.S(): Listed.push(st, x)`, and Bend checks it; no `main` reaches
+  it, so it is not compiled and splits no segment.
 - **Templates** are Bend's, passed through: a `~` parameter binds as any
   parameter, and a `~` argument is a reference as any, bound to the
   final object's definition (`~inc` emitted `~Twice.inc`), or a closed
@@ -241,24 +242,22 @@ its own copy, bound to its own finals: no sharing between objects.
   copied definition by its own name. The samples hold the tool to its
   present order.
 - An abstract object emits nothing of its own.
-- Laws and proofs go into files of their own beside the code, as Bend's
-  convention keeps them, so that the programs built carry no proofs and
-  no open law stops them, written by the same emission as the code:
-  `X_LAWS.bend`, every law, importing the code `X.bend` as `Blend_0`;
-  `X_PROOF.bend`, every proof, as
-  `def Blend_Laws.NatAdd.right_id(...)`, and every lemma, as
-  `def NatAdd.add_succ(...) -> ...`, and every typed declaration's
-  witness, `def Listed.push.as_declared(...)`, importing the code, and
-  the laws where there are any, as `Blend_Laws`, each after those it
-  uses. A module with witnesses and no laws writes no laws' file. Bend imports only plain names,
-  so `_`, not a dot. The gate checks every `*PROOF.bend` with
-  `--verdict`, and that each `X_LAWS.bend` has its `X_PROOF.bend`.
+- Laws and proofs go into the module's own file after its code
+  (`blend-laws-in-module`), so that whoever loads it checks them, a
+  package's importers too: every law, `law NatAdd.LAW.right_id:`; then
+  every proof, `def NatAdd.LAW.right_id(...)`, the def Bend pairs with
+  the law of its name, every lemma, `def NatAdd.LAW.add_succ(...) ->
+  ...`, and every typed declaration's witness,
+  `def Listed.LAW.push.as_declared(...)`, each after those it uses. The
+  programs built carry none, Bend compiling what `main` reaches; each run
+  checks them, seconds at Blend's scale. The gate rechecks each sample
+  holding a law with `--verdict`.
 - A prior proof is written only where a proof reaches it by `_name`:
   replaced and not named, it is gone, and nothing checks it. Reached, it
-  is a def of its own, `Blend_Laws.AnyOf.double_op.Monoid`, proving its
+  is a def of its own, `AnyOf.LAW.double_op.Monoid`, proving its
   law for the family's finals; Bend gives an untyped def the type of the
-  law of its name, so the laws' file states that law again by the
-  prior's name. It is no new claim, the same law named twice, and the
+  law of its name, so the laws state that law again by the prior's
+  name. It is no new claim, the same law named twice, and the
   prior must hold for the family as the proof relying on it does.
 - Before each definition, a marker names where it is written,
   `# blend: FILE:LINE`; its lines follow as they are there, so the line
@@ -289,7 +288,7 @@ program prints.
   one, the library's definitions named through its alias.
 - `choice`: a family's choice as a constant definition, the branch
   on it left to the C compiler to fold.
-- `laws`, with `laws_LAWS.bend` and `laws_PROOF.bend`: laws an abstract
+- `laws`, its laws and proofs in `laws.bend` after its code: laws an abstract
   family states, proved by each family by induction or cases, or once
   for all by the family stating them, `upd proof` where a family's
   update of a definition needs its own; a lemma; the module's own law
@@ -311,17 +310,21 @@ undefined, a parameter shadowing a definition, parents with no C3
 linearization, `^` in a definition of the module, members after a header
 that leaves out `with`, a declared type left undefined, a datatype in an
 object, an import reaching the module importing it, an import of no
-file, an import's path Bend would refuse, a name beginning `Blend_`, an extension of nothing inherited, a
+file, an import's path Blend refuses, a name beginning `Blend_`, an extension of nothing inherited, a
 nested object introduced where one is inherited, `extend` at the top
 level, two nested objects made of one mixin inherited together, a proof
 of no law, code naming a law, `upd law`, a proof introduced where one
 is inherited, `upd proof` with no proof to update, `upd` of an
 inherited law, a definition meeting an inherited law, code naming a
 lemma, `upd proof` of a definition, a declaration made again below, a
-typed declaration with no return type.
+typed declaration with no return type, a concrete object's law with no
+proof, a module's own law with no proof, a name with a part `LAW` (an
+object's too), an
+import climbing out of its directory or naming a file by `/`, a
+package's Blend file.
 
 `samples/refused/`: each `.blend` Blend emits and Bend refuses,
-its proofs' file failing as its `.err` says: a family's definition that
+its file failing as its `.err` says: a family's definition that
 does not fit its declaration, a type of another kind than declared.
 
 ## Known issues

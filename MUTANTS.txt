@@ -353,9 +353,9 @@ the marker naming the line after its definition's
 === header_on_marker markers.writer
 a definition's header written on its marker's line
 --- blend.bend
-    u => when(List<&2, U32>, U32.is_eq(node.what(un.node(ec.un(e, x))), 2), v => codes("\ndef Blend_Laws."), v => codes("\ndef ")))
+  when(List<&2, U32>, U32.is_eq(node.what(un.node(ec.un(e, x))), 1), u => codes("\nlaw "), u => codes("\ndef "))
 +++
-    u => when(List<&2, U32>, U32.is_eq(node.what(un.node(ec.un(e, x))), 2), v => codes("\ndef Blend_Laws."), v => codes(" def ")))
+  when(List<&2, U32>, U32.is_eq(node.what(un.node(ec.un(e, x))), 1), u => codes("\nlaw "), u => codes(" def "))
 
 === body_before_head markers.writer
 a unit's body written after the text before it, its head left out
@@ -823,3 +823,21 @@ reads as the source's next line, not the declaration's
 +++
     case True{}:
       Con{10, wit.line(e, x)}
+
+=== unproven_dropped laws.proven
+a law with no proof let pass, written beside the code to stop every run
+--- blend.bend
+    case False{} False{}:
+      List.append(&2, Er, er.unproven(x, ux), rest)
++++
+    case False{} False{}:
+      rest
+
+=== unproven_dropped_emitted laws.emitted
+a law with no proof let pass, written beside the code to stop every run
+--- blend.bend
+    case False{} False{}:
+      List.append(&2, Er, er.unproven(x, ux), rest)
++++
+    case False{} False{}:
+      rest

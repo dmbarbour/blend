@@ -27,6 +27,6 @@ members (`blend-object-laws`), each emitted as Bend.
   it is used (macros; `static` definitions, `blend-partial`).
 - Until those steps, a type, law or proof in a `.blend` file passed
   through as Bend, unprefixed and shared by every object; each is now a
-  member (`blend-proofs-beside-code` for laws and proofs).
+  member (`blend-laws-in-module` for laws and proofs).
 
 **Rule lives in:** `README.md`, The model.

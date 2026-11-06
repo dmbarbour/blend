@@ -58,6 +58,11 @@ done
 for f in $(files '*PROOF.bend'); do
   python3 -I "$TOOLS/kept.py" verdict "$f" || status=1
 done
+# a Blend module's laws, proofs and witnesses are in its own file
+# (`blend-laws-in-module`): each sample holding any rechecked so
+for f in $(grep -l -E '^(law |def ([A-Za-z0-9_.]*[.])?LAW[.])' $(files 'samples/*.bend')); do
+  python3 -I "$TOOLS/kept.py" verdict "$f" || status=1
+done
 
 section mutants
 for m in $(files '*MUTANTS.txt'); do

@@ -1,0 +1,1 @@
+law-unproven.blend:8: law right_id has no proof: a concrete object proves each law it has, and a module its own; a law not yet proven belongs in an abstract object

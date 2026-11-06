@@ -1,0 +1,10 @@
+# A name with a part LAW is Blend's, for the laws written beside the
+# code: `LAW.f` is a top-level law's, `Obj.LAW.f` an object's.
+import Base
+
+object Pair with
+  def LAW.first() -> Nat:
+    1n
+
+def main() -> Nat:
+  Pair.LAW.first()

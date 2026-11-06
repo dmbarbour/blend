@@ -3,8 +3,8 @@
 # `declare empty() -> S()` for short, and of what kind a type must be,
 # `declare type S: Data`. Each family's definitions are checked against
 # the declaration bound to the family's own types, by witnesses Blend
-# writes into declares_PROOF.bend for Bend to check, never into the
-# program. `declare size` stays untyped, each family's its own.
+# writes into declares.bend with the laws, which Bend checks and the
+# program never calls. `declare size` stays untyped, each family's its own.
 import Base
 
 abstract object Stack with

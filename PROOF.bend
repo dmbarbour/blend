@@ -4472,9 +4472,9 @@ def src_code(+e: B.Ec, hm: {B.ec.mode(e) == 0 : U32}, +x: U32) -> {x == B.unit.s
 
 def rp_k(+c1: Bool, +c2: Bool, +e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +y: U32, +b: B.Tb) -> B.Tb:
   B.when(B.Tb, c1,
-    u => B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.codes("Blend_Laws."), B.own.name(e, x, j))),
+    u => B.tb.put(B.mark.put(mark, b), B.own.name(e, x, j)),
     u => B.when(B.Tb, c2,
-      v => B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.codes("Blend_Laws."), B.rf.text(B.ec.obs(e), r))),
+      v => B.tb.put(B.mark.put(mark, b), B.rf.text.law(B.ec.obs(e), r)),
       v => B.ref.self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b))))
 
 def ref_put_code(+e: B.Ec, hm: {B.ec.mode(e) == 0 : U32}, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +y: U32, +b: B.Tb) ->
@@ -4486,8 +4486,7 @@ def ref_put_code(+e: B.Ec, hm: {B.ec.mode(e) == 0 : U32}, +x: U32, +j: U32, +mar
 
 def refput_none(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +b: B.Tb, +y: U32) -> {cy(b, y) == cy(B.ref.put(e, x, j, mark, r, None{}, b), y) : U32}:
   Equal.trans(U32, cy(b, y), cy(B.mark.put(mark, b), y), cy(B.ref.put(e, x, j, mark, r, None{}, b), y), cy_mark(mark, b, y),
-    tbput_any(B.mark.put(mark, b), B.when(List<&2, U32>, Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)),
-      u => List.append(&2, U32, B.codes("Blend_0."), B.rf.text(B.ec.obs(e), r)), u => B.rf.ext(e, r)), y))
+    tbput_any(B.mark.put(mark, b), B.rf.ext(e, r), y))
 
 # a text whose counter is b's: the rest of a body written after it, as
 # after b
@@ -7861,6 +7860,23 @@ def il_text(+obs: List<&2, B.Ob>, r: B.Rf, +ho: {B.obs.inline(obs) == True{} : B
 
 # The context's parts within a line
 
+
+# a law-side unit's name, `LAW.` before its member's own
+# (`blend-laws-in-module`)
+def il_textlaw(+obs: List<&2, B.Ob>, r: B.Rf, +ho: {B.obs.inline(obs) == True{} : Bool}, hn: {B.inline(B.rf.name(r)) == True{} : Bool}) ->
+    {B.inline(B.rf.text.law(obs, r)) == True{} : Bool}:
+  match r:
+    case B.Rf{+obj, +name, +prior, +origin}:
+      il_text(obs, B.Rf{obj, List.append(&2, U32, B.codes("LAW."), name), prior, origin}, ho, il_app(B.codes("LAW."), name, {==}, hn))
+
+def il_utk(c: Bool, +obs: List<&2, B.Ob>, r: B.Rf, +ho: {B.obs.inline(obs) == True{} : Bool}, hn: {B.inline(B.rf.name(r)) == True{} : Bool}) ->
+    {B.inline(B.unit.text.k(c, obs, r)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_textlaw(obs, r, ho, hn)
+    case False{}:
+      il_text(obs, r, ho, hn)
+
 def ec_files(e: B.Ec, h: {B.ec.inline(e) == True{} : Bool}) -> {B.inlines(B.ec.files(e)) == True{} : Bool}:
   match e:
     case B.Ec{+files, +obs, us, als, +own, res, paths, +mode, rtypes, ux, +ut, mt}:
@@ -7948,7 +7964,7 @@ def un_ls(u: B.Un, h: {B.un.inline(u) == True{} : Bool}) -> {B.rls.inline(B.un.l
           and_r(Bool.and(B.inline(name), B.rts.inline(hd)), B.rls.inline(ls), h)
 
 def il_utext(+e: B.Ec, +y: U32, +hf: {B.ec.inline(e) == True{} : Bool}) -> {B.inline(B.unit.text(e, y)) == True{} : Bool}:
-  il_text(B.ec.obs(e), B.un.ref(B.ec.un(e, y)), ec_obs(e, hf), un_name(B.ec.un(e, y), il_un(e, y, hf)))
+  il_utk(U32.is_gt(B.ec.mode(e), 0), B.ec.obs(e), B.un.ref(B.ec.un(e, y)), ec_obs(e, hf), un_name(B.ec.un(e, y), il_un(e, y, hf)))
 
 def il_copy(+base: List<&2, U32>, +j: U32, +h: {B.inline(base) == True{} : Bool}) -> {B.inline(B.copy.name(base, j)) == True{} : Bool}:
   il_app(base, List.append(&2, U32, B.codes(".c"), B.codes(U32.show(j))), h, il_app(B.codes(".c"), B.codes(U32.show(j)), {==}, il_show(j)))
@@ -7999,30 +8015,8 @@ def il_alias(+e: B.Ec, +p: List<&2, U32>, +hf: {B.ec.inline(e) == True{} : Bool}
 
 # A body's tokens written: the text from the last newline kept
 
-def tp_k(+c: Bool, +x: List<&2, U32>) -> List<&2, U32>:
-  B.when(List<&2, U32>, c, u => List.append(&2, U32, B.codes("Blend_0."), x), u => x)
-
-def il_tpk(c: Bool, +x: List<&2, U32>, +h: {B.inline(x) == True{} : Bool}) -> {B.inline(tp_k(c, x)) == True{} : Bool}:
-  match c:
-    case True{}:
-      il_app(B.codes("Blend_0."), x, {==}, h)
-    case False{}:
-      h
-
 def il_tok(+e: B.Ec, t: B.Tok, h: {B.inline(B.tok.bytes(t)) == True{} : Bool}) -> {B.inline(B.tok.in.proof(e, t)) == True{} : Bool}:
-  match t:
-    case B.TName{+x}:
-      il_tpk(Bool.and(U32.is_gt(B.ec.mode(e), 0), B.names.has(B.ec.rtypes(e), x)), x, h)
-    case B.TNum{+x}:
-      h
-    case B.TStr{+x}:
-      h
-    case B.TCom{+x}:
-      h
-    case B.TSp{+x}:
-      h
-    case B.TSym{+c}:
-      h
+  h
 
 def mark_from(c: Bool, +b: B.Tb) -> {B.tb.from(B.mark.put.k(c, b)) == B.tb.from(b) : List<&2, U32>}:
   match c:
@@ -8071,10 +8065,9 @@ def rpk_from(c1: Bool, c2: Bool, +e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.R
     +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) -> {B.tb.from(rp_k(c1, c2, e, x, j, mark, r, y, b)) == B.tb.from(b) : List<&2, U32>}:
   match c1 c2:
     case True{} _:
-      after_mark(mark, b, List.append(&2, U32, B.codes("Blend_Laws."), B.own.name(e, x, j)), il_app(B.codes("Blend_Laws."), B.own.name(e, x, j), {==}, il_own(e, x, j, hf)))
+      after_mark(mark, b, B.own.name(e, x, j), il_own(e, x, j, hf))
     case False{} True{}:
-      after_mark(mark, b, List.append(&2, U32, B.codes("Blend_Laws."), B.rf.text(B.ec.obs(e), r)),
-        il_app(B.codes("Blend_Laws."), B.rf.text(B.ec.obs(e), r), {==}, il_text(B.ec.obs(e), r, ec_obs(e, hf), hr)))
+      after_mark(mark, b, B.rf.text.law(B.ec.obs(e), r), il_textlaw(B.ec.obs(e), r, ec_obs(e, hf), hr))
     case False{} False{}:
       Equal.trans(List<&2, U32>, B.tb.from(B.ref.self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b))), B.tb.from(B.mark.put(mark, b)), B.tb.from(b),
         self_from(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b), hf), mark_from(U32.is_eq(mark, 126), b))
@@ -8094,17 +8087,6 @@ def il_rxk(c: Bool, +e: B.Ec, +r: B.Rf, +hf: {B.ec.inline(e) == True{} : Bool}, 
       il_app(B.alias.of(e, B.mod.bend(B.ec.paths(e), B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))))), Con{46, B.rf.text(B.ec.obs(e), r)},
         il_alias(e, B.mod.bend(B.ec.paths(e), B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r))))), hf), il_text(B.ec.obs(e), r, ec_obs(e, hf), hr))
 
-def rn_k(+c: Bool, +e: B.Ec, +r: B.Rf) -> List<&2, U32>:
-  B.when(List<&2, U32>, c, u => List.append(&2, U32, B.codes("Blend_0."), B.rf.text(B.ec.obs(e), r)), u => B.rf.ext(e, r))
-
-def il_rnk(c: Bool, +e: B.Ec, +r: B.Rf, +hf: {B.ec.inline(e) == True{} : Bool}, +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) ->
-    {B.inline(rn_k(c, e, r)) == True{} : Bool}:
-  match c:
-    case True{}:
-      il_app(B.codes("Blend_0."), B.rf.text(B.ec.obs(e), r), {==}, il_text(B.ec.obs(e), r, ec_obs(e, hf), hr))
-    case False{}:
-      il_rxk(U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0), e, r, hf, hr)
-
 # ref.put.m's first decision: the file
 def rpm_from(m2: Bool, +e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, +y: U32, +b: B.Tb, +hf: {B.ec.inline(e) == True{} : Bool},
     +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) -> {B.tb.from(B.ref.put.m(m2, e, x, j, mark, r, y, b)) == B.tb.from(b) : List<&2, U32>}:
@@ -8118,8 +8100,8 @@ def rput_from(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, m: Maybe<&2, U32
     +hr: {B.inline(B.rf.name(r)) == True{} : Bool}) -> {B.tb.from(B.ref.put(e, x, j, mark, r, m, b)) == B.tb.from(b) : List<&2, U32>}:
   match m:
     case None{}:
-      after_mark(mark, b, rn_k(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r),
-        il_rnk(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r, hf, hr))
+      after_mark(mark, b, B.rf.ext(e, r),
+        il_rxk(U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0), e, r, hf, hr))
     case Some{+y}:
       rpm_from(U32.is_eq(B.ec.mode(e), 2), e, x, j, mark, r, y, b, hf, hr)
 
@@ -8361,9 +8343,11 @@ def onto_app(xs: List<&2, U32>, +ys: List<&2, U32>, +acc: List<&2, U32>) ->
     case Con{+x, +t}:
       onto_app(t, ys, Con{x, acc})
 
-# unit.kw's choice mirrored: each a newline, then text within a line
+# unit.kw's choice mirrored: each a newline, then text within a line; a
+# proof's `def` as any (`blend-laws-in-module`), its test kept for its
+# callers
 def kw_k(+c1: Bool, +c2: Bool) -> List<&2, U32>:
-  B.when(List<&2, U32>, c1, u => B.codes("\nlaw "), u => B.when(List<&2, U32>, c2, v => B.codes("\ndef Blend_Laws."), v => B.codes("\ndef ")))
+  B.when(List<&2, U32>, c1, u => B.codes("\nlaw "), u => B.codes("\ndef "))
 
 def kw_from(c1: Bool, c2: Bool, +nm: List<&2, U32>, +xs: List<&2, U32>, +h: {B.inline(nm) == True{} : Bool}) ->
     {B.from.nl(B.rev.onto(List.append(&2, U32, kw_k(c1, c2), nm), xs)) == Con{10, xs} : List<&2, U32>}:
@@ -8371,7 +8355,7 @@ def kw_from(c1: Bool, c2: Bool, +nm: List<&2, U32>, +xs: List<&2, U32>, +h: {B.i
     case True{} _:
       onto_from(List.append(&2, U32, B.codes("law "), nm), Con{10, xs}, il_app(B.codes("law "), nm, {==}, h))
     case False{} True{}:
-      onto_from(List.append(&2, U32, B.codes("def Blend_Laws."), nm), Con{10, xs}, il_app(B.codes("def Blend_Laws."), nm, {==}, h))
+      onto_from(List.append(&2, U32, B.codes("def "), nm), Con{10, xs}, il_app(B.codes("def "), nm, {==}, h))
     case False{} False{}:
       onto_from(List.append(&2, U32, B.codes("def "), nm), Con{10, xs}, il_app(B.codes("def "), nm, {==}, h))
 
@@ -12330,10 +12314,9 @@ def uq_rpk(c1: Bool, c2: Bool, +e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf,
     +hr: {B.inline(B.rf.name(r)) == True{} : Bool}, +hc: {U32.is_eq(uq_tf(b), 10) == False{} : Bool}) -> {uq_tf(rp_k(c1, c2, e, x, j, mark, r, y, b)) == uq_tf(b) : U32}:
   match c1 c2:
     case True{} _:
-      uq_amark(mark, b, List.append(&2, U32, B.codes("Blend_Laws."), B.own.name(e, x, j)), il_app(B.codes("Blend_Laws."), B.own.name(e, x, j), {==}, il_own(e, x, j, hf)), hc)
+      uq_amark(mark, b, B.own.name(e, x, j), il_own(e, x, j, hf), hc)
     case False{} True{}:
-      uq_amark(mark, b, List.append(&2, U32, B.codes("Blend_Laws."), B.rf.text(B.ec.obs(e), r)),
-        il_app(B.codes("Blend_Laws."), B.rf.text(B.ec.obs(e), r), {==}, il_text(B.ec.obs(e), r, ec_obs(e, hf), hr)), hc)
+      uq_amark(mark, b, B.rf.text.law(B.ec.obs(e), r), il_textlaw(B.ec.obs(e), r, ec_obs(e, hf), hr), hc)
     case False{} False{}:
       Equal.trans(U32, uq_tf(B.ref.self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b))), uq_tf(B.mark.put(mark, b)), uq_tf(b),
         uq_self(U32.is_eq(y, x), e, x, j, y, B.mark.put(mark, b), hf, uq_ne(uq_tf(B.mark.put(mark, b)), uq_tf(b), 10, uq_mark(U32.is_eq(mark, 126), b, hc), hc)),
@@ -12351,8 +12334,8 @@ def uq_rput(+e: B.Ec, +x: U32, +j: U32, +mark: U32, +r: B.Rf, m: Maybe<&2, U32>,
     +hr: {B.inline(B.rf.name(r)) == True{} : Bool}, +hc: {U32.is_eq(uq_tf(b), 10) == False{} : Bool}) -> {uq_tf(B.ref.put(e, x, j, mark, r, m, b)) == uq_tf(b) : U32}:
   match m:
     case None{}:
-      uq_amark(mark, b, rn_k(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r),
-        il_rnk(Bool.and(U32.is_gt(B.ec.mode(e), 0), U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0)), e, r, hf, hr), hc)
+      uq_amark(mark, b, B.rf.ext(e, r),
+        il_rxk(U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.ec.obs(e), B.rf.obj(r)))), 0), e, r, hf, hr), hc)
     case Some{+y}:
       uq_rpm(U32.is_eq(B.ec.mode(e), 2), e, x, j, mark, r, y, b, hf, hr, hc)
 
@@ -12519,8 +12502,8 @@ def uq_kw10(c1: Bool, c2: Bool, +nm: List<&2, U32>, +xs: List<&2, U32>, +h: {B.i
       uq_ne(B.line.first(B.rev.onto(List.append(&2, U32, B.codes("aw "), nm), Con{108, Con{10, xs}})), B.line.first(Con{108, Con{10, xs}}), 10,
         uq_onto(List.append(&2, U32, B.codes("aw "), nm), Con{108, Con{10, xs}}, il_app(B.codes("aw "), nm, {==}, h), {==}), {==})
     case False{} True{}:
-      uq_ne(B.line.first(B.rev.onto(List.append(&2, U32, B.codes("ef Blend_Laws."), nm), Con{100, Con{10, xs}})), B.line.first(Con{100, Con{10, xs}}), 10,
-        uq_onto(List.append(&2, U32, B.codes("ef Blend_Laws."), nm), Con{100, Con{10, xs}}, il_app(B.codes("ef Blend_Laws."), nm, {==}, h), {==}), {==})
+      uq_ne(B.line.first(B.rev.onto(List.append(&2, U32, B.codes("ef "), nm), Con{100, Con{10, xs}})), B.line.first(Con{100, Con{10, xs}}), 10,
+        uq_onto(List.append(&2, U32, B.codes("ef "), nm), Con{100, Con{10, xs}}, il_app(B.codes("ef "), nm, {==}, h), {==}), {==})
     case False{} False{}:
       uq_ne(B.line.first(B.rev.onto(List.append(&2, U32, B.codes("ef "), nm), Con{100, Con{10, xs}})), B.line.first(Con{100, Con{10, xs}}), 10,
         uq_onto(List.append(&2, U32, B.codes("ef "), nm), Con{100, Con{10, xs}}, il_app(B.codes("ef "), nm, {==}, h), {==}), {==})
@@ -12532,8 +12515,8 @@ def uq_kw35(c1: Bool, c2: Bool, +nm: List<&2, U32>, +xs: List<&2, U32>, +h: {B.i
       uq_ne(B.line.first(B.rev.onto(List.append(&2, U32, B.codes("aw "), nm), Con{108, Con{10, xs}})), B.line.first(Con{108, Con{10, xs}}), 35,
         uq_onto(List.append(&2, U32, B.codes("aw "), nm), Con{108, Con{10, xs}}, il_app(B.codes("aw "), nm, {==}, h), {==}), {==})
     case False{} True{}:
-      uq_ne(B.line.first(B.rev.onto(List.append(&2, U32, B.codes("ef Blend_Laws."), nm), Con{100, Con{10, xs}})), B.line.first(Con{100, Con{10, xs}}), 35,
-        uq_onto(List.append(&2, U32, B.codes("ef Blend_Laws."), nm), Con{100, Con{10, xs}}, il_app(B.codes("ef Blend_Laws."), nm, {==}, h), {==}), {==})
+      uq_ne(B.line.first(B.rev.onto(List.append(&2, U32, B.codes("ef "), nm), Con{100, Con{10, xs}})), B.line.first(Con{100, Con{10, xs}}), 35,
+        uq_onto(List.append(&2, U32, B.codes("ef "), nm), Con{100, Con{10, xs}}, il_app(B.codes("ef "), nm, {==}, h), {==}), {==})
     case False{} False{}:
       uq_ne(B.line.first(B.rev.onto(List.append(&2, U32, B.codes("ef "), nm), Con{100, Con{10, xs}})), B.line.first(Con{100, Con{10, xs}}), 35,
         uq_onto(List.append(&2, U32, B.codes("ef "), nm), Con{100, Con{10, xs}}, il_app(B.codes("ef "), nm, {==}, h), {==}), {==})
@@ -14442,3 +14425,70 @@ def rik_pkg(+c: Bool, +root: List<&2, U32>, +p: List<&2, U32>, h: {c == True{} :
 
 def Laws.imports.package.root(root, p, h):
   rik_pkg(B.path.pkg(p), root, p, h)
+
+# Laws proven (`laws.proven`, `laws.emitted`): the laws' check decides
+# each unit in a helper on its tests (`er.laws.k`), so that its step
+# splits them: a definition's errors leave its proof alone (it is no
+# law), a stray proof's error is no Nil, and a law's, empty, says its
+# proof is found (`er.unproven.k`'s test the law's own predicate).
+
+def unp_k(c: Bool, +x: B.Un, +ux: B.Ht<B.Xe>, e: {c == B.un.proven(x, ux) : Bool}, h: {B.er.unproven.k(c, x) == Nil{} : List<&2, B.Er>}) ->
+    {B.un.proven(x, ux) == True{} : Bool}:
+  match c:
+    case True{}:
+      Equal.sym(Bool, True{}, B.un.proven(x, ux), e)
+    case False{}:
+      Empty.absurd({B.un.proven(x, ux) == True{} : Bool}, er_cons(B.Er{B.node.no(B.un.node(x)), "law " ++ B.text(B.rf.name(B.un.ref(x))) ++ " has no proof: a concrete object proves each law it has, and a module its own; a law not yet proven belongs in an abstract object"}, Nil{}, h))
+
+def lp_k(c1: Bool, c2: Bool, +x: B.Un, +rest: List<&2, B.Er>, +ut: B.Ht<B.Pk<B.Un>>, +ux: B.Ht<B.Xe>,
+    e1: {c1 == U32.is_eq(B.node.what(B.un.node(x)), 0) : Bool}, h: {B.er.laws.k(c1, c2, x, rest, ut, ux) == Nil{} : List<&2, B.Er>}) ->
+    {B.un.proven(x, ux) == True{} : Bool}:
+  match c1 c2:
+    case True{} _:
+      %Equal.sym(U32, B.node.what(B.un.node(x)), 0, u32_eq_of_is_eq(B.node.what(B.un.node(x)), 0, Equal.sym(Bool, True{}, U32.is_eq(B.node.what(B.un.node(x)), 0), e1))) :
+        {Bool.or(Bool.not(U32.is_eq(_, 1)), Maybe.is_some(&2, U32, B.ux.find(ux, B.rf.proof(B.un.ref(x))))) == True{} : Bool}
+      {==}
+    case False{} True{}:
+      Empty.absurd({B.un.proven(x, ux) == True{} : Bool}, er_cons(B.Er{B.node.no(B.un.node(x)), "proof " ++ B.text(B.name.plain(B.rf.name(B.un.ref(x)))) ++ " proves no law: its object states none of that name"}, rest, h))
+    case False{} False{}:
+      unp_k(B.un.proven(x, ux), x, ux, {==}, app_nil_l(B.er.unproven(x, ux), rest, h))
+
+def lr_k(c1: Bool, c2: Bool, +x: B.Un, +rest: List<&2, B.Er>, +ut: B.Ht<B.Pk<B.Un>>, +ux: B.Ht<B.Xe>,
+    h: {B.er.laws.k(c1, c2, x, rest, ut, ux) == Nil{} : List<&2, B.Er>}) -> {rest == Nil{} : List<&2, B.Er>}:
+  match c1 c2:
+    case True{} _:
+      app_nil_r(B.er.law.rls(B.un.lines(x), ut, ux), rest, app_nil_r(B.er.law.rts(B.un.hd(x), ut, ux, B.node.no(B.un.node(x))), List.append(&2, B.Er, B.er.law.rls(B.un.lines(x), ut, ux), rest), h))
+    case False{} True{}:
+      Empty.absurd({rest == Nil{} : List<&2, B.Er>}, er_cons(B.Er{B.node.no(B.un.node(x)), "proof " ++ B.text(B.name.plain(B.rf.name(B.un.ref(x)))) ++ " proves no law: its object states none of that name"}, rest, h))
+    case False{} False{}:
+      app_nil_r(B.er.unproven(x, ux), rest, h)
+
+def Laws.laws.proven(xs, ut, ux, h):
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(B.un.proven(x, ux), B.laws.proven(t, ux),
+        lp_k(U32.is_eq(B.node.what(B.un.node(x)), 0), Bool.and(U32.is_eq(B.node.what(B.un.node(x)), 2), Bool.not(B.on.maybe(U32, Bool, B.ux.find(ux, B.rf.law(B.un.ref(x))), v => False{}, +y => U32.is_eq(B.ut.what(ut, y), 1)))),
+          x, B.er.laws(t, ut, ux), ut, ux, {==}, h),
+        Laws.laws.proven(t, ut, ux, lr_k(U32.is_eq(B.node.what(B.un.node(x)), 0), Bool.and(U32.is_eq(B.node.what(B.un.node(x)), 2), Bool.not(B.on.maybe(U32, Bool, B.ux.find(ux, B.rf.law(B.un.ref(x))), v => False{}, +y => U32.is_eq(B.ut.what(ut, y), 1)))),
+          x, B.er.laws(t, ut, ux), ut, ux, h)))
+
+# the laws' check's part of emission's errors, a module with laws
+def ers_laws(+a: List<&2, B.Er>, +b: List<&2, B.Er>, +c: List<&2, B.Er>, +r: List<&2, B.Er>,
+    h: {List.append(&2, B.Er, a, List.append(&2, B.Er, b, List.append(&2, B.Er, c, r))) == Nil{} : List<&2, B.Er>}) -> {c == Nil{} : List<&2, B.Er>}:
+  app_nil_l(c, r, app_nil_r(b, List.append(&2, B.Er, c, r), app_nil_r(a, List.append(&2, B.Er, b, List.append(&2, B.Er, c, r)), h)))
+
+def le_if(c: Bool, +all: List<&2, B.Un>, hl: {c == True{} : Bool}, h: {B.er.laws.if(c, all) == Nil{} : List<&2, B.Er>}) ->
+    {B.er.laws(all, B.pt.of(B.Un, all), B.ux.of(all)) == Nil{} : List<&2, B.Er>}:
+  match c:
+    case True{}:
+      h
+    case False{}:
+      Empty.absurd({B.er.laws(all, B.pt.of(B.Un, all), B.ux.of(all)) == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(hl))
+
+def Laws.laws.emitted(dse, mse, all, order, e, lwe, pfe, hl, h):
+  Laws.laws.proven(all, B.pt.of(B.Un, all), B.ux.of(all),
+    le_if(B.units.lawful(all), all, hl,
+      ers_laws(dse, mse, B.er.laws.if(B.units.lawful(all), all),
+        List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, lwe, pfe)), h)))

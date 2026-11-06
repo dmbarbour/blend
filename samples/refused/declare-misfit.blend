@@ -1,5 +1,5 @@
 # A family's definition that does not fit its declaration: Blend emits
-# it, and Bend refuses its witness in declare-misfit_PROOF.bend, the
+# it, and Bend refuses its witness in declare-misfit.bend, the
 # declaration bound to the family's S.
 import Base
 
