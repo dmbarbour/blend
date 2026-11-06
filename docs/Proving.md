@@ -126,6 +126,12 @@ it alone taught. Add to this file what a new proof teaches.
   hypothesis; induct on the fuel. An index whose shape is a function of
   its set (a trie on a key's bits) makes the lift a computation, the
   lists' order aside: prove that putting commutes.
+- **A hash trie keyed, proved as a map**: where a trie's path is a
+  key's bits (shifts and masks the hub's `U32` laws do not reach), key
+  each entry and let a lookup compare: a put at another key then leaves
+  a lookup as it was whatever leaf it lands in (`put_else`, the
+  descent's two tests split four ways), so no path arithmetic is
+  needed (`units.positions`; `blend-units-keyed`).
 - **A trie on a `U32`'s own word** (`U32{Word(32n)}`, the lowest bit
   first) is structural all the way down: a lookup and a put recurse on
   the word, and `Word.cmp`'s last step splits into the tails and the

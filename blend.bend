@@ -2172,18 +2172,40 @@ def ht.leaf(-A: Data, t: Ht<A>, +b: U32, +h: U32) -> List<&2, A>:
 # a list's entries by position (`blend-scale.positions`): the trie keyed
 # by their indexes, as deep as their count has bits, so that a leaf holds
 # the one entry of its index
-def pt.puts(-A: Data, xs: List<&2, A>, +k: U32, t: Ht<A>) -> Ht<A>:
+# an entry keyed by its position, which a lookup compares, so that the
+# table is the list's (`blend-units-keyed`; LAWS.bend, `units.positions`)
+type Pk<-A: Data> is Data:
+  Pk{+k: U32, v: A}
+
+def pt.puts(-A: Data, xs: List<&2, A>, +k: U32, t: Ht<Pk<A>>) -> Ht<Pk<A>>:
   match xs:
     case Nil{}:
       t
     case Con{+x, r}:
-      ht.put(A, pt.puts(A, r, (k + 1 : U32), t), (k .&. 1 : U32), k, x)
+      ht.put(Pk<A>, pt.puts(A, r, (k + 1 : U32), t), (k .&. 1 : U32), k, Pk{k, x})
 
-def pt.of(-A: Data, +xs: List<&2, A>) -> Ht<A>:
-  pt.puts(A, xs, 0, ht.for(A, List.length(&2, A, xs)))
+def pt.of(-A: Data, +xs: List<&2, A>) -> Ht<Pk<A>>:
+  pt.puts(A, xs, 0, ht.for(Pk<A>, List.length(&2, A, xs)))
 
-def pt.at(-A: Data, +t: Ht<A>, +i: U32) -> Maybe<&2, A>:
-  List.head(&2, A, ht.leaf(A, t, (i .&. 1 : U32), i))
+# the first entry keyed i; its leaf's others, if any, after it
+def pk.pick(-A: Data, +c: Bool, v: A, m: Maybe<&2, A>) -> Maybe<&2, A>:
+  match c:
+    case True{}:
+      Some{v}
+    case False{}:
+      m
+
+def pk.find(-A: Data, es: List<&2, Pk<A>>, +i: U32) -> Maybe<&2, A>:
+  match es:
+    case Nil{}:
+      None{}
+    case Con{e, t}:
+      match e:
+        case Pk{+k, v}:
+          pk.pick(A, U32.is_eq(k, i), v, pk.find(A, t, i))
+
+def pt.at(-A: Data, +t: Ht<Pk<A>>, +i: U32) -> Maybe<&2, A>:
+  pk.find(A, ht.leaf(Pk<A>, t, (i .&. 1 : U32), i), i)
 
 # Definitions
 # -----------
@@ -4062,10 +4084,10 @@ def un.or(m: Maybe<&2, Un>) -> Un:
       u
 
 # unit i, through the units' positions
-def ut.un(+t: Ht<Un>, +i: U32) -> Un:
+def ut.un(+t: Ht<Pk<Un>>, +i: U32) -> Un:
   un.or(pt.at(Un, t, i))
 
-def ut.what(+t: Ht<Un>, +i: U32) -> U32:
+def ut.what(+t: Ht<Pk<Un>>, +i: U32) -> U32:
   node.what(un.node(ut.un(t, i)))
 
 def un.at(+us: List<&2, Un>, +i: U32) -> Un:
@@ -4933,11 +4955,11 @@ def ms.mu(+s: Ms, +x: U32) -> Mu:
 
 # the copies each use by x needs: none from the module's definitions,
 # else one for each of x's copies, its own name's included
-def use.w(+x: U32, +ut: Ht<Un>, +s: Ms) -> U32:
+def use.w(+x: U32, +ut: Ht<Pk<Un>>, +s: Ms) -> U32:
   when(U32, U32.is_eq(un.o(ut.un(ut, x)), 0), v => 0, v => (1 + mu.m(ms.mu(s, x)) : U32))
 
 # the copies a copied unit's uses need
-def uses.m(rs: List<&2, Ru>, +ut: Ht<Un>, +s: Ms) -> U32:
+def uses.m(rs: List<&2, Ru>, +ut: Ht<Pk<Un>>, +s: Ms) -> U32:
   match rs:
     case Nil{}:
       0
@@ -4970,7 +4992,7 @@ def mult.aff(n: Nat, +x: U32, +rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&
 
 # x's copies, its users' known: a copied unit's uses, an affine unit's one
 # user's copies, an affine unit used twice an error
-def mult.of.k(+shared: Bool, +copied: Bool, +x: U32, +rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&2, Un>, +ut: Ht<Un>, +s: Ms) -> Ms:
+def mult.of.k(+shared: Bool, +copied: Bool, +x: U32, +rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&2, Un>, +ut: Ht<Pk<Un>>, +s: Ms) -> Ms:
   match shared copied:
     case True{} _:
       s
@@ -4981,12 +5003,12 @@ def mult.of.k(+shared: Bool, +copied: Bool, +x: U32, +rs: List<&2, Ru>, +obs: Li
 
 # the sharing tested, not matched, so that a law can follow it (LAWS.bend,
 # `sharing.final`)
-def mult.of(+x: U32, +share: U32, +rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&2, Un>, +ut: Ht<Un>, +s: Ms) -> Ms:
+def mult.of(+x: U32, +share: U32, +rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&2, Un>, +ut: Ht<Pk<Un>>, +s: Ms) -> Ms:
   mult.of.k(U32.is_eq(share, 1), U32.is_eq(share, 2), x, rs, obs, us, ut, s)
 
 # how x is shared: a definition of the module's as Bend's (1), else as
 # it is marked
-def mult.share(+x: U32, +ut: Ht<Un>) -> U32:
+def mult.share(+x: U32, +ut: Ht<Pk<Un>>) -> U32:
   when(U32, U32.is_eq(un.o(ut.un(ut, x)), 0), u => 1, u => node.share(un.node(ut.un(ut, x))))
 
 # from the last emitted to the first, the module's definitions shared, as
@@ -4994,7 +5016,7 @@ def mult.share(+x: U32, +ut: Ht<Un>) -> U32:
 # (`order.callees_first`), so that each hands its uses on to the units
 # it uses, its copies known, and a unit has all its uses when its turn
 # comes (p, each unit's so far)
-def mults(xs: List<&2, U32>, +rt: Pw<List<&2, Ru>>, +ut: Ht<Un>, +obs: List<&2, Ob>, +us: List<&2, Un>, s: Ms,
+def mults(xs: List<&2, U32>, +rt: Pw<List<&2, Ru>>, +ut: Ht<Pk<Un>>, +obs: List<&2, Ob>, +us: List<&2, Un>, s: Ms,
     +p: Wm<List<&2, Ru>>) -> Ms:
   match xs:
     case Nil{}:
@@ -5042,7 +5064,7 @@ def uses.of(es: List<&2, U32>, +rss: List<&2, List<&2, Ru>>, +x: U32) -> List<&2
       List.append(&2, Ru, uses.in(rus.at(rss, e), e, x), uses.of(t, rss, x))
 
 # each unit's copies, its uses those by the units es emits
-def mults.spec(xs: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, Ru>>, +ut: Ht<Un>, +obs: List<&2, Ob>,
+def mults.spec(xs: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, Ru>>, +ut: Ht<Pk<Un>>, +obs: List<&2, Ob>,
     +us: List<&2, Un>, s: Ms) -> Ms:
   match xs:
     case Nil{}:
@@ -5057,7 +5079,7 @@ def mults.spec(xs: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, Ru
 # is emitted
 type Ec is Data:
   Ec{files: List<&2, List<&2, U32>>, obs: List<&2, Ob>, us: List<&2, Un>, als: List<&2, Al>, own: List<&2, Ci>,
-    res: List<&2, List<&2, U32>>, paths: List<&2, List<&2, U32>>, +mode: U32, rtypes: List<&2, List<&2, U32>>, ux: Ht<Xe>, ut: Ht<Un>,
+    res: List<&2, List<&2, U32>>, paths: List<&2, List<&2, U32>>, +mode: U32, rtypes: List<&2, List<&2, U32>>, ux: Ht<Xe>, ut: Ht<Pk<Un>>,
     mt: Wm<Mu>}
 
 def ec.ux(e: Ec) -> Ht<Xe>:
@@ -5080,7 +5102,7 @@ def ec.mu(e: Ec, +i: U32) -> Mu:
     case Ec{files, obs, us, als, own, res, paths, +mode, rtypes, ux, ut, mt}:
       mu.or(um.get(Mu, mt, i))
 
-def ec.ut(e: Ec) -> Ht<Un>:
+def ec.ut(e: Ec) -> Ht<Pk<Un>>:
   match e:
     case Ec{files, obs, us, als, own, res, paths, +mode, rtypes, ux, ut, mt}:
       ut
@@ -5248,7 +5270,7 @@ def rf.law(r: Rf) -> Rf:
 # proof's own law, named in its body, is the proof itself, its induction
 # (any proof of a law serves, so none is bound late); another law named
 # is that law's final proof
-def proves.own(+ut: Ht<Un>, +x: U32, +y: U32) -> Bool:
+def proves.own(+ut: Ht<Pk<Un>>, +x: U32, +y: U32) -> Bool:
   U32.is_eq(ut.what(ut, x), 2) && U32.is_eq(ut.what(ut, y), 1) && rf.eq(rf.law(un.ref(ut.un(ut, x))), un.ref(ut.un(ut, y)))
 
 def ref.put(+e: Ec, +x: U32, +j: U32, +mark: U32, +r: Rf, m: Maybe<&2, U32>, +b: Tb) -> Tb:
@@ -5568,10 +5590,19 @@ def uns.inline(us: List<&2, Un>) -> Bool:
     case Con{u, t}:
       un.inline(u) && uns.inline(t)
 
-def ht.inline(t: Ht<Un>) -> Bool:
+def pks.inline(es: List<&2, Pk<Un>>) -> Bool:
+  match es:
+    case Nil{}:
+      True{}
+    case Con{e, t}:
+      match e:
+        case Pk{+k, u}:
+          un.inline(u) && pks.inline(t)
+
+def ht.inline(t: Ht<Pk<Un>>) -> Bool:
   match t:
     case HLeaf{es}:
-      uns.inline(es)
+      pks.inline(es)
     case HNode{z, o}:
       ht.inline(z) && ht.inline(o)
 
@@ -6109,7 +6140,7 @@ def er.names.of(+ns: List<&2, Nm>) -> List<&2, Er>:
 
 # a law, a proof or a lemma named where a definition is wanted: a law is
 # a claim, and its proof and a lemma are Bend's alone to call
-def er.law.rts(ts: List<&2, Rt>, +ut: Ht<Un>, +ux: Ht<Xe>, +no: U32) -> List<&2, Er>:
+def er.law.rts(ts: List<&2, Rt>, +ut: Ht<Pk<Un>>, +ux: Ht<Xe>, +no: U32) -> List<&2, Er>:
   match ts:
     case Nil{}:
       Nil{}
@@ -6123,7 +6154,7 @@ def er.law.rts(ts: List<&2, Rt>, +ut: Ht<Un>, +ux: Ht<Xe>, +no: U32) -> List<&2,
         case _:
           er.law.rts(r, ut, ux, no)
 
-def er.law.rls(ls: List<&2, Rl>, +ut: Ht<Un>, +ux: Ht<Xe>) -> List<&2, Er>:
+def er.law.rls(ls: List<&2, Rl>, +ut: Ht<Pk<Un>>, +ux: Ht<Xe>) -> List<&2, Er>:
   match ls:
     case Nil{}:
       Nil{}
@@ -6133,7 +6164,7 @@ def er.law.rls(ls: List<&2, Rl>, +ut: Ht<Un>, +ux: Ht<Xe>) -> List<&2, Er>:
           List.append(&2, Er, er.law.rts(ts, ut, ux, no), er.law.rls(t, ut, ux))
 
 # the laws' errors: a definition naming a law, a proof of no law
-def er.laws(xs: List<&2, Un>, +ut: Ht<Un>, +ux: Ht<Xe>) -> List<&2, Er>:
+def er.laws(xs: List<&2, Un>, +ut: Ht<Pk<Un>>, +ux: Ht<Xe>) -> List<&2, Er>:
   match xs:
     case Nil{}:
       Nil{}
@@ -6155,7 +6186,7 @@ def rf.proof(r: Rf) -> Rf:
       Rf{obj, List.append(&2, U32, name, [35]), prior, origin}
 
 # a unit's calls, a law called its proof's, unit k's own law left out
-def calls.law(cs: List<&2, U32>, +ut: Ht<Un>, +ux: Ht<Xe>, +k: U32) -> List<&2, U32>:
+def calls.law(cs: List<&2, U32>, +ut: Ht<Pk<Un>>, +ux: Ht<Xe>, +k: U32) -> List<&2, U32>:
   match cs:
     case Nil{}:
       Nil{}
@@ -6166,7 +6197,7 @@ def calls.law(cs: List<&2, U32>, +ut: Ht<Un>, +ux: Ht<Xe>, +k: U32) -> List<&2, 
             +p => when(List<&2, U32>, U32.is_eq(p, k), w => calls.law(t, ut, ux, k), w => Con{p, calls.law(t, ut, ux, k)})),
           v => Con{c, calls.law(t, ut, ux, k)}))
 
-def calls.laws(css: List<&2, List<&2, U32>>, +ut: Ht<Un>, +ux: Ht<Xe>, +k: U32) -> List<&2, List<&2, U32>>:
+def calls.laws(css: List<&2, List<&2, U32>>, +ut: Ht<Pk<Un>>, +ux: Ht<Xe>, +k: U32) -> List<&2, List<&2, U32>>:
   match css:
     case Nil{}:
       Nil{}

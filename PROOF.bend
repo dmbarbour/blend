@@ -2829,7 +2829,7 @@ def at_turn(+x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&
 
 # mults from the units q taken equals the specification, the order the
 # rest reversed onto q
-def disp(rest: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, s: B.Ms,
+def disp(rest: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, s: B.Ms,
     +h1: {B.ordered(rest, B.calls(rss)) == True{} : Bool}, +h2: {B.distinct(rest) == True{} : Bool}) ->
     {B.mults(rest, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, pa(q, B.pw.of(List<&2, B.Ru>, rss))) == B.mults.spec(rest, List.reverse.go(&2, U32, rest, q), rss, ut, obs, us, s) : B.Ms}:
   match rest:
@@ -4045,7 +4045,7 @@ def wsum_app(a: List<&2, B.Ru>, +b: List<&2, B.Ru>, +c: U32) -> {U32.add(wsum(a,
       %wsum_app(t, b, c) : {U32.add(c, U32.add(wsum(t, c), wsum(b, c))) == U32.add(c, _) : U32}
       {==}
 
-def uses_m_app(a: List<&2, B.Ru>, +b: List<&2, B.Ru>, +ut: B.Ht<B.Un>, +s: B.Ms) ->
+def uses_m_app(a: List<&2, B.Ru>, +b: List<&2, B.Ru>, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms) ->
     {U32.add(B.uses.m(a, ut, s), B.uses.m(b, ut, s)) == B.uses.m(List.append(&2, B.Ru, a, b), ut, s) : U32}:
   match a:
     case Nil{}:
@@ -4079,7 +4079,7 @@ def uses_in_app(a: List<&2, B.Ru>, +b: List<&2, B.Ru>, +x: U32, +y: U32) ->
         case B.Ru{+u, +no}:
           uin_k(U32.is_eq(u, y), x, no, t, b, y, uses_in_app(t, b, x, y))
 
-def umin_k(h: Bool, +x: U32, +no: U32, +t: List<&2, B.Ru>, +y: U32, +ut: B.Ht<B.Un>, +s: B.Ms,
+def umin_k(h: Bool, +x: U32, +no: U32, +t: List<&2, B.Ru>, +y: U32, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms,
     ih: {wsum(B.uses.in(t, x, y), B.use.w(x, ut, s)) == B.uses.m(B.uses.in(t, x, y), ut, s) : U32}) ->
     {wsum(B.uses.in.k(h, x, no, B.uses.in(t, x, y)), B.use.w(x, ut, s)) == B.uses.m(B.uses.in.k(h, x, no, B.uses.in(t, x, y)), ut, s) : U32}:
   match h:
@@ -4090,7 +4090,7 @@ def umin_k(h: Bool, +x: U32, +no: U32, +t: List<&2, B.Ru>, +y: U32, +ut: B.Ht<B.
       ih
 
 # x's uses, weighed: each by x's weight
-def uses_m_in(rs: List<&2, B.Ru>, +x: U32, +y: U32, +ut: B.Ht<B.Un>, +s: B.Ms) ->
+def uses_m_in(rs: List<&2, B.Ru>, +x: U32, +y: U32, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms) ->
     {wsum(B.uses.in(rs, x, y), B.use.w(x, ut, s)) == B.uses.m(B.uses.in(rs, x, y), ut, s) : U32}:
   match rs:
     case Nil{}:
@@ -4581,7 +4581,7 @@ def aff_other(n: Nat, +x: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: L
         case 1n+p:
           ms_er(s, B.er.affine(obs, us, x, rs), z)
 
-def of_k_other(sh: Bool, cp: Bool, +x: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +ut: B.Ht<B.Un>, +s: B.Ms, +z: U32,
+def of_k_other(sh: Bool, cp: Bool, +x: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms, +z: U32,
     hq: {U32.is_eq(x, z) == False{} : Bool}) -> {B.ms.mu(s, z) == B.ms.mu(B.mult.of.k(sh, cp, x, rs, obs, us, ut, s), z) : B.Mu}:
   match sh cp:
     case True{} _:
@@ -4592,12 +4592,12 @@ def of_k_other(sh: Bool, cp: Bool, +x: U32, +rs: List<&2, B.Ru>, +obs: List<&2, 
       aff_other(List.length(&2, B.Ru, rs), x, rs, obs, us, s, z, hq)
 
 # a unit's turn leaves another's disposition
-def mult_of_other(+x: U32, +share: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +ut: B.Ht<B.Un>, +s: B.Ms, +z: U32,
+def mult_of_other(+x: U32, +share: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms, +z: U32,
     hq: {U32.is_eq(x, z) == False{} : Bool}) -> {B.ms.mu(s, z) == B.ms.mu(B.mult.of(x, share, rs, obs, us, ut, s), z) : B.Mu}:
   of_k_other(U32.is_eq(share, 1), U32.is_eq(share, 2), x, rs, obs, us, ut, s, z, hq)
 
 # the turns of units other than z leave its disposition
-def frozen(t: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +z: U32,
+def frozen(t: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +z: U32,
     +hz: {B.has(t, z) == False{} : Bool}) -> {B.ms.mu(s, z) == B.ms.mu(B.mults.spec(t, es, rss, ut, obs, us, s), z) : B.Mu}:
   match t:
     case Nil{}:
@@ -4609,12 +4609,12 @@ def frozen(t: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>,
         frozen(r, es, rss, ut, obs, us, B.mult.of(x, B.mult.share(x, ut), B.uses.of(es, rss, x), obs, us, ut, s), z, or_false_r(U32.is_eq(x, z), B.has(r, z), hz)))
 
 # a copied unit's turn
-def mult_y(+y: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +ut: B.Ht<B.Un>, +s: B.Ms, hc: {B.mult.share(y, ut) == 2 : U32}) ->
+def mult_y(+y: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms, hc: {B.mult.share(y, ut) == 2 : U32}) ->
     {B.ms.set(s, y, B.Mu{B.uses.m(rs, ut, s), 1}) == B.mult.of(y, B.mult.share(y, ut), rs, obs, us, ut, s) : B.Ms}:
   %Equal.sym(U32, B.mult.share(y, ut), 2, hc) : {B.ms.set(s, y, B.Mu{B.uses.m(rs, ut, s), 1}) == B.mult.of(y, _, rs, obs, us, ut, s) : B.Ms}
   {==}
 
-def usew_eq(+u: U32, +ut: B.Ht<B.Un>, +s: B.Ms, +s2: B.Ms, h: {B.ms.mu(s, u) == B.ms.mu(s2, u) : B.Mu}) -> {B.use.w(u, ut, s) == B.use.w(u, ut, s2) : U32}:
+def usew_eq(+u: U32, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms, +s2: B.Ms, h: {B.ms.mu(s, u) == B.ms.mu(s2, u) : B.Mu}) -> {B.use.w(u, ut, s) == B.use.w(u, ut, s2) : U32}:
   %h : {B.use.w(u, ut, s) == uw_k(U32.is_eq(B.un.o(B.ut.un(ut, u)), 0), B.mu.m(_)) : U32}
   {==}
 
@@ -4637,14 +4637,14 @@ def outs_tail(q: List<&2, U32>, +x: U32, +r: List<&2, U32>, +h: {outs(q, Con{x, 
         outs_tail(t, x, r, and_r(Bool.not(B.has(Con{x, r}, u)), outs(t, Con{x, r}), h)))
 
 # a unit none of r nor y: its disposition after y's turn and r's, as before
-def fz(+u: U32, +y: U32, +r: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>,
+def fz(+u: U32, +y: U32, +r: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>,
     +s: B.Ms, +mu: B.Mu, +h: {B.has(Con{y, r}, u) == False{} : Bool}) -> {B.ms.mu(s, u) == B.ms.mu(B.mults.spec(r, es, rss, ut, obs, us, B.ms.set(s, y, mu)), u) : B.Mu}:
   Equal.trans(B.Mu, B.ms.mu(s, u), B.ms.mu(B.ms.set(s, y, mu), u), B.ms.mu(B.mults.spec(r, es, rss, ut, obs, us, B.ms.set(s, y, mu)), u),
     ms_set_other(s, y, mu, u, or_false_l(U32.is_eq(y, u), B.has(r, u), h)),
     frozen(r, es, rss, ut, obs, us, B.ms.set(s, y, mu), u, or_false_r(U32.is_eq(y, u), B.has(r, u), h)))
 
 # the uses by units taken before y, weighed at y's turn and at the end
-def um_frozen(q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +y: U32, +r: List<&2, U32>, +es: List<&2, U32>, +ut: B.Ht<B.Un>,
+def um_frozen(q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +y: U32, +r: List<&2, U32>, +es: List<&2, U32>, +ut: B.Ht<B.Pk<B.Un>>,
     +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +mu: B.Mu, +ho: {outs(q, Con{y, r}) == True{} : Bool}) ->
     {B.uses.m(B.uses.of(q, rss, y), ut, s) == B.uses.m(B.uses.of(q, rss, y), ut, B.mults.spec(r, es, rss, ut, obs, us, B.ms.set(s, y, mu))) : U32}:
   match q:
@@ -4668,7 +4668,7 @@ def um_frozen(q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +y: U32, +r: Lis
       {==}
 
 # y's turn: its disposition its uses' weight, read final
-def case_y(+y: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms,
+def case_y(+y: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms,
     +h1: {B.ordered(Con{y, r}, B.calls(rss)) == True{} : Bool}, +h2: {B.distinct(Con{y, r}) == True{} : Bool}, +hc: {B.mult.share(y, ut) == 2 : U32},
     +ho: {outs(q, Con{y, r}) == True{} : Bool}) ->
     {B.ms.mu(B.mults.spec(Con{y, r}, List.reverse.go(&2, U32, r, Con{y, q}), rss, ut, obs, us, s), y) ==
@@ -4682,7 +4682,7 @@ def case_y(+y: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2
   %um_frozen(q, rss, y, r, List.reverse.go(&2, U32, r, Con{y, q}), ut, obs, us, s, B.Mu{B.uses.m(B.uses.of(q, rss, y), ut, s), 1}, ho) : {B.Mu{B.uses.m(B.uses.of(q, rss, y), ut, s), 1} == B.Mu{_, 1} : B.Mu}
   {==}
 
-def final_k(b: Bool, +x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>,
+def final_k(b: Bool, +x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>,
     +s: B.Ms, +y: U32, +eq: {b == U32.is_eq(x, y) : Bool}, +h1: {B.ordered(Con{x, r}, B.calls(rss)) == True{} : Bool}, +h2: {B.distinct(Con{x, r}) == True{} : Bool},
     +hc: {B.mult.share(y, ut) == 2 : U32}, +ho: {outs(q, Con{x, r}) == True{} : Bool},
     ih: {U32.is_eq(x, y) == False{} : Bool} -> {B.ms.mu(B.mults.spec(Con{x, r}, List.reverse.go(&2, U32, r, Con{x, q}), rss, ut, obs, us, s), y) == B.Mu{B.uses.m(B.uses.of(List.reverse.go(&2, U32, r, Con{x, q}), rss, y), ut, B.mults.spec(Con{x, r}, List.reverse.go(&2, U32, r, Con{x, q}), rss, ut, obs, us, s)), 1} : B.Mu}) -> {B.ms.mu(B.mults.spec(Con{x, r}, List.reverse.go(&2, U32, r, Con{x, q}), rss, ut, obs, us, s), y) == B.Mu{B.uses.m(B.uses.of(List.reverse.go(&2, U32, r, Con{x, q}), rss, y), ut, B.mults.spec(Con{x, r}, List.reverse.go(&2, U32, r, Con{x, q}), rss, ut, obs, us, s)), 1} : B.Mu}:
@@ -4696,7 +4696,7 @@ def final_k(b: Bool, +x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&
 
 # the order's units r, the units q taken before them: a copied unit of r
 # ends weighing its uses against the dispositions at the end
-def spec_final(r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +y: U32,
+def spec_final(r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +y: U32,
     +h1: {B.ordered(r, B.calls(rss)) == True{} : Bool}, +h2: {B.distinct(r) == True{} : Bool}, +hy: {B.has(r, y) == True{} : Bool},
     +hc: {B.mult.share(y, ut) == 2 : U32}, +ho: {outs(q, r) == True{} : Bool}) ->
     {B.ms.mu(B.mults.spec(r, List.reverse.go(&2, U32, r, q), rss, ut, obs, us, s), y) ==
@@ -4729,7 +4729,7 @@ def ms_mu_ms(s: B.Ms, +y: U32) -> {B.ms.mu(s, y) == B.ms.mu(B.Ms{B.ms.ms(s), Nil
       {==}
 
 # the uses' weight reads only the dispositions' table
-def um_ms(rs: List<&2, B.Ru>, +ut: B.Ht<B.Un>, +s: B.Ms) -> {B.uses.m(rs, ut, s) == B.uses.m(rs, ut, B.Ms{B.ms.ms(s), Nil{}}) : U32}:
+def um_ms(rs: List<&2, B.Ru>, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms) -> {B.uses.m(rs, ut, s) == B.uses.m(rs, ut, B.Ms{B.ms.ms(s), Nil{}}) : U32}:
   match rs:
     case Nil{}:
       {==}
@@ -4742,7 +4742,7 @@ def um_ms(rs: List<&2, B.Ru>, +ut: B.Ht<B.Un>, +s: B.Ms) -> {B.uses.m(rs, ut, s)
           {==}
 
 # y's disposition as the writer reads it
-def mu_y(+xs: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +e: B.Ec, +y: U32,
+def mu_y(+xs: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +e: B.Ec, +y: U32,
     +h1: {B.ordered(xs, B.calls(rss)) == True{} : Bool}, +h2: {B.distinct(xs) == True{} : Bool}, +hy: {B.has(xs, y) == True{} : Bool},
     +hc: {B.mult.share(y, ut) == 2 : U32}, +hms: {B.ec.ms(e) == B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>})), Nil{}} : B.Ms}) ->
     {B.ec.mu(e, y) == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}:
@@ -4818,7 +4818,7 @@ def aff_ers(n: Nat, +x: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: Lis
         case 1n+p:
           er_some(s, B.er.affine(obs, us, x, rs))
 
-def of_k_ers(sh: Bool, cp: Bool, +x: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +ut: B.Ht<B.Un>, +s: B.Ms,
+def of_k_ers(sh: Bool, cp: Bool, +x: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms,
     h: {has_ers(s) == True{} : Bool}) -> {has_ers(B.mult.of.k(sh, cp, x, rs, obs, us, ut, s)) == True{} : Bool}:
   match sh cp:
     case True{} _:
@@ -4829,7 +4829,7 @@ def of_k_ers(sh: Bool, cp: Bool, +x: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.
       aff_ers(List.length(&2, B.Ru, rs), x, rs, obs, us, s, h)
 
 # an error reported stays reported
-def ers_grow(t: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms,
+def ers_grow(t: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms,
     h: {has_ers(s) == True{} : Bool}) -> {has_ers(B.mults.spec(t, es, rss, ut, obs, us, s)) == True{} : Bool}:
   match t:
     case Nil{}:
@@ -4848,7 +4848,7 @@ def no_ers(s: B.Ms, he: {B.ms.ers(s) == Nil{} : List<&2, B.Er>}, h: {has_ers(s) 
       MB.false_ne_true()(Equal.trans(Bool, False{}, has_ers(B.Ms{ms, ers}), True{}, nil_some(ms, ers, he), h))
 
 # an affine unit's turn, with no error at the end: one use at most
-def aff_le(n: Nat, +x: U32, +rs: List<&2, B.Ru>, +r: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>,
+def aff_le(n: Nat, +x: U32, +rs: List<&2, B.Ru>, +r: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>,
     +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, he: {B.ms.ers(B.mults.spec(r, es, rss, ut, obs, us, B.mult.aff(n, x, rs, obs, us, s))) == Nil{} : List<&2, B.Er>}) ->
     {Nat.is_le(n, 1n) == True{} : Bool}:
   match n:
@@ -4862,7 +4862,7 @@ def aff_le(n: Nat, +x: U32, +rs: List<&2, B.Ru>, +r: List<&2, U32>, +es: List<&2
           Empty.absurd({Nat.is_le(2n+p, 1n) == True{} : Bool}, no_ers(B.mults.spec(r, es, rss, ut, obs, us, B.ms.er(s, B.er.affine(obs, us, x, rs))), he,
             ers_grow(r, es, rss, ut, obs, us, B.ms.er(s, B.er.affine(obs, us, x, rs)), er_some(s, B.er.affine(obs, us, x, rs)))))
 
-def once_k(b: Bool, +x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>,
+def once_k(b: Bool, +x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>,
     +us: List<&2, B.Un>, +s: B.Ms, +y: U32, +eq: {b == U32.is_eq(x, y) : Bool}, +ha: {B.mult.share(y, ut) == 0 : U32},
     +he: {B.ms.ers(B.mults.spec(r, List.reverse.go(&2, U32, r, Con{x, q}), rss, ut, obs, us, B.mult.of(x, B.mult.share(x, ut), B.uses.of(List.reverse.go(&2, U32, r, Con{x, q}), rss, x), obs, us, ut, s))) == Nil{} : List<&2, B.Er>},
     ih: {U32.is_eq(x, y) == False{} : Bool} -> {Nat.is_le(List.length(&2, B.Ru, B.uses.of(List.reverse.go(&2, U32, r, Con{x, q}), rss, y)), 1n) == True{} : Bool}) -> {Nat.is_le(List.length(&2, B.Ru, B.uses.of(List.reverse.go(&2, U32, r, Con{x, q}), rss, y)), 1n) == True{} : Bool}:
@@ -4876,7 +4876,7 @@ def once_k(b: Bool, +x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2
     case False{}:
       ih(Equal.sym(Bool, False{}, U32.is_eq(x, y), eq))
 
-def spec_once(r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +y: U32,
+def spec_once(r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +y: U32,
     +hy: {B.has(r, y) == True{} : Bool}, +ha: {B.mult.share(y, ut) == 0 : U32},
     +he: {B.ms.ers(B.mults.spec(r, List.reverse.go(&2, U32, r, q), rss, ut, obs, us, s)) == Nil{} : List<&2, B.Er>}) ->
     {Nat.is_le(List.length(&2, B.Ru, B.uses.of(List.reverse.go(&2, U32, r, q), rss, y)), 1n) == True{} : Bool}:
@@ -4994,7 +4994,7 @@ def hlq(+y: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B
   ME.subst(List<&2, B.Ru>, z => {List.length(&2, B.Ru, z) == 1n : Nat}, B.uses.of(List.reverse.go(&2, U32, r, Con{y, q}), rss, y), B.uses.of(q, rss, y), at_turn(y, r, q, rss, h1, h2), hl)
 
 # y's turn, its one use by a unit before it: its user's copies
-def case_aff(+y: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>,
+def case_aff(+y: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>,
     +s: B.Ms, +mu0: B.Mu, +h1: {B.ordered(Con{y, r}, B.calls(rss)) == True{} : Bool}, +h2: {B.distinct(Con{y, r}) == True{} : Bool},
     +ha: {B.mult.share(y, ut) == 0 : U32}, +ho: {outs(q, Con{y, r}) == True{} : Bool}, +h0: {B.ms.mu(s, y) == mu0 : B.Mu},
     +hl: {List.length(&2, B.Ru, B.uses.of(List.reverse.go(&2, U32, r, Con{y, q}), rss, y)) == 1n : Nat}) -> {B.ms.mu(B.mults.spec(Con{y, r}, List.reverse.go(&2, U32, r, Con{y, q}), rss, ut, obs, us, s), y) == B.mu.after(B.mu.m(B.ms.mu(B.mults.spec(Con{y, r}, List.reverse.go(&2, U32, r, Con{y, q}), rss, ut, obs, us, s), B.ru.user(B.uses.of(List.reverse.go(&2, U32, r, Con{y, q}), rss, y)))), mu0) : B.Mu}:
@@ -5012,7 +5012,7 @@ def case_aff(+y: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<
     {B.ms.mu(ak(U32.is_gt(B.mu.m(B.ms.mu(s, B.ru.user(B.uses.of(q, rss, y)))), 0), s, y, B.uses.of(q, rss, y)), y) == B.mu.after(B.mu.m(_), mu0) : B.Mu}
   aff_after(U32.is_gt(B.mu.m(B.ms.mu(s, B.ru.user(B.uses.of(q, rss, y)))), 0), s, y, B.uses.of(q, rss, y), mu0, {==}, h0)
 
-def aff_k2(b: Bool, +x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>,
+def aff_k2(b: Bool, +x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>,
     +s: B.Ms, +y: U32, +mu0: B.Mu, +eq: {b == U32.is_eq(x, y) : Bool}, +h1: {B.ordered(Con{x, r}, B.calls(rss)) == True{} : Bool},
     +h2: {B.distinct(Con{x, r}) == True{} : Bool}, +ha: {B.mult.share(y, ut) == 0 : U32}, +ho: {outs(q, Con{x, r}) == True{} : Bool},
     +h0: {B.ms.mu(s, y) == mu0 : B.Mu}, +hl: {List.length(&2, B.Ru, B.uses.of(List.reverse.go(&2, U32, r, Con{x, q}), rss, y)) == 1n : Nat},
@@ -5028,7 +5028,7 @@ def aff_k2(b: Bool, +x: U32, +r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2
     case False{}:
       ih(Equal.sym(Bool, False{}, U32.is_eq(x, y), eq))
 
-def spec_aff(r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Un>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +y: U32,
+def spec_aff(r: List<&2, U32>, +q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +y: U32,
     +mu0: B.Mu, +h1: {B.ordered(r, B.calls(rss)) == True{} : Bool}, +h2: {B.distinct(r) == True{} : Bool}, +hy: {B.has(r, y) == True{} : Bool},
     +ha: {B.mult.share(y, ut) == 0 : U32}, +ho: {outs(q, r) == True{} : Bool}, +h0: {B.ms.mu(s, y) == mu0 : B.Mu},
     +hl: {List.length(&2, B.Ru, B.uses.of(List.reverse.go(&2, U32, r, q), rss, y)) == 1n : Nat}) -> {B.ms.mu(B.mults.spec(r, List.reverse.go(&2, U32, r, q), rss, ut, obs, us, s), y) == B.mu.after(B.mu.m(B.ms.mu(B.mults.spec(r, List.reverse.go(&2, U32, r, q), rss, ut, obs, us, s), B.ru.user(B.uses.of(List.reverse.go(&2, U32, r, q), rss, y)))), mu0) : B.Mu}:
@@ -7643,14 +7643,14 @@ def ec_own(e: B.Ec, h: {B.ec.inline(e) == True{} : Bool}) -> {B.cis.inline(B.ec.
       and_r(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own),
         and_l(Bool.and(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own)), B.ht.inline(ut), h))
 
-def il_pick(c: Bool, +z: B.Ht<B.Un>, +o: B.Ht<B.Un>, +h: {B.ht.inline(B.HNode{z, o}) == True{} : Bool}) -> {B.ht.inline(B.ht.pick(B.Un, c, z, o)) == True{} : Bool}:
+def il_pick(c: Bool, +z: B.Ht<B.Pk<B.Un>>, +o: B.Ht<B.Pk<B.Un>>, +h: {B.ht.inline(B.HNode{z, o}) == True{} : Bool}) -> {B.ht.inline(B.ht.pick(B.Pk<B.Un>, c, z, o)) == True{} : Bool}:
   match c:
     case True{}:
       and_l(B.ht.inline(z), B.ht.inline(o), h)
     case False{}:
       and_r(B.ht.inline(z), B.ht.inline(o), h)
 
-def il_leaf(fuel: Nat, t: B.Ht<B.Un>, +b: U32, +h: U32, +ht: {B.ht.inline(t) == True{} : Bool}) -> {B.uns.inline(B.ht.leaf.go(B.Un, fuel, t, b, h)) == True{} : Bool}:
+def il_leaf(fuel: Nat, t: B.Ht<B.Pk<B.Un>>, +b: U32, +h: U32, +ht: {B.ht.inline(t) == True{} : Bool}) -> {B.pks.inline(B.ht.leaf.go(B.Pk<B.Un>, fuel, t, b, h)) == True{} : Bool}:
   match fuel:
     case 0n:
       match t:
@@ -7663,20 +7663,31 @@ def il_leaf(fuel: Nat, t: B.Ht<B.Un>, +b: U32, +h: U32, +ht: {B.ht.inline(t) == 
         case B.HLeaf{es}:
           ht
         case B.HNode{+z, +o}:
-          il_leaf(k, B.ht.pick(B.Un, U32.is_eq(b, 0), z, o), nb(h), nh(h), il_pick(U32.is_eq(b, 0), z, o, ht))
+          il_leaf(k, B.ht.pick(B.Pk<B.Un>, U32.is_eq(b, 0), z, o), nb(h), nh(h), il_pick(U32.is_eq(b, 0), z, o, ht))
 
-def il_head(us: List<&2, B.Un>, h: {B.uns.inline(us) == True{} : Bool}) -> {B.un.inline(B.un.or(List.head(&2, B.Un, us))) == True{} : Bool}:
-  match us:
+def pkf_k(c: Bool, +u: B.Un, +m: Maybe<&2, B.Un>, +hu: {B.un.inline(u) == True{} : Bool}, +hm: {B.un.inline(B.un.or(m)) == True{} : Bool}) ->
+    {B.un.inline(B.un.or(B.pk.pick(B.Un, c, u, m))) == True{} : Bool}:
+  match c:
+    case True{}:
+      hu
+    case False{}:
+      hm
+
+# the unit a keyed leaf finds: one of its own, within a line
+def il_pkfind(es: List<&2, B.Pk<B.Un>>, +i: U32, +h: {B.pks.inline(es) == True{} : Bool}) -> {B.un.inline(B.un.or(B.pk.find(B.Un, es, i))) == True{} : Bool}:
+  match es:
     case Nil{}:
       {==}
-    case Con{+u, +t}:
-      and_l(B.un.inline(u), B.uns.inline(t), h)
+    case Con{e, +t}:
+      match e:
+        case B.Pk{+k, +u}:
+          pkf_k(U32.is_eq(k, i), u, B.pk.find(B.Un, t, i), and_l(B.un.inline(u), B.pks.inline(t), h), il_pkfind(t, i, and_r(B.un.inline(u), B.pks.inline(t), h)))
 
 # every unit the writer reads within a line
 def il_un(e: B.Ec, +i: U32, h: {B.ec.inline(e) == True{} : Bool}) -> {B.un.inline(B.ec.un(e, i)) == True{} : Bool}:
   match e:
     case B.Ec{+files, +obs, us, als, +own, res, paths, +mode, rtypes, ux, +ut, mt}:
-      il_head(B.ht.leaf(B.Un, ut, (i .&. 1 : U32), i), il_leaf(32n, ut, (i .&. 1 : U32), i,
+      il_pkfind(B.ht.leaf(B.Pk<B.Un>, ut, (i .&. 1 : U32), i), i, il_leaf(32n, ut, (i .&. 1 : U32), i,
         and_r(Bool.and(Bool.and(B.inlines(files), B.obs.inline(obs)), B.cis.inline(own)), B.ht.inline(ut), h)))
 
 def un_name(u: B.Un, h: {B.un.inline(u) == True{} : Bool}) -> {B.inline(B.rf.name(B.un.ref(u))) == True{} : Bool}:
@@ -10692,55 +10703,65 @@ def Laws.inline.own(ns, mpath, h):
 
 # The units' table: each unit put within a line
 
-def hte_il(d: Nat) -> {B.ht.inline(B.ht.empty(B.Un, d)) == True{} : Bool}:
+def hte_il(d: Nat) -> {B.ht.inline(B.ht.empty(B.Pk<B.Un>, d)) == True{} : Bool}:
   match d:
     case 0n:
       {==}
     case 1n+(+k):
-      and_intro(B.ht.inline(B.ht.empty(B.Un, k)), B.ht.inline(B.ht.empty(B.Un, k)), hte_il(k), hte_il(k))
+      and_intro(B.ht.inline(B.ht.empty(B.Pk<B.Un>, k)), B.ht.inline(B.ht.empty(B.Pk<B.Un>, k)), hte_il(k), hte_il(k))
 
-def il_pick2(c: Bool, +z: B.Ht<B.Un>, +o: B.Ht<B.Un>, +h: {B.ht.inline(B.HNode{z, o}) == True{} : Bool}) -> {B.ht.inline(B.ht.pick(B.Un, c, o, z)) == True{} : Bool}:
+def il_pick2(c: Bool, +z: B.Ht<B.Pk<B.Un>>, +o: B.Ht<B.Pk<B.Un>>, +h: {B.ht.inline(B.HNode{z, o}) == True{} : Bool}) -> {B.ht.inline(B.ht.pick(B.Pk<B.Un>, c, o, z)) == True{} : Bool}:
   match c:
     case True{}:
       and_r(B.ht.inline(z), B.ht.inline(o), h)
     case False{}:
       and_l(B.ht.inline(z), B.ht.inline(o), h)
 
-def il_join(c: Bool, +x: B.Ht<B.Un>, +y: B.Ht<B.Un>, +hx: {B.ht.inline(x) == True{} : Bool}, +hy: {B.ht.inline(y) == True{} : Bool}) -> {B.ht.inline(B.ht.join(B.Un, c, x, y)) == True{} : Bool}:
+def il_join(c: Bool, +x: B.Ht<B.Pk<B.Un>>, +y: B.Ht<B.Pk<B.Un>>, +hx: {B.ht.inline(x) == True{} : Bool}, +hy: {B.ht.inline(y) == True{} : Bool}) -> {B.ht.inline(B.ht.join(B.Pk<B.Un>, c, x, y)) == True{} : Bool}:
   match c:
     case True{}:
       and_intro(B.ht.inline(x), B.ht.inline(y), hx, hy)
     case False{}:
       and_intro(B.ht.inline(y), B.ht.inline(x), hy, hx)
 
-def htput_il(fuel: Nat, t: B.Ht<B.Un>, +b: U32, +h: U32, +e: B.Un, +he: {B.un.inline(e) == True{} : Bool}, +ht: {B.ht.inline(t) == True{} : Bool}) ->
-    {B.ht.inline(B.ht.put.go(B.Un, fuel, t, b, h, e)) == True{} : Bool}:
+def pkil(e: B.Pk<B.Un>) -> Bool:
+  match e:
+    case B.Pk{+k, u}:
+      B.un.inline(u)
+
+def pks_cons(e: B.Pk<B.Un>, +es: List<&2, B.Pk<B.Un>>, +he: {pkil(e) == True{} : Bool}, +hes: {B.pks.inline(es) == True{} : Bool}) -> {B.pks.inline(Con{e, es}) == True{} : Bool}:
+  match e:
+    case B.Pk{+k, +u}:
+      and_intro(B.un.inline(u), B.pks.inline(es), he, hes)
+
+def htput_il(fuel: Nat, t: B.Ht<B.Pk<B.Un>>, +b: U32, +h: U32, +e: B.Pk<B.Un>, +he: {pkil(e) == True{} : Bool}, +ht: {B.ht.inline(t) == True{} : Bool}) ->
+    {B.ht.inline(B.ht.put.go(B.Pk<B.Un>, fuel, t, b, h, e)) == True{} : Bool}:
   match fuel:
     case 0n:
       match t:
         case B.HLeaf{+es}:
-          and_intro(B.un.inline(e), B.uns.inline(es), he, ht)
+          pks_cons(e, es, he, ht)
         case B.HNode{z, o}:
-          and_intro(B.un.inline(e), True{}, he, {==})
+          pks_cons(e, Nil{}, he, {==})
     case 1n+(+k):
       match t:
         case B.HLeaf{+es}:
-          and_intro(B.un.inline(e), B.uns.inline(es), he, ht)
+          pks_cons(e, es, he, ht)
         case B.HNode{+z, +o}:
-          il_join(U32.is_eq(b, 0), B.ht.put.go(B.Un, k, B.ht.pick(B.Un, U32.is_eq(b, 0), z, o), nb(h), nh(h), e), B.ht.pick(B.Un, U32.is_eq(b, 0), o, z),
-            htput_il(k, B.ht.pick(B.Un, U32.is_eq(b, 0), z, o), nb(h), nh(h), e, he, il_pick(U32.is_eq(b, 0), z, o, ht)), il_pick2(U32.is_eq(b, 0), z, o, ht))
+          il_join(U32.is_eq(b, 0), B.ht.put.go(B.Pk<B.Un>, k, B.ht.pick(B.Pk<B.Un>, U32.is_eq(b, 0), z, o), nb(h), nh(h), e), B.ht.pick(B.Pk<B.Un>, U32.is_eq(b, 0), o, z),
+            htput_il(k, B.ht.pick(B.Pk<B.Un>, U32.is_eq(b, 0), z, o), nb(h), nh(h), e, he, il_pick(U32.is_eq(b, 0), z, o, ht)), il_pick2(U32.is_eq(b, 0), z, o, ht))
 
-def ptputs_il(xs: List<&2, B.Un>, +k: U32, +t: B.Ht<B.Un>, +hx: {B.uns.inline(xs) == True{} : Bool}, +ht: {B.ht.inline(t) == True{} : Bool}) ->
+def ptputs_il(xs: List<&2, B.Un>, +k: U32, +t: B.Ht<B.Pk<B.Un>>, +hx: {B.uns.inline(xs) == True{} : Bool}, +ht: {B.ht.inline(t) == True{} : Bool}) ->
     {B.ht.inline(B.pt.puts(B.Un, xs, k, t)) == True{} : Bool}:
   match xs:
     case Nil{}:
       ht
     case Con{+x, +r}:
-      htput_il(32n, B.pt.puts(B.Un, r, U32.add(k, 1), t), U32.and(k, 1), k, x, and_l(B.un.inline(x), B.uns.inline(r), hx),
+      htput_il(32n, B.pt.puts(B.Un, r, U32.add(k, 1), t), U32.and(k, 1), k, B.Pk{k, x}, and_l(B.un.inline(x), B.uns.inline(r), hx),
         ptputs_il(r, U32.add(k, 1), t, and_r(B.un.inline(x), B.uns.inline(r), hx), ht))
 
 def ptof_il(+xs: List<&2, B.Un>, +h: {B.uns.inline(xs) == True{} : Bool}) -> {B.ht.inline(B.pt.of(B.Un, xs)) == True{} : Bool}:
-  ptputs_il(xs, 0, B.ht.for(B.Un, List.length(&2, B.Un, xs)), h, hte_il(B.ht.depth(32n, U32.from_nat(List.length(&2, B.Un, xs)))))
+  ptputs_il(xs, 0, B.ht.for(B.Pk<B.Un>, List.length(&2, B.Un, xs)), h, hte_il(B.ht.depth(32n, U32.from_nat(List.length(&2, B.Un, xs)))))
 
 def uok(+c: Bool, +u: B.Un, +t: List<&2, B.Un>, +laws: Bool) -> List<&2, B.Un>:
   B.when(List<&2, B.Un>, c, v => Con{u, B.units.of(t, laws)}, v => B.units.of(t, laws))
@@ -11333,3 +11354,182 @@ def Laws.resolve.names(cx, o, q, locals, t, no):
       tok_mk(B.TSp{x})
     case B.TSym{+c}:
       tok_mk(B.TSym{c})
+
+# The units' table by position (`units.positions`): a put finds its key
+# first in its leaf (`leaf_put`), a put at another key leaves a lookup as
+# it was, wherever it lands (`put_else`), so a lookup at i finds the
+# first entry keyed i (`puts_at`), the list's i-th (`pl_get`)
+
+def pkk(-A: Data, e: B.Pk<A>) -> U32:
+  match e:
+    case B.Pk{+k, v}:
+      k
+
+def skip_e(-A: Data, e: B.Pk<A>, +es: List<&2, B.Pk<A>>, +i: U32, he: {U32.is_eq(pkk(A, e), i) == False{} : Bool}) ->
+    {B.pk.find(A, Con{e, es}, i) == B.pk.find(A, es, i) : Maybe<&2, A>}:
+  match e:
+    case B.Pk{+k, +v}:
+      %Equal.sym(Bool, U32.is_eq(k, i), False{}, he) : {B.pk.pick(A, _, v, B.pk.find(A, es, i)) == B.pk.find(A, es, i) : Maybe<&2, A>}
+      {==}
+
+def pe_k(-A: Data, c: Bool, c2: Bool, +k: Nat, +z: B.Ht<B.Pk<A>>, +o: B.Ht<B.Pk<A>>, +h: U32, +b2: U32, +h2: U32, +e: B.Pk<A>, +i: U32,
+    eq2: {c2 == U32.is_eq(b2, 0) : Bool},
+    ih: @s:B.Ht<B.Pk<A>> -> {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, B.ht.put.go(B.Pk<A>, k, s, nb(h), nh(h), e), nb(h2), nh(h2)), i) ==
+      B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, s, nb(h2), nh(h2)), i) : Maybe<&2, A>}) ->
+    {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, 1n+k, B.ht.join(B.Pk<A>, c, B.ht.put.go(B.Pk<A>, k, B.ht.pick(B.Pk<A>, c, z, o), nb(h), nh(h), e), B.ht.pick(B.Pk<A>, c, o, z)), b2, h2), i) ==
+      B.pk.find(A, B.ht.leaf.go(B.Pk<A>, 1n+k, B.HNode{z, o}, b2, h2), i) : Maybe<&2, A>}:
+  match c:
+    case True{}:
+      match c2:
+        case True{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, B.ht.pick(B.Pk<A>, _, B.ht.put.go(B.Pk<A>, k, z, nb(h), nh(h), e), o), nb(h2), nh(h2)), i) ==
+            B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, B.ht.pick(B.Pk<A>, _, z, o), nb(h2), nh(h2)), i) : Maybe<&2, A>}
+          ih(z)
+        case False{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, B.ht.pick(B.Pk<A>, _, B.ht.put.go(B.Pk<A>, k, z, nb(h), nh(h), e), o), nb(h2), nh(h2)), i) ==
+            B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, B.ht.pick(B.Pk<A>, _, z, o), nb(h2), nh(h2)), i) : Maybe<&2, A>}
+          {==}
+    case False{}:
+      match c2:
+        case True{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, B.ht.pick(B.Pk<A>, _, z, B.ht.put.go(B.Pk<A>, k, o, nb(h), nh(h), e)), nb(h2), nh(h2)), i) ==
+            B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, B.ht.pick(B.Pk<A>, _, z, o), nb(h2), nh(h2)), i) : Maybe<&2, A>}
+          {==}
+        case False{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, B.ht.pick(B.Pk<A>, _, z, B.ht.put.go(B.Pk<A>, k, o, nb(h), nh(h), e)), nb(h2), nh(h2)), i) ==
+            B.pk.find(A, B.ht.leaf.go(B.Pk<A>, k, B.ht.pick(B.Pk<A>, _, z, o), nb(h2), nh(h2)), i) : Maybe<&2, A>}
+          ih(o)
+
+# a put at another key than i: what a lookup of i finds, as before
+def put_else(-A: Data, fuel: Nat, t: B.Ht<B.Pk<A>>, +b: U32, +h: U32, +b2: U32, +h2: U32, +e: B.Pk<A>, +i: U32, +he: {U32.is_eq(pkk(A, e), i) == False{} : Bool}) ->
+    {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, fuel, B.ht.put.go(B.Pk<A>, fuel, t, b, h, e), b2, h2), i) == B.pk.find(A, B.ht.leaf.go(B.Pk<A>, fuel, t, b2, h2), i) : Maybe<&2, A>}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{+es}:
+          skip_e(A, e, es, i, he)
+        case B.HNode{z, o}:
+          skip_e(A, e, Nil{}, i, he)
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{+es}:
+          skip_e(A, e, es, i, he)
+        case B.HNode{+z, +o}:
+          pe_k(A, U32.is_eq(b, 0), U32.is_eq(b2, 0), k, z, o, h, b2, h2, e, i, {==}, s => put_else(A, k, s, nb(h), nh(h), nb(h2), nh(h2), e, i, he))
+
+def pa_k(-A: Data, c: Bool, +t: B.Ht<B.Pk<A>>, +k: U32, +x: A, +i: U32, ek: {U32.is_eq(k, i) == c : Bool}) ->
+    {B.pt.at(A, B.ht.put(B.Pk<A>, t, U32.and(k, 1), k, B.Pk{k, x}), i) == B.pk.pick(A, c, x, B.pt.at(A, t, i)) : Maybe<&2, A>}:
+  match c:
+    case True{}:
+      %u32_eq_of_is_eq(k, i, ek) : {B.pt.at(A, B.ht.put(B.Pk<A>, t, U32.and(k, 1), k, B.Pk{k, x}), _) == Some{x} : Maybe<&2, A>}
+      %leaf_put(B.Pk<A>, 32n, t, U32.and(k, 1), k, B.Pk{k, x}) : {B.pk.find(A, _, k) == Some{x} : Maybe<&2, A>}
+      %Equal.sym(Bool, U32.is_eq(k, k), True{}, u32_is_eq_refl(k)) : {B.pk.pick(A, _, x, B.pk.find(A, B.ht.leaf.go(B.Pk<A>, 32n, t, U32.and(k, 1), k), k)) == Some{x} : Maybe<&2, A>}
+      {==}
+    case False{}:
+      put_else(A, 32n, t, U32.and(k, 1), k, U32.and(i, 1), i, B.Pk{k, x}, i, ek)
+
+# the lookup of i in a table the list was put in from key k: the first
+# entry keyed i, else the table's
+def plist(-A: Data, xs: List<&2, A>, +k: U32, +i: U32, +t: B.Ht<B.Pk<A>>) -> Maybe<&2, A>:
+  match xs:
+    case Nil{}:
+      B.pt.at(A, t, i)
+    case Con{+x, r}:
+      B.pk.pick(A, U32.is_eq(k, i), x, plist(A, r, U32.add(k, 1), i, t))
+
+def puts_at(-A: Data, xs: List<&2, A>, +k: U32, +i: U32, +t: B.Ht<B.Pk<A>>) -> {B.pt.at(A, B.pt.puts(A, xs, k, t), i) == plist(A, xs, k, i, t) : Maybe<&2, A>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +r}:
+      Equal.trans(Maybe<&2, A>, B.pt.at(A, B.ht.put(B.Pk<A>, B.pt.puts(A, r, U32.add(k, 1), t), U32.and(k, 1), k, B.Pk{k, x}), i),
+        B.pk.pick(A, U32.is_eq(k, i), x, B.pt.at(A, B.pt.puts(A, r, U32.add(k, 1), t), i)), B.pk.pick(A, U32.is_eq(k, i), x, plist(A, r, U32.add(k, 1), i, t)),
+        pa_k(A, U32.is_eq(k, i), B.pt.puts(A, r, U32.add(k, 1), t), k, x, i, {==}),
+        Equal.cong(Maybe<&2, A>, Maybe<&2, A>, z => B.pk.pick(A, U32.is_eq(k, i), x, z), B.pt.at(A, B.pt.puts(A, r, U32.add(k, 1), t), i), plist(A, r, U32.add(k, 1), i, t),
+          puts_at(A, r, U32.add(k, 1), i, t)))
+
+def pick_same(-A: Data, c: Bool, +x: B.Ht<A>) -> {B.ht.pick(A, c, x, x) == x : B.Ht<A>}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# an empty table's leaves are empty
+def le_empty(-A: Data, fuel: Nat, d: Nat, +b: U32, +h: U32) -> {B.ht.leaf.go(A, fuel, B.ht.empty(A, d), b, h) == Nil{} : List<&2, A>}:
+  match fuel:
+    case 0n:
+      match d:
+        case 0n:
+          {==}
+        case 1n+p:
+          {==}
+    case 1n+(+k):
+      match d:
+        case 0n:
+          {==}
+        case 1n+(+p):
+          %Equal.sym(B.Ht<A>, B.ht.pick(A, U32.is_eq(b, 0), B.ht.empty(A, p), B.ht.empty(A, p)), B.ht.empty(A, p), pick_same(A, U32.is_eq(b, 0), B.ht.empty(A, p))) :
+            {B.ht.leaf.go(A, k, _, nb(h), nh(h)) == Nil{} : List<&2, A>}
+          le_empty(A, k, p, nb(h), nh(h))
+
+def empty_at(-A: Data, +n: Nat, +i: U32) -> {B.pt.at(A, B.ht.for(B.Pk<A>, n), i) == None{} : Maybe<&2, A>}:
+  Equal.cong(List<&2, B.Pk<A>>, Maybe<&2, A>, z => B.pk.find(A, z, i), B.ht.leaf.go(B.Pk<A>, 32n, B.ht.empty(B.Pk<A>, B.ht.depth(32n, U32.from_nat(n))), U32.and(i, 1), i), Nil{},
+    le_empty(B.Pk<A>, 32n, B.ht.depth(32n, U32.from_nat(n)), U32.and(i, 1), i))
+
+def lt_i(+k: U32, +i: U32, +d2: Nat, +m: Nat, +em: {Nat.pow(2n, 32n) == m : Nat}, +hd: {1n+Nat.add(d2, U32.to_nat(k)) == U32.to_nat(i) : Nat}) ->
+    MNat.lt(1n+Nat.add(d2, U32.to_nat(k)), m):
+  %Equal.sym(Nat, 1n+Nat.add(d2, U32.to_nat(k)), U32.to_nat(i), hd) : MNat.lt(_, m)
+  MU.internal_u32_to_nat_lt(m, i, em)
+
+# a key one more than k, below i: within the word
+def lt1(+k: U32, +i: U32, +d2: Nat, +m: Nat, +em: {Nat.pow(2n, 32n) == m : Nat}, +hd: {1n+Nat.add(d2, U32.to_nat(k)) == U32.to_nat(i) : Nat}) ->
+    MNat.lt(Nat.add(U32.to_nat(k), U32.to_nat(1)), m):
+  %Equal.sym(Nat, Nat.add(U32.to_nat(k), 1n), Nat.add(1n, U32.to_nat(k)), MNat.add_comm(U32.to_nat(k), 1n)) : MNat.lt(_, m)
+  MNat.lt_of_le_of_lt(1n+U32.to_nat(k), 1n+Nat.add(d2, U32.to_nat(k)), m, le_add_l(d2, U32.to_nat(k)), lt_i(k, i, d2, m, em, hd))
+
+def ne_ik2(+k: U32, +i: U32, +d2: Nat, +hd: {1n+Nat.add(d2, U32.to_nat(k)) == U32.to_nat(i) : Nat}) -> {Nat.is_eq(U32.to_nat(i), U32.to_nat(k)) == False{} : Bool}:
+  %hd : {Nat.is_eq(_, U32.to_nat(k)) == False{} : Bool}
+  succ_add_ne(d2, U32.to_nat(k))
+
+def ne_ik(+k: U32, +i: U32, +d2: Nat, +hd: {1n+Nat.add(d2, U32.to_nat(k)) == U32.to_nat(i) : Nat}) -> {U32.is_eq(k, i) == False{} : Bool}:
+  Equal.trans(Bool, U32.is_eq(k, i), U32.is_eq(i, k), False{}, u32_is_eq_comm(k, i),
+    Equal.trans(Bool, U32.is_eq(i, k), Nat.is_eq(U32.to_nat(i), U32.to_nat(k)), False{}, MU.u32_is_eq_to_nat(i, k), ne_ik2(k, i, d2, hd)))
+
+def hd_next(+k: U32, +i: U32, +d2: Nat, +hd: {1n+Nat.add(d2, U32.to_nat(k)) == U32.to_nat(i) : Nat}) -> {Nat.add(d2, U32.to_nat(U32.add(k, 1))) == U32.to_nat(i) : Nat}:
+  %Equal.sym(Nat, U32.to_nat(U32.add(k, 1)), 1n+U32.to_nat(k),
+      Equal.trans(Nat, U32.to_nat(U32.add(k, 1)), Nat.add(U32.to_nat(k), U32.to_nat(1)), 1n+U32.to_nat(k),
+        MU.internal_u32_add_exact(Nat.pow(2n, 32n), k, 1, {==}, lt1(k, i, d2, Nat.pow(2n, 32n), {==}, hd)), MNat.add_comm(U32.to_nat(k), 1n))) :
+    {Nat.add(d2, _) == U32.to_nat(i) : Nat}
+  Equal.trans(Nat, Nat.add(d2, 1n+U32.to_nat(k)), 1n+Nat.add(d2, U32.to_nat(k)), U32.to_nat(i), MNat.add_succ(d2, U32.to_nat(k)), hd)
+
+def pk_true(-A: Data, +k: U32, +i: U32, +x: A, +m: Maybe<&2, A>, +hd: {U32.to_nat(k) == U32.to_nat(i) : Nat}) -> {B.pk.pick(A, U32.is_eq(k, i), x, m) == Some{x} : Maybe<&2, A>}:
+  %Equal.sym(Bool, U32.is_eq(k, i), True{}, Equal.trans(Bool, U32.is_eq(k, i), Nat.is_eq(U32.to_nat(k), U32.to_nat(i)), True{}, MU.u32_is_eq_to_nat(k, i), nat_at(U32.to_nat(k), U32.to_nat(i), hd))) :
+    {B.pk.pick(A, _, x, m) == Some{x} : Maybe<&2, A>}
+  {==}
+
+def pk_false(-A: Data, +k: U32, +i: U32, +x: A, +m: Maybe<&2, A>, +he: {U32.is_eq(k, i) == False{} : Bool}) -> {B.pk.pick(A, U32.is_eq(k, i), x, m) == m : Maybe<&2, A>}:
+  %Equal.sym(Bool, U32.is_eq(k, i), False{}, he) : {B.pk.pick(A, _, x, m) == m : Maybe<&2, A>}
+  {==}
+
+# the list put from key k, i its value d places on: the list's entry d
+def pl_get(-A: Data, xs: List<&2, A>, d: Nat, +k: U32, +i: U32, +t: B.Ht<B.Pk<A>>, +ht: {B.pt.at(A, t, i) == None{} : Maybe<&2, A>},
+    +hd: {Nat.add(d, U32.to_nat(k)) == U32.to_nat(i) : Nat}) -> {plist(A, xs, k, i, t) == List.get(&2, A, xs, d) : Maybe<&2, A>}:
+  match xs:
+    case Nil{}:
+      ht
+    case Con{+x, +r}:
+      match d:
+        case 0n:
+          pk_true(A, k, i, x, plist(A, r, U32.add(k, 1), i, t), hd)
+        case 1n+(+d2):
+          Equal.trans(Maybe<&2, A>, B.pk.pick(A, U32.is_eq(k, i), x, plist(A, r, U32.add(k, 1), i, t)), plist(A, r, U32.add(k, 1), i, t), List.get(&2, A, r, d2),
+            pk_false(A, k, i, x, plist(A, r, U32.add(k, 1), i, t), ne_ik(k, i, d2, hd)),
+            pl_get(A, r, d2, U32.add(k, 1), i, t, ht, hd_next(k, i, d2, hd)))
+
+def Laws.units.positions(us, i):
+  Equal.cong(Maybe<&2, B.Un>, B.Un, z => B.un.or(z), B.pt.at(B.Un, B.pt.of(B.Un, us), i), List.get(&2, B.Un, us, U32.to_nat(i)),
+    Equal.trans(Maybe<&2, B.Un>, B.pt.at(B.Un, B.pt.puts(B.Un, us, 0, B.ht.for(B.Pk<B.Un>, List.length(&2, B.Un, us))), i),
+      plist(B.Un, us, 0, i, B.ht.for(B.Pk<B.Un>, List.length(&2, B.Un, us))), List.get(&2, B.Un, us, U32.to_nat(i)),
+      puts_at(B.Un, us, 0, i, B.ht.for(B.Pk<B.Un>, List.length(&2, B.Un, us))),
+      pl_get(B.Un, us, U32.to_nat(i), 0, i, B.ht.for(B.Pk<B.Un>, List.length(&2, B.Un, us)), empty_at(B.Un, List.length(&2, B.Un, us), i), MNat.add_zero(U32.to_nat(i)))))

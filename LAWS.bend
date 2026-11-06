@@ -204,7 +204,7 @@ law emit.unique:
 law mults.uses:
   for xs: List<&2, U32>
   for +rss: List<&2, List<&2, B.Ru>>
-  for +ut: B.Ht<B.Un>
+  for +ut: B.Ht<B.Pk<B.Un>>
   for +obs: List<&2, B.Ob>
   for +us: List<&2, B.Un>
   for s: B.Ms
@@ -219,7 +219,7 @@ law mults.uses:
 law mults.walked:
   for +roots: List<&2, U32>
   for +rss: List<&2, List<&2, B.Ru>>
-  for +ut: B.Ht<B.Un>
+  for +ut: B.Ht<B.Pk<B.Un>>
   for +obs: List<&2, B.Ob>
   for +us: List<&2, B.Un>
   for s: B.Ms
@@ -280,7 +280,7 @@ law sharing.counts:
 law sharing.final:
   for +xs: List<&2, U32>
   for +rss: List<&2, List<&2, B.Ru>>
-  for +ut: B.Ht<B.Un>
+  for +ut: B.Ht<B.Pk<B.Un>>
   for +obs: List<&2, B.Ob>
   for +us: List<&2, B.Un>
   for +s: B.Ms
@@ -302,7 +302,7 @@ law sharing.final:
 law sharing.copied:
   for +xs: List<&2, U32>
   for +rss: List<&2, List<&2, B.Ru>>
-  for +ut: B.Ht<B.Un>
+  for +ut: B.Ht<B.Pk<B.Un>>
   for +obs: List<&2, B.Ob>
   for +us: List<&2, B.Un>
   for +s: B.Ms
@@ -314,7 +314,7 @@ law sharing.copied:
   for +hy: {B.has(xs, y) == True{} : Bool}
   for +hc: {B.mult.share(y, ut) == 2 : U32}
   for +hm: {B.ec.mode(e) == 0 : U32}
-  for +hut: {B.ec.ut(e) == ut : B.Ht<B.Un>}
+  for +hut: {B.ec.ut(e) == ut : B.Ht<B.Pk<B.Un>>}
   for +hms: {B.ec.ms(e) == B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>})), Nil{}} : B.Ms}
   for +hu: {B.uses.of.e(List.reverse(&2, U32, xs), e, y) == B.uses.of(List.reverse(&2, U32, xs), rss, y) : List<&2, B.Ru>}
   {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, B.mu.m(B.ec.mu(e, y))) : U32}
@@ -325,7 +325,7 @@ law sharing.copied:
 law sharing.once:
   for +xs: List<&2, U32>
   for +rss: List<&2, List<&2, B.Ru>>
-  for +ut: B.Ht<B.Un>
+  for +ut: B.Ht<B.Pk<B.Un>>
   for +obs: List<&2, B.Ob>
   for +us: List<&2, B.Un>
   for +s: B.Ms
@@ -344,7 +344,7 @@ law sharing.once:
 law sharing.affine:
   for +xs: List<&2, U32>
   for +rss: List<&2, List<&2, B.Ru>>
-  for +ut: B.Ht<B.Un>
+  for +ut: B.Ht<B.Pk<B.Un>>
   for +obs: List<&2, B.Ob>
   for +us: List<&2, B.Un>
   for +s: B.Ms
@@ -655,3 +655,13 @@ law resolve.names:
   for +t: B.Tok
   for +no: U32
   {B.rr.made(B.rr.of(cx, o, q, locals, t, no), t) == True{} : Bool}
+
+# LAW: the units' table holds the units' list by position: a lookup at i
+# finds the list's unit at i, none past its end, each entry keyed by its
+# position (`blend-units-keyed`); so a law over the units' list reaches
+# what emission reads through its table.
+# Record: blend-units-keyed
+law units.positions:
+  for +us: List<&2, B.Un>
+  for +i: U32
+  {B.ut.un(B.pt.of(B.Un, us), i) == B.un.at(us, i) : B.Un}
