@@ -167,6 +167,11 @@ it alone taught. Add to this file what a new proof teaches.
   the structural equality equality (`nodes.same_eq`): then each
   property crosses it by one rewrite (`same_ok`, `same_il`), where
   each took case work of its own.
+- **Containment by a recursive `Bool`**: "a suffix of" stated as
+  `suffix(p, xs)`, `p` is `xs` or a suffix of its tail, so that drops,
+  tails and appends are each an induction (`suffix_drop`, `suffix_app`,
+  `suffix_trans`), where `ends`, a drop by a difference of lengths,
+  would want length arithmetic in every one (`resolve.names`).
 - **Name a function's locals to state them**: a law cannot name a
   `+x = ...` inside a definition; making the local a definition of its
   own (`syn.of`, `obs.made`) lets the law say what it computes, the

@@ -641,3 +641,17 @@ law nodes.same_eq:
   for +b: B.Node
   for h: {B.ndef.same(a, b) == True{} : Bool}
   {a == b : B.Node}
+
+# LAW: resolution makes no names: a token resolves to itself, as
+# written, or to references and priors named by its text, a suffix of it
+# (a mark dropped, a dotted name's last parts), or such a suffix and
+# `#` (a law's proof), as `nodes` says the objects make no definitions.
+# Record: blend-adds-no-bend-logic
+law resolve.names:
+  for +cx: B.Cx
+  for +o: U32
+  for +q: U32
+  for +locals: List<&2, List<&2, U32>>
+  for +t: B.Tok
+  for +no: U32
+  {B.rr.made(B.rr.of(cx, o, q, locals, t, no), t) == True{} : Bool}
