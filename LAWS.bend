@@ -577,6 +577,21 @@ law markers.writer:
   for +hl: {B.rls.from(B.un.lines(B.ec.un(e, s)), B.node.no(B.un.node(B.ec.un(e, s)))) == True{} : Bool}
   {B.wr.unit(e, s, x, j, b) == True{} : Bool}
 
+# LAW: a witness's copy, a witness having no body lines, is its head,
+# then on its header's line a space and the witness's line, then a
+# newline: so where Bend refuses a witness, at that line, where.sh names
+# the declaration it checks, as the header's marker names it
+# (`markers.writer`).
+# Record: blend-declares-witnessed
+law markers.witness:
+  for +e: B.Ec
+  for +x: U32
+  for +j: U32
+  for +b: B.Tb
+  for +hw: {B.node.what(B.un.node(B.ec.un(e, x))) == 4 : U32}
+  for +hl: {B.un.lines(B.ec.un(e, x)) == Nil{} : List<&2, B.Rl>}
+  {B.tb.acc(B.unit.put(e, x, j, b)) == B.rev.onto(Con{32, List.append(&2, U32, B.wit.line(e, x), [10])}, B.tb.acc(B.unit.head(e, x, x, j, b))) : List<&2, U32>}
+
 # LAW: and no line of a unit's copy after its marker's is one where.sh
 # reads as a marker, as each line ends: its header's begins with `def` or
 # `law`, and each body line on its own begins after a newline with its
@@ -942,6 +957,71 @@ law sharing.emitted:
   for +hy: {B.has(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), y) == True{} : Bool}
   for +hc: {B.mult.share(y, B.pt.of(B.Un, us)) == 2 : U32}
   {B.ctr.at(B.tb.ctrs(B.module.table(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), acc)), y) == U32.add(1, B.mu.m(B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y))) : U32}
+
+# LAW: a unit shared, or a module's definition (shared as Bend's), keeps
+# its disposition through every unit's turn: its own leaves it as it is,
+# another's touches only its own.
+# Record: blend-module-is-bend, blend-copies-keep-their-name
+law mults.shared:
+  for +xs: List<&2, U32>
+  for +rt: B.Ht<B.Pk<List<&2, B.Ru>>>
+  for +ut: B.Ht<B.Pk<B.Un>>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +s: B.Ms
+  for +p: B.Ht<B.Pk<List<&2, B.Ru>>>
+  for +y: U32
+  for +hs: {B.mult.share(y, ut) == 1 : U32}
+  {B.ms.mu(B.mults(xs, rt, ut, obs, us, s, p), y) == B.ms.mu(s, y) : B.Mu}
+
+# LAW: writing an order into the code's file, a plain unit's counter of
+# numbered calls is never advanced: a call to it writes its own name, and
+# a call to another advances that one's alone.
+# Record: blend-copies-keep-their-name
+law sharing.plain:
+  for +xs: List<&2, U32>
+  for +e: B.Ec
+  for +b: B.Tb
+  for +y: U32
+  for +hm: {B.ec.mode(e) == 0 : U32}
+  for +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}
+  {B.ctr.at(B.tb.ctrs(B.order.put(xs, e, b)), y) == B.ctr.at(B.tb.ctrs(b), y) : U32}
+
+# LAW: so in the code's file as emitted, a unit shared, or a module's
+# definition, is written once, by its own name, plain (`mults.shared`,
+# the dispositions starting empty).
+# Record: blend-module-is-bend, blend-copies-keep-their-name
+law shared.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +als: List<&2, B.Al>
+  for +own: List<&2, B.Ci>
+  for +res: List<&2, List<&2, U32>>
+  for +paths: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +roots: List<&2, U32>
+  for +y: U32
+  for +hs: {B.mult.share(y, B.pt.of(B.Un, us)) == 1 : U32}
+  {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.Mu{0, 0} : B.Mu}
+
+# LAW: and every call to it names it: its counter of numbered calls ends
+# where it starts, no numbered copy of it called (`sharing.plain`).
+# Record: blend-module-is-bend, blend-copies-keep-their-name
+law plain.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +als: List<&2, B.Al>
+  for +own: List<&2, B.Ci>
+  for +res: List<&2, List<&2, U32>>
+  for +paths: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +roots: List<&2, U32>
+  for +acc: List<&2, U32>
+  for +y: U32
+  for +hs: {B.mult.share(y, B.pt.of(B.Un, us)) == 1 : U32}
+  {B.ctr.at(B.tb.ctrs(B.module.table(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), acc)), y) == 1 : U32}
 
 # LAW: and where emission reports no error, the definitions the code's
 # file is written with (`module.table`, by `emit.defs` those of the

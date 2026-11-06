@@ -1,6 +1,6 @@
 # A typed declaration is checked by a witness Bend checks
 
-`blend-declares-witnessed` · maintainer · rev 4e18b15
+`blend-declares-witnessed` · maintainer · rev 146d156
 
 **Context.** `declare foo` said only that a concrete family must define
 `foo`, with no way to say its type, while types may be overridden (the
@@ -35,7 +35,8 @@ checker and adds no Bend logic of its own (`blend-adds-no-bend-logic`).
 
 **Consequences.**
 - A misfit is Bend's error at the witness, expected and observed types
-  printed, found by the gate's proof step; the samples Blend emits and
+  printed, found by the gate's proof step, on the witness's one line,
+  which where.sh maps to the declaration (`markers.witness`); the samples Blend emits and
   Bend refuses live in `samples/refused/`, held to Bend's output.
 - A module with witnesses and no laws writes its proofs' file alone.
 - The samples `declares`, `declare-twice`, `declare-no-type`,

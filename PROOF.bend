@@ -12032,6 +12032,204 @@ def Laws.affine.emitted(files, obs, us, als, own, res, paths, ux, roots, y, hy, 
   Laws.sharing.affine(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}, y, o_first(roots, B.calls(B.refss(us, ux, 0)), obs, us), o_once(roots, B.calls(B.refss(us, ux, 0)), obs, us), hy, ha,
     hl_u(files, obs, us, als, own, res, paths, ux, roots, y, hl))
 
+# The shared units (`mults.shared`, `sharing.plain`, `shared.emitted`,
+# `plain.emitted`): a unit shared, or a module's definition, keeps its
+# disposition through every turn, its own leaving it (`mult.of.k`'s
+# first case) and another's too (`mult_of_other`); and a plain unit's
+# counter is never advanced, a call to it writing its own name
+# (`ref.kind.k`'s first case) and a call to another leaving it
+# (`kind_other`), through the writer as `sharing.counts` goes, each
+# step's counter equal to the last's, no weights to sum.
+
+# a unit's turn leaves a shared unit's disposition, its own or another's
+def mo_shared(q: Bool, +x: U32, +rs: List<&2, B.Ru>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms, +z: U32,
+    +hs: {B.mult.share(z, ut) == 1 : U32}, eq: {q == U32.is_eq(x, z) : Bool}) ->
+    {B.ms.mu(s, z) == B.ms.mu(B.mult.of(x, B.mult.share(x, ut), rs, obs, us, ut, s), z) : B.Mu}:
+  match q:
+    case True{}:
+      %Equal.sym(U32, x, z, u32_eq_of_is_eq(x, z, Equal.sym(Bool, True{}, U32.is_eq(x, z), eq))) :
+        {B.ms.mu(s, z) == B.ms.mu(B.mult.of(_, B.mult.share(_, ut), rs, obs, us, ut, s), z) : B.Mu}
+      %Equal.sym(U32, B.mult.share(z, ut), 1, hs) :
+        {B.ms.mu(s, z) == B.ms.mu(B.mult.of(z, _, rs, obs, us, ut, s), z) : B.Mu}
+      {==}
+    case False{}:
+      mult_of_other(x, B.mult.share(x, ut), rs, obs, us, ut, s, z, Equal.sym(Bool, False{}, U32.is_eq(x, z), eq))
+
+# every turn of `mults` leaves it
+def mults_shared(xs: List<&2, U32>, +rt: B.Ht<B.Pk<List<&2, B.Ru>>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms,
+    +p: B.Ht<B.Pk<List<&2, B.Ru>>>, +z: U32, +hs: {B.mult.share(z, ut) == 1 : U32}) ->
+    {B.ms.mu(s, z) == B.ms.mu(B.mults(xs, rt, ut, obs, us, s, p), z) : B.Mu}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      Equal.trans(B.Mu, B.ms.mu(s, z), B.ms.mu(B.mult.of(x, B.mult.share(x, ut), B.pend.at(p, x), obs, us, ut, s), z),
+        B.ms.mu(B.mults(t, rt, ut, obs, us, B.mult.of(x, B.mult.share(x, ut), B.pend.at(p, x), obs, us, ut, s), B.pend.uses(B.rus.or(B.pw.get(List<&2, B.Ru>, rt, x)), x, p)), z),
+        mo_shared(U32.is_eq(x, z), x, B.pend.at(p, x), obs, us, ut, s, z, hs, {==}),
+        mults_shared(t, rt, ut, obs, us, B.mult.of(x, B.mult.share(x, ut), B.pend.at(p, x), obs, us, ut, s), B.pend.uses(B.rus.or(B.pw.get(List<&2, B.Ru>, rt, x)), x, p), z, hs))
+
+def Laws.mults.shared(xs, rt, ut, obs, us, s, p, y, hs):
+  Equal.sym(B.Mu, B.ms.mu(s, y), B.ms.mu(B.mults(xs, rt, ut, obs, us, s, p), y), mults_shared(xs, rt, ut, obs, us, s, p, y, hs))
+
+# a call to y, a plain unit, or to another, leaves y's counter
+def pk_target(q: Bool, +y2: U32, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}, eq: {q == U32.is_eq(y2, y) : Bool}) ->
+    {cy(b, y) == cy(B.ref.kind.k(U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 1), e, x, y2, j, b), y) : U32}:
+  match q:
+    case True{}:
+      %Equal.sym(U32, y2, y, u32_eq_of_is_eq(y2, y, Equal.sym(Bool, True{}, U32.is_eq(y2, y), eq))) :
+        {cy(b, y) == cy(B.ref.kind.k(U32.is_eq(B.mu.kind(B.ec.mu(e, _)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, _)), 1), e, x, _, j, b), y) : U32}
+      %Equal.sym(U32, B.mu.kind(B.ec.mu(e, y)), 0, hk) :
+        {cy(b, y) == cy(B.ref.kind.k(U32.is_eq(_, 0), U32.is_eq(_, 1), e, x, y, j, b), y) : U32}
+      tbput_any(b, B.unit.text(e, y), y)
+    case False{}:
+      kind_other(U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 1), e, x, y2, j, b, y, Equal.sym(Bool, False{}, U32.is_eq(y2, y), eq))
+
+def pk_self(s: Bool, +y2: U32, +mark: U32, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}) ->
+    {cy(b, y) == cy(B.ref.self(s, e, x, j, y2, B.mark.put(mark, b)), y) : U32}:
+  match s:
+    case True{}:
+      Equal.trans(U32, cy(b, y), cy(B.mark.put(mark, b), y), cy(B.tb.put(B.mark.put(mark, b), B.own.name(e, x, j)), y), cy_mark(mark, b, y),
+        tbput_any(B.mark.put(mark, b), B.own.name(e, x, j), y))
+    case False{}:
+      Equal.trans(U32, cy(b, y), cy(B.mark.put(mark, b), y),
+        cy(B.ref.kind.k(U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 0), U32.is_eq(B.mu.kind(B.ec.mu(e, y2)), 1), e, x, y2, j, B.mark.put(mark, b)), y),
+        cy_mark(mark, b, y), pk_target(U32.is_eq(y2, y), y2, e, x, j, B.mark.put(mark, b), y, hk, {==}))
+
+def pk_ref(mb: Maybe<&2, U32>, +mark: U32, +ref: B.Rf, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32},
+    +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}) -> {cy(b, y) == cy(B.ref.put(e, x, j, mark, ref, mb, b), y) : U32}:
+  match mb:
+    case None{}:
+      refput_none(e, x, j, mark, ref, b, y)
+    case Some{+y2}:
+      %ref_put_code(e, hm, x, j, mark, ref, y2, b) : {cy(b, y) == cy(_, y) : U32}
+      pk_self(U32.is_eq(y2, x), y2, mark, e, x, j, b, y, hk)
+
+# a body's tokens written leave y's counter
+def pk_rts(ts: List<&2, B.Rt>, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}) ->
+    {cy(b, y) == cy(B.rts.put(ts, e, x, j, b), y) : U32}:
+  match ts:
+    case Nil{}:
+      {==}
+    case Con{t, +r}:
+      match t:
+        case B.RT{+tk}:
+          Equal.trans(U32, cy(b, y), cy(B.tb.put(b, B.tok.in.proof(e, tk)), y), cy(B.rts.put(r, e, x, j, B.tb.put(b, B.tok.in.proof(e, tk))), y),
+            tbput_any(b, B.tok.in.proof(e, tk), y), pk_rts(r, e, x, j, B.tb.put(b, B.tok.in.proof(e, tk)), y, hm, hk))
+        case B.RR{+mark, +ref}:
+          Equal.trans(U32, cy(b, y), cy(B.ref.put(e, x, j, mark, ref, B.ux.find(B.ec.ux(e), ref), b), y),
+            cy(B.rts.put(r, e, x, j, B.ref.put(e, x, j, mark, ref, B.ux.find(B.ec.ux(e), ref), b)), y),
+            pk_ref(B.ux.find(B.ec.ux(e), ref), mark, ref, e, x, j, b, y, hm, hk),
+            pk_rts(r, e, x, j, B.ref.put(e, x, j, mark, ref, B.ux.find(B.ec.ux(e), ref), b), y, hm, hk))
+        case B.RX{+mark, +path, +rest}:
+          Equal.trans(U32, cy(b, y), cy(B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest})), y),
+            cy(B.rts.put(r, e, x, j, B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest}))), y),
+            Equal.trans(U32, cy(b, y), cy(B.mark.put(mark, b), y), cy(B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest})), y),
+              cy_mark(mark, b, y), tbput_any(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest}), y)),
+            pk_rts(r, e, x, j, B.tb.put(B.mark.put(mark, b), List.append(&2, U32, B.alias.of(e, path), Con{46, rest})), y, hm, hk))
+
+# a body's lines written leave it
+def pk_rls(ls: List<&2, B.Rl>, +e: B.Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32},
+    +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}) -> {cy(b, y) == cy(B.rls.put(ls, e, x, j, dind, first, b), y) : U32}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +t}:
+      match l:
+        case B.Rl{+no, +ind, ts}:
+          match ts:
+            case Nil{}:
+              +bl = B.tb.put(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), True{}, 0n))
+              Equal.trans(U32, cy(b, y), cy(bl, y), cy(B.rls.put(t, e, x, j, dind, False{}, bl), y),
+                tbput_any(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), True{}, 0n), y),
+                pk_rls(t, e, x, j, dind, False{}, bl, y, hm, hk))
+            case Con{+tk, +r}:
+              Equal.trans(U32, cy(b, y), cy(B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b)), y),
+                cy(B.rls.put(t, e, x, j, dind, False{}, B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b))), y),
+                Equal.trans(U32, cy(b, y), cy(lw(first, no, ind, dind, e, x, b), y), cy(B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b)), y),
+                  tbput_any(b, B.rl.lead(Bool.and(first, U32.is_eq(no, B.node.no(B.un.node(B.ec.un(e, x))))), False{},
+                    U32.to_nat(B.when(U32, U32.is_gt(ind, dind), v => U32.sub(ind, dind), v => 0))), y),
+                  pk_rts(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b), y, hm, hk)),
+                pk_rls(t, e, x, j, dind, False{}, B.rts.put(Con{tk, r}, e, x, j, lw(first, no, ind, dind, e, x, b)), y, hm, hk))
+
+# a unit's copy written leaves it
+def pk_unit(+e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}) ->
+    {cy(b, y) == cy(B.unit.put(e, x, j, b), y) : U32}:
+  %src_code(e, hm, x) : {cy(b, y) == cy(B.unit.put.as(e, _, x, j, b), y) : U32}
+  Equal.trans(U32, cy(b, y), cy(ln_w(e, x, j, b), y), cy(B.tb.put(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10])), y),
+    Equal.trans(U32, cy(b, y), cy(hd_w(e, x, j, b), y), cy(ln_w(e, x, j, b), y),
+      Equal.trans(U32, cy(b, y), cy(t0(e, x, j, b), y), cy(hd_w(e, x, j, b), y),
+        tbput_any(b, List.append(&2, U32, B.marker(e, x), List.append(&2, U32, B.unit.kw(e, x), B.own.name(e, x, j))), y),
+        pk_rts(B.un.hd(B.ec.un(e, x)), e, x, j, t0(e, x, j, b), y, hm, hk)),
+      pk_rls(B.un.lines(B.ec.un(e, x)), e, x, j, B.node.ind(B.un.node(B.ec.un(e, x))), True{}, hd_w(e, x, j, b), y, hm, hk)),
+    tbput_any(ln_w(e, x, j, b), List.append(&2, U32, B.witness.body(e, x), [10]), y))
+
+def pk_copies(n: Nat, +e: B.Ec, +x: U32, +j: U32, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}) ->
+    {cy(b, y) == cy(B.copies.put(n, e, x, j, b), y) : U32}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+(+k):
+      Equal.trans(U32, cy(b, y), cy(B.unit.put(e, x, j, b), y), cy(B.copies.put(k, e, x, U32.add(j, 1), B.unit.put(e, x, j, b)), y),
+        pk_unit(e, x, j, b, y, hm, hk), pk_copies(k, e, x, U32.add(j, 1), B.unit.put(e, x, j, b), y, hm, hk))
+
+def pk_all(+e: B.Ec, +x: U32, mu: B.Mu, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}) ->
+    {cy(b, y) == cy(B.unit.all(e, x, mu, b), y) : U32}:
+  match mu:
+    case B.Mu{+m, +kind}:
+      Equal.trans(U32, cy(b, y), cy(B.unit.put(e, x, 0, b), y), cy(B.copies.put(U32.to_nat(m), e, x, 1, B.unit.put(e, x, 0, b)), y),
+        pk_unit(e, x, 0, b, y, hm, hk), pk_copies(U32.to_nat(m), e, x, 1, B.unit.put(e, x, 0, b), y, hm, hk))
+
+# an order written leaves it
+def pk_order(xs: List<&2, U32>, +e: B.Ec, +b: B.Tb, +y: U32, +hm: {B.ec.mode(e) == 0 : U32}, +hk: {B.mu.kind(B.ec.mu(e, y)) == 0 : U32}) ->
+    {cy(b, y) == cy(B.order.put(xs, e, b), y) : U32}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      Equal.trans(U32, cy(b, y), cy(B.unit.all(e, x, B.ec.mu(e, x), b), y), cy(B.order.put(t, e, B.unit.all(e, x, B.ec.mu(e, x), b)), y),
+        pk_all(e, x, B.ec.mu(e, x), b, y, hm, hk), pk_order(t, e, B.unit.all(e, x, B.ec.mu(e, x), b), y, hm, hk))
+
+def Laws.sharing.plain(xs, e, b, y, hm, hk):
+  Equal.sym(U32, cy(b, y), cy(B.order.put(xs, e, b), y), pk_order(xs, e, b, y, hm, hk))
+
+def Laws.shared.emitted(files, obs, us, als, own, res, paths, ux, roots, y, hs):
+  Equal.sym(B.Mu, B.ms.mu(B.Ms{B.HLeaf{Nil{}}, Nil{}}, y), B.ms.mu(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us), y),
+    mults_shared(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.pw.of(List<&2, B.Ru>, B.refss(us, ux, 0)), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}, B.HLeaf{Nil{}}, y, hs))
+
+def Laws.plain.emitted(files, obs, us, als, own, res, paths, ux, roots, acc, y, hs):
+  Laws.sharing.plain(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.Tb{acc, B.HLeaf{Nil{}}}, y, {==},
+    Equal.cong(B.Mu, U32, m => B.mu.kind(m), B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y), B.Mu{0, 0}, Laws.shared.emitted(files, obs, us, als, own, res, paths, ux, roots, y, hs)))
+
+# A witness's body on its header's line (`markers.witness`): a witness is
+# its own source in any file (`src_wit`, `unit.src`'s test false on its
+# kind whatever the file's mode), its kind's test and its empty lines
+# rewritten, the text put onto its head read whatever the head
+# (`acc_put`).
+
+def us_w(c: Bool, +e: B.Ec, +x: U32) -> {x == us_k(Bool.and(c, False{}), e, x) : U32}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def src_wit(+e: B.Ec, +x: U32, hw: {B.node.what(B.un.node(B.ec.un(e, x))) == 4 : U32}) -> {x == B.unit.src(e, x) : U32}:
+  %Equal.sym(U32, B.node.what(B.un.node(B.ec.un(e, x))), 4, hw) : {x == us_k(Bool.and(U32.is_eq(B.ec.mode(e), 1), U32.is_eq(_, 2)), e, x) : U32}
+  us_w(U32.is_eq(B.ec.mode(e), 1), e, x)
+
+def acc_put(b: B.Tb, +xs: List<&2, U32>) -> {B.tb.acc(B.tb.put(b, xs)) == B.rev.onto(xs, B.tb.acc(b)) : List<&2, U32>}:
+  match b:
+    case B.Tb{acc, ctrs}:
+      {==}
+
+def Laws.markers.witness(e, x, j, b, hw, hl):
+  %src_wit(e, x, hw) : {B.tb.acc(B.unit.put.as(e, _, x, j, b)) == B.rev.onto(Con{32, List.append(&2, U32, B.wit.line(e, x), [10])}, B.tb.acc(B.unit.head(e, x, x, j, b))) : List<&2, U32>}
+  %Equal.sym(U32, B.node.what(B.un.node(B.ec.un(e, x))), 4, hw) :
+    {B.tb.acc(B.tb.put(B.unit.body(e, x, x, j, b), List.append(&2, U32, B.witness.body.k(U32.is_eq(_, 4), e, x), [10]))) == B.rev.onto(Con{32, List.append(&2, U32, B.wit.line(e, x), [10])}, B.tb.acc(B.unit.head(e, x, x, j, b))) : List<&2, U32>}
+  %Equal.sym(List<&2, B.Rl>, B.un.lines(B.ec.un(e, x)), Nil{}, hl) :
+    {B.tb.acc(B.tb.put(B.rls.put(_, e, x, j, B.node.ind(B.un.node(B.ec.un(e, x))), True{}, B.unit.head(e, x, x, j, b)), Con{32, List.append(&2, U32, B.wit.line(e, x), [10])})) == B.rev.onto(Con{32, List.append(&2, U32, B.wit.line(e, x), [10])}, B.tb.acc(B.unit.head(e, x, x, j, b))) : List<&2, U32>}
+  acc_put(B.unit.head(e, x, x, j, b), Con{32, List.append(&2, U32, B.wit.line(e, x), [10])})
+
 # No line read as a marker (`markers.unambiguous`): the first byte of the
 # text's last line (`line.first`) is set where the line starts, and text
 # within a line written after a line holding some keeps it
