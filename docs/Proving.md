@@ -235,6 +235,8 @@ it alone taught. Add to this file what a new proof teaches.
 - **Lemmas on the hub**: the package `0x8ae61ec3a6615abd35f196c07232ad28`
   (bend-mathlib) proves lists, `U32`, `Nat`, `Bool` and equality
   (`list.bend`, `u32.bend`, `nat.bend`, `bool.bend`, `equal.bend`).
+  A fact of Bend's own types a proof needs and the hub lacks goes on
+  [HubCandidates.md](HubCandidates.md), to offer upstream later.
 - **Find a failing lemma by bisecting** the proof file into prefixes,
   each its own file, checked in turn: Bend reports the first failure, or
   only that its stack overflowed.
