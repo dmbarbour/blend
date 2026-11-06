@@ -1,1 +1,1 @@
-import-package-blend.blend:4: import shapes@1.0.0.0/shapes.blend: a package's Blend files are not read yet; import the .bend files it emits
+import-package-blend.blend:5: import shapes@1.0.0.0/shapes.blend: importing a package's Blend files is not supported yet
