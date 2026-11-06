@@ -50,8 +50,10 @@ Blend is a command of its own, shaped as Bend's and installed beside it.
 - [`blend-command-mirrors-bend`](decisions/blend-command-mirrors-bend.md):
   `blend` takes a file first as
   `bend` does and hands the emitted module to Bend; errors in Bend's
-  shape; `deps` lists what `emit --tree` reaches and whether each is
-  current; `blend` lives in `$BEND_HOME/bin`.
+  shape; `deps` lists what `emit` reaches and whether each is current;
+  `blend` a launcher in `$BEND_HOME/bin` running the tool built natively,
+  else through Bend; installed from a checkout or a release, which it
+  reports but never takes unasked.
 
 ## The model
 
@@ -91,9 +93,8 @@ its modules, namespaces and emitted names are Bend's.
   template is affine by default, as any definition; the guide explains
   `shared` against `copied` for templates.
 - [`blend-emit-verifies-imports`](decisions/blend-emit-verifies-imports.md):
-  emission writes only the modules a command names, or with `--tree`
-  every import they reach short of a package, and verifies each import
-  none names against its emission, unless `--alone`.
+  emission writes the modules named and every import they reach short
+  of a package, or with `--alone` the modules named alone.
 - [`blend-laws-in-module`](decisions/blend-laws-in-module.md): a module's
   laws and proofs written into its own file after its code, `Obj.LAW.name`
   and `LAW.name`; a law a claim stated once, its proof a member `upd
