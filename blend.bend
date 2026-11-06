@@ -5518,6 +5518,10 @@ def ec.files(e: Ec) -> List<&2, List<&2, U32>>:
 def marker.at(+files: List<&2, List<&2, U32>>, +no: U32) -> List<&2, U32>:
   List.append(&2, U32, codes("\n# blend: "), List.append(&2, U32, loc.file(files, no), Con{58, codes(U32.show(loc.line(no)))}))
 
+# the marker's line as where.sh reads it, `# blend: FILE:LINE`
+def marker.line(+files: List<&2, List<&2, U32>>, +no: U32) -> List<&2, U32>:
+  List.append(&2, U32, codes("# blend: "), List.append(&2, U32, loc.file(files, no), Con{58, codes(U32.show(loc.line(no)))}))
+
 def marker(+e: Ec, +x: U32) -> List<&2, U32>:
   marker.at(ec.files(e), node.no(un.node(ec.un(e, x))))
 
@@ -5563,14 +5567,26 @@ def rf.name(r: Rf) -> List<&2, U32>:
     case Rf{+obj, name, +prior, +origin}:
       name
 
-# a witness's body: the object's own definition of the name, called with
+# a witness's line: the object's own definition of the name, called with
 # the declaration's parameters, the code's through `Blend_0`
+def wit.line(+e: Ec, +x: U32) -> List<&2, U32>:
+  List.append(&2, U32, codes("Blend_0."), List.append(&2, U32,
+    path.name(ob.path(ob.at(ec.obs(e), rf.obj(un.ref(ec.un(e, x))))), name.plain(rf.name(un.ref(ec.un(e, x))))),
+    Con{40, List.append(&2, U32, args.joined(node.params(un.node(ec.un(e, x)))), [41])}))
+
+def witness.body.k(+w: Bool, +e: Ec, +x: U32) -> List<&2, U32>:
+  match w:
+    case True{}:
+      Con{32, wit.line(e, x)}
+    case False{}:
+      Nil{}
+
+# a witness's body on its header's line, after a space, the witness
+# having no body lines: where Bend refuses it, at that line, where.sh
+# names the declaration, as the header's marker does (LAWS.bend,
+# `markers.witness`)
 def witness.body(+e: Ec, +x: U32) -> List<&2, U32>:
-  when(List<&2, U32>, U32.is_eq(node.what(un.node(ec.un(e, x))), 4),
-    u => List.append(&2, U32, codes("\n  Blend_0."), List.append(&2, U32,
-      path.name(ob.path(ob.at(ec.obs(e), rf.obj(un.ref(ec.un(e, x))))), name.plain(rf.name(un.ref(ec.un(e, x))))),
-      Con{40, List.append(&2, U32, args.joined(node.params(un.node(ec.un(e, x)))), [41])})),
-    u => Nil{})
+  witness.body.k(U32.is_eq(node.what(un.node(ec.un(e, x))), 4), e, x)
 
 # a unit's copy in its parts, as a law follows them (LAWS.bend,
 # `markers.writer`): its head, the marker and the header; its body's
@@ -5940,10 +5956,6 @@ def rr.made(r: Rr, +tk: Tok) -> Bool:
 # a body's lines numbered on from its header's line, or the line after
 def rls.from(+ls: List<&2, Rl>, +no: U32) -> Bool:
   rl.from(ls, no) || rl.from(ls, (no + 1 : U32))
-
-# the marker's line as where.sh reads it, `# blend: FILE:LINE`
-def marker.line(+files: List<&2, List<&2, U32>>, +no: U32) -> List<&2, U32>:
-  List.append(&2, U32, codes("# blend: "), List.append(&2, U32, loc.file(files, no), Con{58, codes(U32.show(loc.line(no)))}))
 
 # a unit's head written after b as where.sh reads it: a newline, the
 # marker's line, a newline, then the header's line, none holding one

@@ -765,3 +765,61 @@ def rel.import.k(+pkg: Bool, +root: List<&2, U32>, +path: List<&2, U32>) -> List
   match pkg:
     case True{}:
       List.append(&2, U32, codes("./"), path)
+
+=== shared_copied mults.shared
+a shared unit's turn sets it copied, its copies counted from its uses,
+where a shared unit, or a module's definition, is written once
+--- blend.bend
+  match shared copied:
+    case True{} _:
+      s
++++
+  match shared copied:
+    case True{} _:
+      ms.set(s, x, Mu{uses.m(rs, ut, s), 1})
+
+=== shared_copied_emitted shared.emitted
+a shared unit's turn sets it copied, its copies counted from its uses,
+where a shared unit, or a module's definition, is written once
+--- blend.bend
+  match shared copied:
+    case True{} _:
+      s
++++
+  match shared copied:
+    case True{} _:
+      ms.set(s, x, Mu{uses.m(rs, ut, s), 1})
+
+=== plain_numbered sharing.plain
+a call to a plain unit numbered as a copied unit's, a numbered copy
+called that is never written
+--- blend.bend
+  match plain copied:
+    case True{} _:
+      tb.put(b, unit.text(e, y))
++++
+  match plain copied:
+    case True{} _:
+      ref.next(e, y, b)
+
+=== plain_numbered_emitted plain.emitted
+a call to a plain unit numbered as a copied unit's, a numbered copy
+called that is never written
+--- blend.bend
+  match plain copied:
+    case True{} _:
+      tb.put(b, unit.text(e, y))
++++
+  match plain copied:
+    case True{} _:
+      ref.next(e, y, b)
+
+=== witness_own_line markers.witness
+a witness's body on a line of its own after its header's, which where.sh
+reads as the source's next line, not the declaration's
+--- blend.bend
+    case True{}:
+      Con{32, wit.line(e, x)}
++++
+    case True{}:
+      Con{10, wit.line(e, x)}
