@@ -4817,158 +4817,63 @@ def vs.of(xs: List<&2, U32>) -> Wt:
     case Con{+x, t}:
       vs.put(vs.of(t), x)
 
-# a list split by position: the even, then the odd
-type Eo<-A: Data> is Data:
-  Eo{e: List<&2, A>, o: List<&2, A>}
+# A list by position: the table of its elements keyed by their
+# positions, as the units' is (`pt.of`; `blend-perf.tables`: a hash trie
+# as deep as the list's length has bits, where a trie on a U32's 32 bits
+# walked all 32)
+def pw.of(-A: Data, +xs: List<&2, A>) -> Ht<Pk<A>>:
+  pt.of(A, xs)
 
-def eo.cons(-A: Data, +x: A, p: Eo<A>) -> Eo<A>:
-  match p:
-    case Eo{e, o}:
-      Eo{Con{x, o}, e}
+def pw.get(-A: Data, +t: Ht<Pk<A>>, +x: U32) -> Maybe<&2, A>:
+  pt.at(A, t, x)
 
-def eo.split(-A: Data, xs: List<&2, A>) -> Eo<A>:
-  match xs:
+# A map by key: a keyed hash trie, as the units' table is, its put
+# replacing the key's entry in its leaf, the path grown where a leaf
+# stands, 16 levels deep; an empty map one empty leaf
+# (`blend-perf.tables`: a trie on a U32's 32 bits walked all 32)
+
+# the entries but those keyed k
+def pk.keep(-A: Data, +c: Bool, e: Pk<A>, rest: List<&2, Pk<A>>) -> List<&2, Pk<A>>:
+  match c:
+    case True{}:
+      rest
+    case False{}:
+      Con{e, rest}
+
+def pk.del(-A: Data, es: List<&2, Pk<A>>, +k: U32) -> List<&2, Pk<A>>:
+  match es:
     case Nil{}:
-      Eo{Nil{}, Nil{}}
-    case Con{+x, t}:
-      eo.cons(A, x, eo.split(A, t))
+      Nil{}
+    case Con{e, t}:
+      match e:
+        case Pk{+k2, v}:
+          pk.keep(A, U32.is_eq(k2, k), Pk{k2, v}, pk.del(A, t, k))
 
-def eo.e(-A: Data, p: Eo<A>) -> List<&2, A>:
-  match p:
-    case Eo{e, o}:
-      e
+def km.put.go(-A: Data, fuel: Nat, t: Ht<Pk<A>>, +b: U32, +h: U32, +k: U32, +v: A) -> Ht<Pk<A>>:
+  match fuel t:
+    case 0n HLeaf{es}:
+      HLeaf{Con{Pk{k, v}, pk.del(A, es, k)}}
+    case 0n HNode{z, o}:
+      HLeaf{[Pk{k, v}]}
+    case 1n+f HLeaf{+es}:
+      +c = U32.is_eq(b, 0)
+      ht.join(Pk<A>, c, km.put.go(A, f, HLeaf{es}, ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32), k, v), HLeaf{es})
+    case 1n+f HNode{+z, +o}:
+      +c = U32.is_eq(b, 0)
+      ht.join(Pk<A>, c, km.put.go(A, f, ht.pick(Pk<A>, c, z, o), ((h >> 1n : U32) .&. 1 : U32), (h >> 1n : U32), k, v), ht.pick(Pk<A>, c, o, z))
 
-def eo.o(-A: Data, p: Eo<A>) -> List<&2, A>:
-  match p:
-    case Eo{e, o}:
-      o
+def um.put(-A: Data, t: Ht<Pk<A>>, +x: U32, +v: A) -> Ht<Pk<A>>:
+  km.put.go(A, 16n, t, (x .&. 1 : U32), x, x, v)
 
-# a list's entries by their positions: a trie on the positions' bits, the
-# lowest first, n bits deep, the list split by its positions' bits at
-# each level; entry i found at the word whose value is i
-type Pw<-A: Data> is Data:
-  PwNone{}
-  PwLeaf{v: A}
-  PwNode{e: Pw<A>, o: Pw<A>}
-
-def pw.build(-A: Data, n: Nat, xs: List<&2, A>) -> Pw<A>:
-  match n:
-    case 0n:
-      match xs:
-        case Nil{}:
-          PwNone{}
-        case Con{x, t}:
-          PwLeaf{x}
-    case 1n+(+p):
-      match xs:
-        case Nil{}:
-          PwNone{}
-        case Con{+x, +t}:
-          PwNode{pw.build(A, p, eo.e(A, eo.split(A, Con{x, t}))), pw.build(A, p, eo.o(A, eo.split(A, Con{x, t})))}
-
-def pw.at(-A: Data, n: Nat, w: Word(n), t: Pw<A>) -> Maybe<&2, A>:
-  match n:
-    case 0n:
-      match t:
-        case PwLeaf{v}:
-          Some{v}
-        case _:
-          None{}
-    case 1n+p:
-      match w:
-        case WCon{b, r}:
-          match b:
-            case True{}:
-              match t:
-                case PwNode{e, o}:
-                  pw.at(A, p, r, o)
-                case _:
-                  None{}
-            case False{}:
-              match t:
-                case PwNode{e, o}:
-                  pw.at(A, p, r, e)
-                case _:
-                  None{}
-
-def pw.of(-A: Data, xs: List<&2, A>) -> Pw<A>:
-  pw.build(A, 32n, xs)
-
-# entry x, as List.get finds it at x's value
-def pw.get(-A: Data, +t: Pw<A>, x: U32) -> Maybe<&2, A>:
-  match x:
-    case U32{w}:
-      pw.at(A, 32n, w, t)
-
-# a table of values by a word's bits, the lowest first: put a value at
-# a word, and the word finds it
-type Wm<-A: Data> is Data:
-  WmNone{}
-  WmLeaf{v: A}
-  WmNode{f: Wm<A>, t: Wm<A>}
-
-def wm.put(-A: Data, n: Nat, w: Word(n), +v: A, t: Wm<A>) -> Wm<A>:
-  match n:
-    case 0n:
-      WmLeaf{v}
-    case 1n+p:
-      match w:
-        case WCon{b, r}:
-          match b:
-            case True{}:
-              match t:
-                case WmNode{f, tt}:
-                  WmNode{f, wm.put(A, p, r, v, tt)}
-                case _:
-                  WmNode{WmNone{}, wm.put(A, p, r, v, WmNone{})}
-            case False{}:
-              match t:
-                case WmNode{f, tt}:
-                  WmNode{wm.put(A, p, r, v, f), tt}
-                case _:
-                  WmNode{wm.put(A, p, r, v, WmNone{}), WmNone{}}
-
-def wm.get(-A: Data, n: Nat, w: Word(n), t: Wm<A>) -> Maybe<&2, A>:
-  match n:
-    case 0n:
-      match t:
-        case WmLeaf{v}:
-          Some{v}
-        case _:
-          None{}
-    case 1n+p:
-      match w:
-        case WCon{b, r}:
-          match b:
-            case True{}:
-              match t:
-                case WmNode{f, tt}:
-                  wm.get(A, p, r, tt)
-                case _:
-                  None{}
-            case False{}:
-              match t:
-                case WmNode{f, tt}:
-                  wm.get(A, p, r, f)
-                case _:
-                  None{}
-
-def um.put(-A: Data, t: Wm<A>, x: U32, +v: A) -> Wm<A>:
-  match x:
-    case U32{w}:
-      wm.put(A, 32n, w, v, t)
-
-def um.get(-A: Data, +t: Wm<A>, x: U32) -> Maybe<&2, A>:
-  match x:
-    case U32{w}:
-      wm.get(A, 32n, w, t)
+def um.get(-A: Data, +t: Ht<Pk<A>>, +x: U32) -> Maybe<&2, A>:
+  pk.find(A, ht.leaf.go(Pk<A>, 16n, t, (x .&. 1 : U32), x), x)
 
 # each unit's calls by its position
-def ct.of(cal: List<&2, List<&2, U32>>) -> Pw<List<&2, U32>>:
+def ct.of(cal: List<&2, List<&2, U32>>) -> Ht<Pk<List<&2, U32>>>:
   pw.of(List<&2, U32>, cal)
 
 # unit x's calls, as ids.at finds them
-def cs.at(+t: Pw<List<&2, U32>>, +x: U32) -> List<&2, U32>:
+def cs.at(+t: Ht<Pk<List<&2, U32>>>, +x: U32) -> List<&2, U32>:
   ids.or(pw.get(List<&2, U32>, t, x))
 
 # the walk's state, and the sets of those walked (vd), ordered (vo) and
@@ -4985,7 +4890,7 @@ def df.ds(d: Df) -> Ds:
 # a call followed, as ds.call.k: a unit not walked is on the stack where
 # it was entered
 def df.call.k(+seen: Bool, +cyc: Bool, +c: U32, +u: U32, +rs: List<&2, U32>, +st: List<&2, Fm>, +roots: List<&2, U32>,
-    +done: List<&2, U32>, +order: List<&2, U32>, +ers: List<&2, Er>, +vd: Wt, +vo: Wt, +ve: Wt, +ct: Pw<List<&2, U32>>, +obs: List<&2, Ob>,
+    +done: List<&2, U32>, +order: List<&2, U32>, +ers: List<&2, Er>, +vd: Wt, +vo: Wt, +ve: Wt, +ct: Ht<Pk<List<&2, U32>>>, +obs: List<&2, Ob>,
     +us: List<&2, Un>) -> Df:
   match seen cyc:
     case True{} _:
@@ -5009,14 +4914,14 @@ def df.done.k(+ok: Bool, +u: U32, +st: List<&2, Fm>, +roots: List<&2, U32>, +don
 
 # a root, as ds.root.k
 def df.root.k(+seen: Bool, +r: U32, +rt: List<&2, U32>, +done: List<&2, U32>, +order: List<&2, U32>, +ers: List<&2, Er>,
-    +vd: Wt, +vo: Wt, +ve: Wt, +ct: Pw<List<&2, U32>>) -> Df:
+    +vd: Wt, +vo: Wt, +ve: Wt, +ct: Ht<Pk<List<&2, U32>>>) -> Df:
   match seen:
     case True{}:
       Df{Nil{}, rt, done, order, ers, vd, vo, ve}
     case False{}:
       Df{[Fm{r, cs.at(ct, r)}], rt, done, order, ers, vd, vo, vs.put(ve, r)}
 
-def df.step(s: Df, +ct: Pw<List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Df:
+def df.step(s: Df, +ct: Ht<Pk<List<&2, U32>>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Df:
   match s:
     case Df{stack, roots, +done, +order, +ers, +vd, +vo, +ve}:
       match stack:
@@ -5035,7 +4940,7 @@ def df.step(s: Df, +ct: Pw<List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>
                 case Con{+c, rs}:
                   df.call.k(vs.has(vd, c), vs.has(ve, c), c, u, rs, st, roots, done, order, ers, vd, vo, ve, ct, obs, us)
 
-def df.go(n: Nat, s: Df, +ct: Pw<List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Df:
+def df.go(n: Nat, s: Df, +ct: Ht<Pk<List<&2, U32>>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Df:
   match n:
     case 0n:
       s
@@ -5079,15 +4984,15 @@ def un.o(u: Un) -> U32:
 
 # each unit's uses so far, by unit, in a table on the units' bits
 # (`blend-laws.dispositions`): a use put first in its unit's
-def pend.at(+p: Wm<List<&2, Ru>>, +i: U32) -> List<&2, Ru>:
+def pend.at(+p: Ht<Pk<List<&2, Ru>>>, +i: U32) -> List<&2, Ru>:
   rus.or(um.get(List<&2, Ru>, p, i))
 
-def pend.cons(+p: Wm<List<&2, Ru>>, +c: U32, +r: Ru) -> Wm<List<&2, Ru>>:
+def pend.cons(+p: Ht<Pk<List<&2, Ru>>>, +c: U32, +r: Ru) -> Ht<Pk<List<&2, Ru>>>:
   um.put(List<&2, Ru>, p, c, Con{r, pend.at(p, c)})
 
 # u's uses of others, each put first in its unit's, the last first, so
 # that each unit's keep u's order
-def pend.uses(rs: List<&2, Ru>, +u: U32, p: Wm<List<&2, Ru>>) -> Wm<List<&2, Ru>>:
+def pend.uses(rs: List<&2, Ru>, +u: U32, p: Ht<Pk<List<&2, Ru>>>) -> Ht<Pk<List<&2, Ru>>>:
   match rs:
     case Nil{}:
       p
@@ -5124,7 +5029,7 @@ def er.affine(+obs: List<&2, Ob>, +us: List<&2, Un>, +x: U32, +rs: List<&2, Ru>)
 # each unit's copies, in a table on the units' bits (`blend-scale.mults`,
 # `blend-laws.sharing`), a unit not set plain (`mu.or`)
 type Ms is Data:
-  Ms{ms: Wm<Mu>, ers: List<&2, Er>}
+  Ms{ms: Ht<Pk<Mu>>, ers: List<&2, Er>}
 
 def ms.set(s: Ms, +x: U32, +mu: Mu) -> Ms:
   match s:
@@ -5136,7 +5041,7 @@ def ms.er(s: Ms, e: Er) -> Ms:
     case Ms{ms, ers}:
       Ms{ms, Con{e, ers}}
 
-def ms.ms(s: Ms) -> Wm<Mu>:
+def ms.ms(s: Ms) -> Ht<Pk<Mu>>:
   match s:
     case Ms{ms, ers}:
       ms
@@ -5207,8 +5112,8 @@ def mult.share(+x: U32, +ut: Ht<Pk<Un>>) -> U32:
 # (`order.callees_first`), so that each hands its uses on to the units
 # it uses, its copies known, and a unit has all its uses when its turn
 # comes (p, each unit's so far)
-def mults(xs: List<&2, U32>, +rt: Pw<List<&2, Ru>>, +ut: Ht<Pk<Un>>, +obs: List<&2, Ob>, +us: List<&2, Un>, s: Ms,
-    +p: Wm<List<&2, Ru>>) -> Ms:
+def mults(xs: List<&2, U32>, +rt: Ht<Pk<List<&2, Ru>>>, +ut: Ht<Pk<Un>>, +obs: List<&2, Ob>, +us: List<&2, Un>, s: Ms,
+    +p: Ht<Pk<List<&2, Ru>>>) -> Ms:
   match xs:
     case Nil{}:
       s
@@ -5271,7 +5176,7 @@ def mults.spec(xs: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, Ru
 type Ec is Data:
   Ec{files: List<&2, List<&2, U32>>, obs: List<&2, Ob>, us: List<&2, Un>, als: List<&2, Al>, own: List<&2, Ci>,
     res: List<&2, List<&2, U32>>, paths: List<&2, List<&2, U32>>, +mode: U32, rtypes: List<&2, List<&2, U32>>, ux: Ht<Xe>, ut: Ht<Pk<Un>>,
-    mt: Wm<Mu>}
+    mt: Ht<Pk<Mu>>}
 
 def ec.ux(e: Ec) -> Ht<Xe>:
   match e:
@@ -5305,7 +5210,7 @@ def ec.un(e: Ec, +i: U32) -> Un:
 
 # the text so far, its bytes reversed, and each copied unit's next number
 type Tb is Data:
-  Tb{acc: List<&2, U32>, ctrs: Wm<U32>}
+  Tb{acc: List<&2, U32>, ctrs: Ht<Pk<U32>>}
 
 def rev.onto(xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
@@ -5336,7 +5241,7 @@ def ctr.or(m: Maybe<&2, U32>) -> U32:
     case Some{+x}:
       x
 
-def ctr.at(+cs: Wm<U32>, +i: U32) -> U32:
+def ctr.at(+cs: Ht<Pk<U32>>, +i: U32) -> U32:
   ctr.or(um.get(U32, cs, i))
 
 # the next of y's copies, counted
@@ -5640,7 +5545,7 @@ def unit.all(+e: Ec, +x: U32, +mu: Mu, b: Tb) -> Tb:
 
 # The sharing law's terms (LAWS.bend, `sharing.counts`)
 
-def tb.ctrs(b: Tb) -> Wm<U32>:
+def tb.ctrs(b: Tb) -> Ht<Pk<U32>>:
   match b:
     case Tb{acc, ctrs}:
       ctrs
@@ -6340,7 +6245,7 @@ def dts.where(+ns: List<&2, Node>, +files: List<&2, List<&2, U32>>) -> Bool:
 # of the walk's order, from the last walked to the first (LAWS.bend,
 # `sharing.emitted`)
 def module.table(+e: Ec, +order: List<&2, U32>, +acc: List<&2, U32>) -> Tb:
-  order.put(List.reverse(&2, U32, order), e, Tb{acc, WmNone{}})
+  order.put(List.reverse(&2, U32, order), e, Tb{acc, HLeaf{Nil{}}})
 
 def module.bytes(+files: List<&2, List<&2, U32>>, +e: Ec, +order: List<&2, U32>, +tree: List<&2, Node>, +more: List<&2, U32>) -> List<&2, U32>:
   tb.bytes(module.table(e, order, rev.onto(List.append(&2, U32, codes("# Written by Blend from "),
@@ -6395,7 +6300,7 @@ def code.import(+root: List<&2, U32>, +mode: U32, +laws: Bool) -> List<&2, U32>:
 def proof.bytes(+files: List<&2, List<&2, U32>>, +e: Ec, +order: List<&2, U32>, +tree: List<&2, Node>, +more: List<&2, U32>, +laws: Bool) -> List<&2, U32>:
   tb.bytes(order.put(order, e, Tb{rev.onto(List.append(&2, U32, codes("# Written by Blend from "),
     List.append(&2, U32, loc.file(files, 0), List.append(&2, U32, codes("; do not edit.\n"),
-    List.append(&2, U32, imports(tree), List.append(&2, U32, code.import(path.at(ec.paths(e), 0), ec.mode(e), laws), more))))), Nil{}), WmNone{}}))
+    List.append(&2, U32, imports(tree), List.append(&2, U32, code.import(path.at(ec.paths(e), 0), ec.mode(e), laws), more))))), Nil{}), HLeaf{Nil{}}}))
 
 def pf.file(+files: List<&2, List<&2, U32>>, +tree: List<&2, Node>, +name: List<&2, U32>, +laws: Bool, p: Pf) -> Fo:
   match p:
@@ -6635,7 +6540,7 @@ def emit.walk(+roots: List<&2, U32>, +rss: List<&2, List<&2, Ru>>, +obs: List<&2
 
 # the dispositions of the units of the walk's order
 def emit.ms(+order: List<&2, U32>, +rss: List<&2, List<&2, Ru>>, +ut: Ht<Pk<Un>>, +obs: List<&2, Ob>, +us: List<&2, Un>) -> Ms:
-  mults(order, pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{WmNone{}, Nil{}}, WmNone{})
+  mults(order, pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{HLeaf{Nil{}}, Nil{}}, HLeaf{Nil{}})
 
 # whether any unit is a law, a proof or a lemma: where none is, no unit
 # names one, so the check that none is named where a definition is
@@ -6665,7 +6570,7 @@ def emit.ers(dse: List<&2, Er>, mse: List<&2, Er>, +all: List<&2, Un>, order: Li
 
 # the writer's context for the code's file
 def emit.ec(+files: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>, +als: List<&2, Al>, +own: List<&2, Ci>, +res: List<&2, List<&2, U32>>,
-    +paths: List<&2, List<&2, U32>>, +ux: Ht<Xe>, +ut: Ht<Pk<Un>>, +mt: Wm<Mu>) -> Ec:
+    +paths: List<&2, List<&2, U32>>, +ux: Ht<Xe>, +ut: Ht<Pk<Un>>, +mt: Ht<Pk<Mu>>) -> Ec:
   Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, ut, mt}
 
 def proof.parts(+mode: U32, +files: List<&2, List<&2, U32>>, +cx: Cx, +all: List<&2, Un>) -> Pf:
@@ -6677,7 +6582,7 @@ def proof.parts(+mode: U32, +files: List<&2, List<&2, U32>>, +cx: Cx, +all: List
   +own = emit.own(cx)
   +res = need.uniq(need.us(units.what(us, mode), obs, cx.paths(cx)), own, Nil{})
   +e = {Ec{files, obs, us, cx.als(cx), own, res, cx.paths(cx), mode, tree.types(ob.mems(ob.at(obs, 0))), ux,
-    pt.of(Un, us), WmNone{}} : Ec}
+    pt.of(Un, us), HLeaf{Nil{}}} : Ec}
   Pf{e, order.what(order, us, mode), res.lines(path.at(cx.paths(cx), 0), res, 1),
     List.append(&2, Er, ds.ers(d), er.names.of(names.all(order.what(order, us, mode), e)))}
 
