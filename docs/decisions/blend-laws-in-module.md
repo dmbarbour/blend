@@ -15,8 +15,8 @@ the module's code ever checks, a package's least of all; bend-mathlib
 keeps each law with its proof, so whoever loads a lemma checks it. Defs
 no `main` reaches are not compiled: the kernel given four second
 callers no main reaches compiles to the same C, byte for byte. Checking
-a module's proofs at each load costs seconds (glam-in-bend's
-`docs/reviews/LawsInBend_2026-11-06.md`).
+a module's proofs at each load costs seconds: Blend's code 0.8 s alone,
+3.6 s with its proofs; the kernel 3.7 s, 5.8 s (2026-11-06).
 
 **Decision.** The maintainer (2026-11-06):
 1. A module's laws and proofs are written into its own `.bend`, after
@@ -67,6 +67,10 @@ a module's proofs at each load costs seconds (glam-in-bend's
 - `scripts/check_laws.py` reads `law` members in `.blend` files as it
   reads `LAWS.bend`, each named by the objects it sits in: changing one
   on main needs its `Law:` trailer. An invalid sample's laws are none.
+- `--verdict` rechecks every def a file loads, Base's aside, reached
+  from `main` or not, and refuses one relying on `@unsafe` or foreign
+  code: a module with laws keeps such code in a module of its own, as
+  its proofs' file, importing the code, had to before.
 - Blend's gate rechecks each sample holding a law with `--verdict`;
   import verification reports a laws or proofs file left beside an
   import, written by the Blend before, as no longer emitted.
