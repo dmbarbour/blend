@@ -21,9 +21,9 @@ blend_check() {
   dir=$1
   shift
   out=$root/results/generated/$dir
-  again="(cd $dir && $(echo "$dir" | sed 's#[^/][^/]*#..#g')/run.sh emit $*)"
+  again="(cd $dir && $(echo "$dir" | sed 's#[^/][^/]*#..#g')/run.sh emit --alone $*)"
   mkdir -p "$out" || return 1
-  if ! wrote=$(cd "$dir" && "$root/run.sh" emit "$@" "$out"); then
+  if ! wrote=$(cd "$dir" && "$root/run.sh" emit --alone "$@" "$out"); then
     echo "$dir: blend emit $* fails"
     return 1
   fi

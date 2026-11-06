@@ -7274,7 +7274,7 @@ def basename(path: String) -> String:
   base.k(until(List.reverse(&2, U32, codes(path)), 47))
 
 def usage() -> String:
-  "usage:\n  blend emit [--alone] FILE.blend... [DIR]  write each module's .bend beside it, or into DIR\n  blend read|objects|resolve FILE.blend     print a stage\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
+  "usage:\n  blend emit [--alone] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR; --alone those named alone\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend read|objects|resolve FILE.blend     print a stage\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
 
 # 1 read, 2 objects, 3 resolve, 4 emit
 def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
@@ -7573,7 +7573,7 @@ def dep.checks(o: Out, +d: List<&2, U32>) -> List<&2, Ck>:
       List.append(&2, Ck, cks.of(fos.at(fs, dir.of(d)), d),
         List.append(&2, Ck, ck.gone(fs, d, codes("_LAWS.bend")), ck.gone(fs, d, codes("_PROOF.bend"))))
     case Out{+ok, text}:
-      [Cer{List.append(&2, U32, codes("blend: "), List.append(&2, U32, d, List.append(&2, U32, codes(", which it imports, has errors of its own:\n"),
+      [Cer{List.append(&2, U32, codes("blend: "), List.append(&2, U32, d, List.append(&2, U32, codes(" has errors:\n"),
         List.append(&2, U32, codes(text), codes("\n")))))}]
 
 # every import, once, that no argument names
@@ -7606,6 +7606,8 @@ def verify.cks(cks: List<&2, Ck>, +errs: List<&2, U32>, fs: List<&2, Fo>) -> IO(
           verify.cks(ct, List.append(&2, U32, errs, msg), fs)
 
 # each import emitted again in memory, its checks gathered; then made
+# (`emit` no longer verifies, writing the tree; kept for `deps`,
+# blend-cli.deps)
 def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>) -> IO(Unit):
   match ds:
     case Nil{}:
@@ -7614,20 +7616,44 @@ def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
         +ms => verify.deps(dt, List.append(&2, Ck, acc, dep.checks(run.mods(4, ms), d)), fs))
 
-def emit.end(+alone: Bool, ds: List<&2, List<&2, U32>>, o: Out) -> IO(Unit):
+# the imports none names, each read with its own and emitted in turn,
+# into the directory given, else beside it (`blend-emit-verifies-imports`)
+def emit.deps(ds: List<&2, List<&2, U32>>, +dir: Maybe<&2, List<&2, U32>>, acc: Out) -> IO(Out):
+  match ds:
+    case Nil{}:
+      IO.pure(Out, acc)
+    case Con{+d, dt}:
+      IO.bind(List<&2, Md>, Out, load.go(4096n, [Td{d, 0}], Nil{}),
+        +ms => emit.deps(dt, dir, out.join(acc, out.at(run.mods(4, ms), dir.or(dir, d)))))
+
+def emit.write(o: Out) -> IO(Unit):
   match o:
     case Outs{+fs}:
-      when(IO(Unit), alone, u => write.all(fs), u => verify.deps(ds, Nil{}, fs))
+      write.all(fs)
     case Out{+ok, text}:
       main.out(Out{ok, text})
 
+# the modules named alone, or with the imports they reach, written
+# first; where the modules named have errors, those alone, nothing
+# written
+def emit.end(o: Out, +alone: Bool, +dir: Maybe<&2, List<&2, U32>>, ds: List<&2, List<&2, U32>>) -> IO(Unit):
+  match o:
+    case Out{+ok, text}:
+      main.out(Out{ok, text})
+    case Outs{+fs}:
+      match alone:
+        case True{}:
+          emit.write(out.once(Outs{fs}))
+        case False{}:
+          IO.bind(Out, Unit, emit.deps(ds, dir, Outs{Nil{}}), d => emit.write(out.once(out.join(d, Outs{fs}))))
+
 # each module emitted in turn, each read with its imports, into the
-# directory given, else its own; then the imports none names verified,
-# unless alone; then every module's files written, or none
+# directory given, else its own; then, unless alone, the imports none
+# names emitted too, its tree; then every file written, or none
 def main.emit.go(ps: List<&2, String>, +dir: Maybe<&2, List<&2, U32>>, +alone: Bool, +named: List<&2, List<&2, U32>>, deps: List<&2, List<&2, U32>>, acc: Out) -> IO(Unit):
   match ps:
     case Nil{}:
-      emit.end(alone, deps.missed(deps, named, Nil{}), out.once(acc))
+      emit.end(acc, alone, dir, deps.missed(deps, named, Nil{}))
     case Con{+p, t}:
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{codes(p), 0}], Nil{}),
         +ms => main.emit.go(t, dir, alone, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
@@ -7670,12 +7696,116 @@ def main.emit(+xs: List<&2, String>) -> IO(Unit):
   on.maybe(String, IO(Unit), List.head(&2, String, xs), u => main.out(Out{False{}, usage()}),
     +h => when(IO(Unit), String.eq(h, "--alone"), v => main.emit.k(True{}, List.tail(&2, String, xs)), v => main.emit.k(False{}, xs)))
 
+# Deps (`blend deps`, blend-command-mirrors-bend): the modules `emit`
+# would write, imports first, each current, stale, missing or refused, or
+# with `--make` each a makefile's rule; the status 1 where any is not
+# current, as `make -q`'s, or with `--make` where any has errors
+
+# a file's state against what emission would write: 0 current, 1 stale
+# (other, or written no longer), 2 missing
+def ck.state(want: Maybe<&2, List<&2, U32>>, got: Maybe<&2, List<&2, U32>>) -> U32:
+  match want got:
+    case Some{w} Some{g}:
+      when(U32, same(w, g), u => 0, u => 1)
+    case Some{w} None{}:
+      2
+    case None{} Some{g}:
+      1
+    case None{} None{}:
+      0
+
+def u32.max(+a: U32, +b: U32) -> U32:
+  when(U32, U32.is_gt(a, b), u => a, u => b)
+
+# a module's state from its checks, each file read: the worst of its
+# files', or 3 where it has errors, which go to standard error
+def dep.state(cks: List<&2, Ck>, +st: U32) -> IO(U32):
+  match cks:
+    case Nil{}:
+      IO.pure(U32, st)
+    case Con{c, ct}:
+      match c:
+        case Ck{+path, +src, want}:
+          IO.bind(Maybe<&2, List<&2, U32>>, U32, read.file(path), +m => dep.state(ct, u32.max(st, ck.state(want, m))))
+        case Cer{msg}:
+          IO.bind(Unit, U32, IO.print_err(text(msg)), u => dep.state(ct, 3))
+
+def dep.word(+st: U32) -> List<&2, U32>:
+  match st:
+    case 0:
+      codes("current")
+    case 1:
+      codes("stale")
+    case 2:
+      codes("missing")
+    case _:
+      codes("refused")
+
+def spaced(xs: List<&2, List<&2, U32>>) -> List<&2, U32>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{x, t}:
+      List.append(&2, U32, [32], List.append(&2, U32, x, spaced(t)))
+
+# a module's line: its state and path, or its rule, its .bend from its
+# .blend and every .blend it reaches
+def dep.line(+make: Bool, +st: U32, +d: List<&2, U32>, ms: List<&2, Md>) -> List<&2, U32>:
+  match make:
+    case True{}:
+      List.append(&2, U32, bendify(d, True{}), List.append(&2, U32, codes(":"), List.append(&2, U32, spaced(mds.paths(ms)),
+        List.append(&2, U32, codes("\n\tblend emit --alone "), List.append(&2, U32, d, [10])))))
+    case False{}:
+      List.append(&2, U32, dep.word(st), List.append(&2, U32, [32], d))
+
+def dep.bad(+make: Bool, +st: U32) -> Bool:
+  match make:
+    case True{}:
+      U32.is_eq(st, 3)
+    case False{}:
+      U32.is_gt(st, 0)
+
+def dep.say(+make: Bool, +st: U32, +d: List<&2, U32>, ms: List<&2, Md>) -> IO(Unit):
+  when(IO(Unit), make && U32.is_eq(st, 3), u => IO.pure(Unit, Unit{}), u => IO.print(text(dep.line(make, st, d, ms))))
+
+# each module in turn, read with its imports and emitted in memory, its
+# state or its rule printed; the status 1 where any was bad
+def deps.go(ds: List<&2, List<&2, U32>>, +make: Bool, +bad: Bool) -> IO(Unit):
+  match ds:
+    case Nil{}:
+      when(IO(Unit), bad, u => IO.exit(1), u => IO.pure(Unit, Unit{}))
+    case Con{+d, dt}:
+      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
+        +ms => IO.bind(U32, Unit, dep.state(dep.checks(run.mods(4, ms), d), 0),
+          +st => IO.bind(Unit, Unit, dep.say(make, st, d, ms), u => deps.go(dt, make, bad || dep.bad(make, st)))))
+
+# the imports the modules named reach, gathered by reading each; then
+# every module, the imports first, as `emit` writes them
+def deps.gather(ps: List<&2, List<&2, U32>>, +make: Bool, +named: List<&2, List<&2, U32>>, ds: List<&2, List<&2, U32>>) -> IO(Unit):
+  match ps:
+    case Nil{}:
+      deps.go(List.append(&2, List<&2, U32>, deps.missed(ds, named, Nil{}), named), make, False{})
+    case Con{+p, t}:
+      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{p, 0}], Nil{}),
+        +ms => deps.gather(t, make, named, List.append(&2, List<&2, U32>, ds, List.tail(&2, List<&2, U32>, mds.paths(ms)))))
+
+def main.deps.k(+make: Bool, +xs: List<&2, String>) -> IO(Unit):
+  when(IO(Unit), List.is_empty(&2, String, xs) || args.dashed(xs), u => main.out(Out{False{}, usage()}),
+    u => deps.gather(args.plain(xs), make, args.plain(xs), Nil{}))
+
+# `deps [--make] FILE.blend...`
+def main.deps(+xs: List<&2, String>) -> IO(Unit):
+  on.maybe(String, IO(Unit), List.head(&2, String, xs), u => main.out(Out{False{}, usage()}),
+    +h => when(IO(Unit), String.eq(h, "--make"), v => main.deps.k(True{}, List.tail(&2, String, xs)), v => main.deps.k(False{}, xs)))
+
 def main.cmd(+cmd: U32, +xs: List<&2, String>) -> IO(Unit):
   match cmd:
     case 0:
       main.out(Out{False{}, usage()})
     case 4:
       main.emit(xs)
+    case 5:
+      main.deps(xs)
     case _:
       match xs:
         case Con{+path, r}:
@@ -7687,17 +7817,19 @@ def main.cmd(+cmd: U32, +xs: List<&2, String>) -> IO(Unit):
         case Nil{}:
           main.out(Out{False{}, usage()})
 
-def cmd.of(+rd: Bool, +ob: Bool, +rs: Bool, +em: Bool) -> U32:
-  match rd ob rs em:
-    case True{} _ _ _:
+def cmd.of(+rd: Bool, +ob: Bool, +rs: Bool, +em: Bool, +dp: Bool) -> U32:
+  match rd ob rs em dp:
+    case True{} _ _ _ _:
       1
-    case False{} True{} _ _:
+    case False{} True{} _ _ _:
       2
-    case False{} False{} True{} _:
+    case False{} False{} True{} _ _:
       3
-    case False{} False{} False{} True{}:
+    case False{} False{} False{} True{} _:
       4
-    case False{} False{} False{} False{}:
+    case False{} False{} False{} False{} True{}:
+      5
+    case False{} False{} False{} False{} False{}:
       0
 
 # whether an argument holds a newline: a path that would break each line
@@ -7711,7 +7843,7 @@ def args.nl(xs: List<&2, String>) -> Bool:
 
 def main.args.r(+flag: String, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), args.nl(xs), v => main.out(Out{False{}, "blend: a path holding a newline would break the lines naming it: refused"}),
-    v => main.cmd(cmd.of(String.eq(flag, "read"), String.eq(flag, "objects"), String.eq(flag, "resolve"), String.eq(flag, "emit")), xs))
+    v => main.cmd(cmd.of(String.eq(flag, "read"), String.eq(flag, "objects"), String.eq(flag, "resolve"), String.eq(flag, "emit"), String.eq(flag, "deps")), xs))
 
 def main.args.k(+flag: String, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), String.eq(flag, "--help") || String.eq(flag, "-h"), u => main.out(Out{True{}, usage()}),

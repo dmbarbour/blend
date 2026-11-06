@@ -26,7 +26,9 @@ what a module reaches and a `deps` to list it, a dry run.
 - `deps` lists the modules `emit --tree` would reach, in the order it
   writes them, each current, stale, missing, refused or a package's,
   and exits 1 where any is not current, as `make -q` does; `--make`
-  prints them as a makefile's rules. It learns staleness as import
+  prints them as a makefile's rules, each `.bend` from its `.blend` and
+  every `.blend` it reaches, `blend emit --alone` the recipe, the status
+  1 only where a module has errors (rules being no report of state). It learns staleness as import
   verification does, by emitting in memory, until a stamp in each
   emitted header makes it a line read.
 - `blend` lives beside `bend`, in `$BEND_HOME/bin` (`~/.bend/bin`) by

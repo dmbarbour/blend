@@ -68,23 +68,59 @@ for src in refused/*.blend; do
     status=1
   fi
 done
-# an import no argument names is verified, its files compared with its
-# emission: a stale one fails the command, which writes nothing, and
-# `--alone` leaves it unverified; a module named by its absolute path
-# finds its imports (results/, fixed paths, overwritten each run)
+# `emit` writes a module's tree, the imports none names written too, a
+# stale one made current; `--alone` writes the modules named, a stale
+# import left as it is; a module named by its absolute path finds its
+# imports (results/, fixed paths, overwritten each run;
+# `blend-emit-verifies-imports`)
 v=../results/verify
 mkdir -p "$v/lib" || exit 1
 cp imports.blend "$v/" && cp lib/shapes.blend "$v/lib/" && echo "# stale" > "$v/lib/shapes.bend" || exit 1
-want="blend: lib/shapes.bend is stale: it is not what lib/shapes.blend emits
-blend: name each such import too, or emit --alone to leave the imports unverified"
-if got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" emit imports.blend 2>&1); then
-  echo "blend: a stale import passes unverified"
+want="lib/shapes.bend
+./imports.bend"
+if ! got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" emit imports.blend 2>&1); then
+  echo "blend: emit of a tree fails: $got"
   status=1
 elif [ "$got" != "$want" ]; then
-  echo "blend: a stale import gives '$got', not '$want'"
+  echo "blend: emit of a tree writes '$got', not '$want'"
+  status=1
+elif ! cmp -s "$v/lib/shapes.bend" lib/shapes.bend || ! cmp -s "$v/imports.bend" imports.bend; then
+  echo "blend: emit of a tree writes other than the samples' files"
   status=1
 fi
+# `deps`: the tree as emit writes it, imports first, each current
+want="current lib/shapes.blend
+current imports.blend"
+got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps imports.blend 2>&1) || { echo "blend: deps of a current tree fails"; status=1; }
+[ "$got" = "$want" ] || { echo "blend: deps of a current tree says '$got', not '$want'"; status=1; }
+want="lib/shapes.bend: lib/shapes.blend
+	blend emit --alone lib/shapes.blend
+
+imports.bend: imports.blend lib/shapes.blend
+	blend emit --alone imports.blend"
+got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps --make imports.blend 2>&1) || { echo "blend: deps --make fails"; status=1; }
+[ "$got" = "$want" ] || { echo "blend: deps --make says '$got', not '$want'"; status=1; }
+echo "# stale" > "$v/lib/shapes.bend" || exit 1
 (cd "$v" && "$CAPPED" 500 30 "$BLEND" emit --alone imports.blend >/dev/null) || { echo "blend: emit --alone fails"; status=1; }
+[ "$(cat "$v/lib/shapes.bend")" = "# stale" ] || { echo "blend: emit --alone writes an import"; status=1; }
+# a stale import, the status 1; a module with errors refused, the errors
+# on standard error
+want="stale lib/shapes.blend
+current imports.blend"
+if got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps imports.blend 2>&1); then
+  echo "blend: deps of a stale tree succeeds"
+  status=1
+elif [ "$got" != "$want" ]; then
+  echo "blend: deps of a stale tree says '$got', not '$want'"
+  status=1
+fi
+if got=$(cd invalid && "$CAPPED" 500 30 "$BLEND" deps law-unproven.blend 2>/dev/null); then
+  echo "blend: deps of a module with errors succeeds"
+  status=1
+elif [ "$got" != "refused law-unproven.blend" ]; then
+  echo "blend: deps of a module with errors says '$got'"
+  status=1
+fi
 mkdir -p ../results/absolute || exit 1
 "$CAPPED" 500 30 "$BLEND" emit "$PWD/imports.blend" ../results/absolute >/dev/null ||
   { echo "blend: a module named by its absolute path fails"; status=1; }
