@@ -6773,6 +6773,240 @@ def Laws.markers.tree(its, h):
 def Laws.markers.read(bs, base):
   Laws.markers.tree(B.flat(B.lines.at(bs, base)), Laws.markers.items(B.lines.at(bs, base), U32.add(base, 1), Laws.markers.lines(bs, base)))
 
+# Definitions the same are equal (`nodes.same_eq`): each field compared
+# is equal, by its comparison's own law
+
+def teq_no(+x: B.Tok, +y: B.Tok, h: {False{} == True{} : Bool}) -> {x == y : B.Tok}:
+  Empty.absurd({x == y : B.Tok}, MB.false_ne_true()(h))
+
+def tok_eq(x: B.Tok, y: B.Tok, +hs: {B.tok.same(x, y) == True{} : Bool}) -> {x == y : B.Tok}:
+  match x:
+    case B.TName{+a}:
+      match y:
+        case B.TName{+b}:
+          Equal.cong(List<&2, U32>, B.Tok, z => B.TName{z}, a, b, Laws.names.same_eq(a, b, hs))
+        case B.TNum{+b}:
+          teq_no(B.TName{a}, B.TNum{b}, hs)
+        case B.TStr{+b}:
+          teq_no(B.TName{a}, B.TStr{b}, hs)
+        case B.TCom{+b}:
+          teq_no(B.TName{a}, B.TCom{b}, hs)
+        case B.TSp{+b}:
+          teq_no(B.TName{a}, B.TSp{b}, hs)
+        case B.TSym{+d}:
+          teq_no(B.TName{a}, B.TSym{d}, hs)
+    case B.TNum{+a}:
+      match y:
+        case B.TName{+b}:
+          teq_no(B.TNum{a}, B.TName{b}, hs)
+        case B.TNum{+b}:
+          Equal.cong(List<&2, U32>, B.Tok, z => B.TNum{z}, a, b, Laws.names.same_eq(a, b, hs))
+        case B.TStr{+b}:
+          teq_no(B.TNum{a}, B.TStr{b}, hs)
+        case B.TCom{+b}:
+          teq_no(B.TNum{a}, B.TCom{b}, hs)
+        case B.TSp{+b}:
+          teq_no(B.TNum{a}, B.TSp{b}, hs)
+        case B.TSym{+d}:
+          teq_no(B.TNum{a}, B.TSym{d}, hs)
+    case B.TStr{+a}:
+      match y:
+        case B.TName{+b}:
+          teq_no(B.TStr{a}, B.TName{b}, hs)
+        case B.TNum{+b}:
+          teq_no(B.TStr{a}, B.TNum{b}, hs)
+        case B.TStr{+b}:
+          Equal.cong(List<&2, U32>, B.Tok, z => B.TStr{z}, a, b, Laws.names.same_eq(a, b, hs))
+        case B.TCom{+b}:
+          teq_no(B.TStr{a}, B.TCom{b}, hs)
+        case B.TSp{+b}:
+          teq_no(B.TStr{a}, B.TSp{b}, hs)
+        case B.TSym{+d}:
+          teq_no(B.TStr{a}, B.TSym{d}, hs)
+    case B.TCom{+a}:
+      match y:
+        case B.TName{+b}:
+          teq_no(B.TCom{a}, B.TName{b}, hs)
+        case B.TNum{+b}:
+          teq_no(B.TCom{a}, B.TNum{b}, hs)
+        case B.TStr{+b}:
+          teq_no(B.TCom{a}, B.TStr{b}, hs)
+        case B.TCom{+b}:
+          Equal.cong(List<&2, U32>, B.Tok, z => B.TCom{z}, a, b, Laws.names.same_eq(a, b, hs))
+        case B.TSp{+b}:
+          teq_no(B.TCom{a}, B.TSp{b}, hs)
+        case B.TSym{+d}:
+          teq_no(B.TCom{a}, B.TSym{d}, hs)
+    case B.TSp{+a}:
+      match y:
+        case B.TName{+b}:
+          teq_no(B.TSp{a}, B.TName{b}, hs)
+        case B.TNum{+b}:
+          teq_no(B.TSp{a}, B.TNum{b}, hs)
+        case B.TStr{+b}:
+          teq_no(B.TSp{a}, B.TStr{b}, hs)
+        case B.TCom{+b}:
+          teq_no(B.TSp{a}, B.TCom{b}, hs)
+        case B.TSp{+b}:
+          Equal.cong(List<&2, U32>, B.Tok, z => B.TSp{z}, a, b, Laws.names.same_eq(a, b, hs))
+        case B.TSym{+d}:
+          teq_no(B.TSp{a}, B.TSym{d}, hs)
+    case B.TSym{+c}:
+      match y:
+        case B.TName{+b}:
+          teq_no(B.TSym{c}, B.TName{b}, hs)
+        case B.TNum{+b}:
+          teq_no(B.TSym{c}, B.TNum{b}, hs)
+        case B.TStr{+b}:
+          teq_no(B.TSym{c}, B.TStr{b}, hs)
+        case B.TCom{+b}:
+          teq_no(B.TSym{c}, B.TCom{b}, hs)
+        case B.TSp{+b}:
+          teq_no(B.TSym{c}, B.TSp{b}, hs)
+        case B.TSym{+d}:
+          Equal.cong(U32, B.Tok, z => B.TSym{z}, c, d, u32_eq_of_is_eq(c, d, hs))
+
+def toks_eq(xs: List<&2, B.Tok>, ys: List<&2, B.Tok>, +hs: {B.toks.same(xs, ys) == True{} : Bool}) -> {xs == ys : List<&2, B.Tok>}:
+  match xs:
+    case Nil{}:
+      match ys:
+        case Nil{}:
+          {==}
+        case Con{+y, +yt}:
+          Empty.absurd({Nil{} == Con{y, yt} : List<&2, B.Tok>}, MB.false_ne_true()(hs))
+    case Con{+x, +xt}:
+      match ys:
+        case Nil{}:
+          Empty.absurd({Con{x, xt} == Nil{} : List<&2, B.Tok>}, MB.false_ne_true()(hs))
+        case Con{+y, +yt}:
+          %tok_eq(x, y, and_l(B.tok.same(x, y), B.toks.same(xt, yt), hs)) : {Con{x, xt} == Con{_, yt} : List<&2, B.Tok>}
+          %toks_eq(xt, yt, and_r(B.tok.same(x, y), B.toks.same(xt, yt), hs)) : {Con{x, xt} == Con{x, _} : List<&2, B.Tok>}
+          {==}
+
+def bl_eq(a: B.Bl, b: B.Bl, +hs: {B.bl.same(a, b) == True{} : Bool}) -> {a == b : B.Bl}:
+  match a:
+    case B.Bl{+n1, +i1, +t1}:
+      match b:
+        case B.Bl{+n2, +i2, +t2}:
+          %u32_eq_of_is_eq(n1, n2, and_l(U32.is_eq(n1, n2), U32.is_eq(i1, i2), and_l(Bool.and(U32.is_eq(n1, n2), U32.is_eq(i1, i2)), B.toks.same(t1, t2), hs))) :
+            {B.Bl{n1, i1, t1} == B.Bl{_, i2, t2} : B.Bl}
+          %u32_eq_of_is_eq(i1, i2, and_r(U32.is_eq(n1, n2), U32.is_eq(i1, i2), and_l(Bool.and(U32.is_eq(n1, n2), U32.is_eq(i1, i2)), B.toks.same(t1, t2), hs))) :
+            {B.Bl{n1, i1, t1} == B.Bl{n1, _, t2} : B.Bl}
+          %toks_eq(t1, t2, and_r(Bool.and(U32.is_eq(n1, n2), U32.is_eq(i1, i2)), B.toks.same(t1, t2), hs)) : {B.Bl{n1, i1, t1} == B.Bl{n1, i1, _} : B.Bl}
+          {==}
+
+def bls_eq(xs: List<&2, B.Bl>, ys: List<&2, B.Bl>, +hs: {B.bls.same(xs, ys) == True{} : Bool}) -> {xs == ys : List<&2, B.Bl>}:
+  match xs:
+    case Nil{}:
+      match ys:
+        case Nil{}:
+          {==}
+        case Con{+y, +yt}:
+          Empty.absurd({Nil{} == Con{y, yt} : List<&2, B.Bl>}, MB.false_ne_true()(hs))
+    case Con{+x, +xt}:
+      match ys:
+        case Nil{}:
+          Empty.absurd({Con{x, xt} == Nil{} : List<&2, B.Bl>}, MB.false_ne_true()(hs))
+        case Con{+y, +yt}:
+          %bl_eq(x, y, and_l(B.bl.same(x, y), B.bls.same(xt, yt), hs)) : {Con{x, xt} == Con{_, yt} : List<&2, B.Bl>}
+          %bls_eq(xt, yt, and_r(B.bl.same(x, y), B.bls.same(xt, yt), hs)) : {Con{x, xt} == Con{x, _} : List<&2, B.Bl>}
+          {==}
+
+def names_eq(xs: List<&2, List<&2, U32>>, ys: List<&2, List<&2, U32>>, +hs: {B.names.eq(xs, ys) == True{} : Bool}) -> {xs == ys : List<&2, List<&2, U32>>}:
+  match xs:
+    case Nil{}:
+      match ys:
+        case Nil{}:
+          {==}
+        case Con{+y, +yt}:
+          Empty.absurd({Nil{} == Con{y, yt} : List<&2, List<&2, U32>>}, MB.false_ne_true()(hs))
+    case Con{+x, +xt}:
+      match ys:
+        case Nil{}:
+          Empty.absurd({Con{x, xt} == Nil{} : List<&2, List<&2, U32>>}, MB.false_ne_true()(hs))
+        case Con{+y, +yt}:
+          %Laws.names.same_eq(x, y, and_l(B.same(x, y), B.names.eq(xt, yt), hs)) : {Con{x, xt} == Con{_, yt} : List<&2, List<&2, U32>>}
+          %names_eq(xt, yt, and_r(B.same(x, y), B.names.eq(xt, yt), hs)) : {Con{x, xt} == Con{x, _} : List<&2, List<&2, U32>>}
+          {==}
+
+def xor_eq(u1: Bool, u2: Bool, +hs: {Bool.not(Bool.xor(u1, u2)) == True{} : Bool}) -> {u1 == u2 : Bool}:
+  match u1:
+    case True{}:
+      match u2:
+        case True{}:
+          {==}
+        case False{}:
+          Empty.absurd({True{} == False{} : Bool}, MB.false_ne_true()(hs))
+    case False{}:
+      match u2:
+        case True{}:
+          Empty.absurd({False{} == True{} : Bool}, MB.false_ne_true()(hs))
+        case False{}:
+          {==}
+
+def ndef_eq(+s1: U32, +u1: Bool, +n1: List<&2, U32>, +r1: List<&2, U32>, +p1: List<&2, List<&2, U32>>, +b1: List<&2, B.Bl>, +o1: U32, +i1: U32, +w1: U32,
+    +s2: U32, +u2: Bool, +n2: List<&2, U32>, +r2: List<&2, U32>, +p2: List<&2, List<&2, U32>>, +b2: List<&2, B.Bl>, +o2: U32, +i2: U32, +w2: U32,
+    +hs: {B.ndef.same(B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1}, B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2}) == True{} : Bool}) ->
+    {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2} : B.Node}:
+  +x1 = Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2)))
+  +x2 = Bool.and(x1, B.same(n1, n2))
+  +x3 = Bool.and(x2, B.same(r1, r2))
+  +x4 = Bool.and(x3, B.names.eq(p1, p2))
+  +x5 = Bool.and(x4, B.bls.same(b1, b2))
+  +x6 = Bool.and(x5, U32.is_eq(o1, o2))
+  +x7 = Bool.and(x6, U32.is_eq(i1, i2))
+  +h7 = and_l(x7, U32.is_eq(w1, w2), hs)
+  +h6 = and_l(x6, U32.is_eq(i1, i2), h7)
+  +h5 = and_l(x5, U32.is_eq(o1, o2), h6)
+  +h4 = and_l(x4, B.bls.same(b1, b2), h5)
+  +h3 = and_l(x3, B.names.eq(p1, p2), h4)
+  +h2 = and_l(x2, B.same(r1, r2), h3)
+  +h1 = and_l(x1, B.same(n1, n2), h2)
+  %u32_eq_of_is_eq(s1, s2, and_l(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2)), h1)) : {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{_, u2, n2, r2, p2, b2, o2, i2, w2} : B.Node}
+  %xor_eq(u1, u2, and_r(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2)), h1)) : {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{s1, _, n2, r2, p2, b2, o2, i2, w2} : B.Node}
+  %Laws.names.same_eq(n1, n2, and_r(x1, B.same(n1, n2), h2)) : {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{s1, u1, _, r2, p2, b2, o2, i2, w2} : B.Node}
+  %Laws.names.same_eq(r1, r2, and_r(x2, B.same(r1, r2), h3)) : {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{s1, u1, n1, _, p2, b2, o2, i2, w2} : B.Node}
+  %names_eq(p1, p2, and_r(x3, B.names.eq(p1, p2), h4)) : {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{s1, u1, n1, r1, _, b2, o2, i2, w2} : B.Node}
+  %bls_eq(b1, b2, and_r(x4, B.bls.same(b1, b2), h5)) : {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{s1, u1, n1, r1, p1, _, o2, i2, w2} : B.Node}
+  %u32_eq_of_is_eq(o1, o2, and_r(x5, U32.is_eq(o1, o2), h6)) : {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{s1, u1, n1, r1, p1, b1, _, i2, w2} : B.Node}
+  %u32_eq_of_is_eq(i1, i2, and_r(x6, U32.is_eq(i1, i2), h7)) : {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{s1, u1, n1, r1, p1, b1, o1, _, w2} : B.Node}
+  %u32_eq_of_is_eq(w1, w2, and_r(x7, U32.is_eq(w1, w2), hs)) : {B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1} == B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, _} : B.Node}
+  {==}
+
+def neq_no(+a: B.Node, +b: B.Node, h: {False{} == True{} : Bool}) -> {a == b : B.Node}:
+  Empty.absurd({a == b : B.Node}, MB.false_ne_true()(h))
+
+def Laws.nodes.same_eq(a, b, h):
+  match a:
+    case B.NDef{+s1, +u1, +n1, +r1, +p1, +b1, +o1, +i1, +w1}:
+      match b:
+        case B.NDef{+s2, +u2, +n2, +r2, +p2, +b2, +o2, +i2, +w2}:
+          ndef_eq(s1, u1, n1, r1, p1, b1, o1, i1, w1, s2, u2, n2, r2, p2, b2, o2, i2, w2, h)
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          neq_no(B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1}, B.NObj{abs, ext, name, parents, kids, no}, h)
+        case B.NImport{+txt, +no}:
+          neq_no(B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1}, B.NImport{txt, no}, h)
+        case B.NDecl{+names, +no}:
+          neq_no(B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1}, B.NDecl{names, no}, h)
+        case B.NBad{+txt, +no}:
+          neq_no(B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1}, B.NBad{txt, no}, h)
+        case B.NErr{+msg, +no}:
+          neq_no(B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1}, B.NErr{msg, no}, h)
+        case B.NBend{+lines, +no}:
+          neq_no(B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1}, B.NBend{lines, no}, h)
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      neq_no(B.NObj{abs, ext, name, parents, kids, no}, b, h)
+    case B.NImport{+txt, +no}:
+      neq_no(B.NImport{txt, no}, b, h)
+    case B.NDecl{+names, +no}:
+      neq_no(B.NDecl{names, no}, b, h)
+    case B.NBad{+txt, +no}:
+      neq_no(B.NBad{txt, no}, b, h)
+    case B.NErr{+msg, +no}:
+      neq_no(B.NErr{msg, no}, b, h)
+    case B.NBend{+lines, +no}:
+      neq_no(B.NBend{lines, no}, b, h)
+
 # The units' lines (`markers.units`): a unit's lines its definition's
 # body's, number for number (`nos`), resolution making a line for a line
 # (`rbl_nos`), whatever definition a copy holds; the trees' definitions
@@ -7009,65 +7243,11 @@ def dsok_trees(ts: List<&2, List<&2, B.Node>>, +h: {B.trees.ok(ts) == True{} : B
     case Con{+tr, +t}:
       dsok_app(B.tree.defs(tr), B.trees.defs(t), dsok_tree(tr, and_l(B.defs.ok(tr), B.trees.ok(t), h)), dsok_trees(t, and_r(B.defs.ok(tr), B.trees.ok(t), h)))
 
-# bodies the same line for line: numbered alike
-def bls_from_eq(b1: List<&2, B.Bl>, b2: List<&2, B.Bl>, +k: U32, +h: {B.bls.same(b1, b2) == True{} : Bool}) -> {B.bl.from(b1, k) == B.bl.from(b2, k) : Bool}:
-  match b1:
-    case Nil{}:
-      match b2:
-        case Nil{}:
-          {==}
-        case Con{y, yt}:
-          Empty.absurd({B.bl.from(Nil{}, k) == B.bl.from(Con{y, yt}, k) : Bool}, MB.false_ne_true()(h))
-    case Con{x, +xt}:
-      match x:
-        case B.Bl{+n1, +i1, +t1}:
-          match b2:
-            case Nil{}:
-              Empty.absurd({B.bl.from(Con{B.Bl{n1, i1, t1}, xt}, k) == B.bl.from(Nil{}, k) : Bool}, MB.false_ne_true()(h))
-            case Con{y, +yt}:
-              match y:
-                case B.Bl{+n2, +i2, +t2}:
-                  %u32_eq_of_is_eq(n1, n2, and_l(U32.is_eq(n1, n2), U32.is_eq(i1, i2), and_l(Bool.and(U32.is_eq(n1, n2), U32.is_eq(i1, i2)), B.toks.same(t1, t2),
-                      and_l(B.bl.same(B.Bl{n1, i1, t1}, B.Bl{n2, i2, t2}), B.bls.same(xt, yt), h)))) :
-                    {Bool.and(U32.is_eq(n1, k), B.bl.from(xt, U32.add(k, 1))) == Bool.and(U32.is_eq(_, k), B.bl.from(yt, U32.add(k, 1))) : Bool}
-                  %bls_from_eq(xt, yt, U32.add(k, 1), and_r(B.bl.same(B.Bl{n1, i1, t1}, B.Bl{n2, i2, t2}), B.bls.same(xt, yt), h)) :
-                    {Bool.and(U32.is_eq(n1, k), B.bl.from(xt, U32.add(k, 1))) == Bool.and(U32.is_eq(n1, k), _) : Bool}
-                  {==}
-
-# a definition the same as one numbered so: numbered so
+# a definition the same as one numbered so: numbered so, being it
+# (`nodes.same_eq`)
 def same_ok(d: B.Node, nd: B.Node, +hs: {B.ndef.same(d, nd) == True{} : Bool}, +hd: {nbok(d) == True{} : Bool}) -> {nbok(nd) == True{} : Bool}:
-  match d:
-    case B.NDef{+s1, +u1, +n1, +r1, +p1, +b1, +o1, +i1, +w1}:
-      match nd:
-        case B.NDef{+s2, +u2, +n2, +r2, +p2, +b2, +o2, +i2, +w2}:
-          %u32_eq_of_is_eq(o1, o2, and_r(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2)), U32.is_eq(w1, w2), hs)))) : {Bool.or(B.bl.from(b2, _), B.bl.from(b2, U32.add(_, 1))) == True{} : Bool}
-          %bls_from_eq(b1, b2, o1, and_r(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2)), U32.is_eq(w1, w2), hs))))) : {Bool.or(_, B.bl.from(b2, U32.add(o1, 1))) == True{} : Bool}
-          %bls_from_eq(b1, b2, U32.add(o1, 1), and_r(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2), and_l(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2)), B.same(r1, r2)), B.names.eq(p1, p2)), B.bls.same(b1, b2)), U32.is_eq(o1, o2)), U32.is_eq(i1, i2)), U32.is_eq(w1, w2), hs))))) : {Bool.or(B.bl.from(b1, o1), _) == True{} : Bool}
-          hd
-        case B.NImport{+txt, +no}:
-          {==}
-        case B.NDecl{+names, +no}:
-          {==}
-        case B.NBad{+txt, +no}:
-          {==}
-        case B.NErr{+msg, +no}:
-          {==}
-        case B.NBend{+lines, +no}:
-          {==}
-        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
-          {==}
-    case B.NImport{+txt, +no}:
-      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
-    case B.NDecl{+names, +no}:
-      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
-    case B.NBad{+txt, +no}:
-      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
-    case B.NErr{+msg, +no}:
-      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
-    case B.NBend{+lines, +no}:
-      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
-    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
-      Empty.absurd({nbok(nd) == True{} : Bool}, MB.false_ne_true()(hs))
+  %Laws.nodes.same_eq(d, nd, hs) : {nbok(_) == True{} : Bool}
+  hd
 
 # a definition held by definitions numbered so: numbered so
 def in_ok(ds: List<&2, B.Node>, +nd: B.Node, +hin: {B.def.in(ds, nd) == True{} : Bool}, +hd: {dsok(ds) == True{} : Bool}) -> {nbok(nd) == True{} : Bool}:
@@ -9695,192 +9875,9 @@ def dsil(ds: List<&2, B.Node>) -> Bool:
 def nope(+P: Bool, h: {False{} == True{} : Bool}) -> {P == True{} : Bool}:
   Empty.absurd({P == True{} : Bool}, MB.false_ne_true()(h))
 
-def txt_same(+a: List<&2, U32>, +b: List<&2, U32>, +hs: {B.same(a, b) == True{} : Bool}, h: {B.inline(a) == True{} : Bool}) -> {B.inline(b) == True{} : Bool}:
-  %Laws.names.same_eq(a, b, hs) : {B.inline(_) == True{} : Bool}
-  h
-
-def sym_same(+c: U32, +d: U32, +hs: {U32.is_eq(c, d) == True{} : Bool}, h: {B.inline([c]) == True{} : Bool}) -> {B.inline([d]) == True{} : Bool}:
-  %u32_eq_of_is_eq(c, d, hs) : {B.inline([_]) == True{} : Bool}
-  h
-
-def tok_same_il(x: B.Tok, y: B.Tok, +hs: {B.tok.same(x, y) == True{} : Bool}, +h: {B.inline(B.tok.bytes(x)) == True{} : Bool}) -> {B.inline(B.tok.bytes(y)) == True{} : Bool}:
-  match x:
-    case B.TName{+a}:
-      match y:
-        case B.TName{+b}:
-          txt_same(a, b, hs, h)
-        case B.TNum{+b}:
-          nope(B.inline(b), hs)
-        case B.TStr{+b}:
-          nope(B.inline(b), hs)
-        case B.TCom{+b}:
-          nope(B.inline(b), hs)
-        case B.TSp{+b}:
-          nope(B.inline(b), hs)
-        case B.TSym{+d}:
-          nope(B.inline([d]), hs)
-    case B.TNum{+a}:
-      match y:
-        case B.TName{+b}:
-          nope(B.inline(b), hs)
-        case B.TNum{+b}:
-          txt_same(a, b, hs, h)
-        case B.TStr{+b}:
-          nope(B.inline(b), hs)
-        case B.TCom{+b}:
-          nope(B.inline(b), hs)
-        case B.TSp{+b}:
-          nope(B.inline(b), hs)
-        case B.TSym{+d}:
-          nope(B.inline([d]), hs)
-    case B.TStr{+a}:
-      match y:
-        case B.TName{+b}:
-          nope(B.inline(b), hs)
-        case B.TNum{+b}:
-          nope(B.inline(b), hs)
-        case B.TStr{+b}:
-          txt_same(a, b, hs, h)
-        case B.TCom{+b}:
-          nope(B.inline(b), hs)
-        case B.TSp{+b}:
-          nope(B.inline(b), hs)
-        case B.TSym{+d}:
-          nope(B.inline([d]), hs)
-    case B.TCom{+a}:
-      match y:
-        case B.TName{+b}:
-          nope(B.inline(b), hs)
-        case B.TNum{+b}:
-          nope(B.inline(b), hs)
-        case B.TStr{+b}:
-          nope(B.inline(b), hs)
-        case B.TCom{+b}:
-          txt_same(a, b, hs, h)
-        case B.TSp{+b}:
-          nope(B.inline(b), hs)
-        case B.TSym{+d}:
-          nope(B.inline([d]), hs)
-    case B.TSp{+a}:
-      match y:
-        case B.TName{+b}:
-          nope(B.inline(b), hs)
-        case B.TNum{+b}:
-          nope(B.inline(b), hs)
-        case B.TStr{+b}:
-          nope(B.inline(b), hs)
-        case B.TCom{+b}:
-          nope(B.inline(b), hs)
-        case B.TSp{+b}:
-          txt_same(a, b, hs, h)
-        case B.TSym{+d}:
-          nope(B.inline([d]), hs)
-    case B.TSym{+c}:
-      match y:
-        case B.TName{+b}:
-          nope(B.inline(b), hs)
-        case B.TNum{+b}:
-          nope(B.inline(b), hs)
-        case B.TStr{+b}:
-          nope(B.inline(b), hs)
-        case B.TCom{+b}:
-          nope(B.inline(b), hs)
-        case B.TSp{+b}:
-          nope(B.inline(b), hs)
-        case B.TSym{+d}:
-          sym_same(c, d, hs, h)
-
-def toks_same_il(xs: List<&2, B.Tok>, ys: List<&2, B.Tok>, +hs: {B.toks.same(xs, ys) == True{} : Bool}, +h: {B.toks.inline(xs) == True{} : Bool}) ->
-    {B.toks.inline(ys) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      match ys:
-        case Nil{}:
-          {==}
-        case Con{+y, +yt}:
-          nope(B.toks.inline(Con{y, yt}), hs)
-    case Con{+x, +xt}:
-      match ys:
-        case Nil{}:
-          nope(True{}, hs)
-        case Con{+y, +yt}:
-          and_intro(B.inline(B.tok.bytes(y)), B.toks.inline(yt),
-            tok_same_il(x, y, and_l(B.tok.same(x, y), B.toks.same(xt, yt), hs), and_l(B.inline(B.tok.bytes(x)), B.toks.inline(xt), h)),
-            toks_same_il(xt, yt, and_r(B.tok.same(x, y), B.toks.same(xt, yt), hs), and_r(B.inline(B.tok.bytes(x)), B.toks.inline(xt), h)))
-
-def bls_same_il(xs: List<&2, B.Bl>, ys: List<&2, B.Bl>, +hs: {B.bls.same(xs, ys) == True{} : Bool}, +h: {B.bls.inline(xs) == True{} : Bool}) ->
-    {B.bls.inline(ys) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      match ys:
-        case Nil{}:
-          {==}
-        case Con{+y, +yt}:
-          nope(B.bls.inline(Con{y, yt}), hs)
-    case Con{x, +xt}:
-      match x:
-        case B.Bl{+n1, +i1, +t1}:
-          match ys:
-            case Nil{}:
-              nope(True{}, hs)
-            case Con{y, +yt}:
-              match y:
-                case B.Bl{+n2, +i2, +t2}:
-                  and_intro(B.toks.inline(t2), B.bls.inline(yt),
-                    toks_same_il(t1, t2, and_r(Bool.and(U32.is_eq(n1, n2), U32.is_eq(i1, i2)), B.toks.same(t1, t2),
-                      and_l(B.bl.same(B.Bl{n1, i1, t1}, B.Bl{n2, i2, t2}), B.bls.same(xt, yt), hs)), and_l(B.toks.inline(t1), B.bls.inline(xt), h)),
-                    bls_same_il(xt, yt, and_r(B.bl.same(B.Bl{n1, i1, t1}, B.Bl{n2, i2, t2}), B.bls.same(xt, yt), hs), and_r(B.toks.inline(t1), B.bls.inline(xt), h)))
-
-def ndef_same_il(+s1: U32, +u1: Bool, +n1: List<&2, U32>, +r1: List<&2, U32>, +p1: List<&2, List<&2, U32>>, +b1: List<&2, B.Bl>, +o1: U32, +i1: U32, +w1: U32,
-    +s2: U32, +u2: Bool, +n2: List<&2, U32>, +r2: List<&2, U32>, +p2: List<&2, List<&2, U32>>, +b2: List<&2, B.Bl>, +o2: U32, +i2: U32, +w2: U32,
-    +hs: {B.ndef.same(B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1}, B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2}) == True{} : Bool},
-    +hd: {ndil(B.NDef{s1, u1, n1, r1, p1, b1, o1, i1, w1}) == True{} : Bool}) -> {ndil(B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2}) == True{} : Bool}:
-  +x2 = Bool.and(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2))
-  +x3 = Bool.and(x2, B.same(r1, r2))
-  +x5 = Bool.and(Bool.and(x3, B.names.eq(p1, p2)), B.bls.same(b1, b2))
-  +x7 = Bool.and(Bool.and(x5, U32.is_eq(o1, o2)), U32.is_eq(i1, i2))
-  +h7 = and_l(x7, U32.is_eq(w1, w2), hs)
-  +h5 = and_l(x5, U32.is_eq(o1, o2), and_l(Bool.and(x5, U32.is_eq(o1, o2)), U32.is_eq(i1, i2), h7))
-  +h3 = and_l(x3, B.names.eq(p1, p2), and_l(Bool.and(x3, B.names.eq(p1, p2)), B.bls.same(b1, b2), h5))
-  +hn1 = and_l(B.inline(n1), B.inline(r1), and_l(Bool.and(B.inline(n1), B.inline(r1)), B.bls.inline(b1), hd))
-  +hr1 = and_r(B.inline(n1), B.inline(r1), and_l(Bool.and(B.inline(n1), B.inline(r1)), B.bls.inline(b1), hd))
-  +hb1 = and_r(Bool.and(B.inline(n1), B.inline(r1)), B.bls.inline(b1), hd)
-  and_intro(Bool.and(B.inline(n2), B.inline(r2)), B.bls.inline(b2),
-    and_intro(B.inline(n2), B.inline(r2), txt_same(n1, n2, and_r(Bool.and(U32.is_eq(s1, s2), Bool.not(Bool.xor(u1, u2))), B.same(n1, n2), and_l(x2, B.same(r1, r2), h3)), hn1),
-      txt_same(r1, r2, and_r(x2, B.same(r1, r2), h3), hr1)),
-    bls_same_il(b1, b2, and_r(Bool.and(x3, B.names.eq(p1, p2)), B.bls.same(b1, b2), h5), hb1))
-
-# a definition the same as one within a line: within a line
 def same_il(nd: B.Node, d: B.Node, +hs: {B.ndef.same(d, nd) == True{} : Bool}, +hd: {ndil(d) == True{} : Bool}) -> {ndil(nd) == True{} : Bool}:
-  match nd:
-    case B.NDef{+s2, +u2, +n2, +r2, +p2, +b2, +o2, +i2, +w2}:
-      match d:
-        case B.NDef{+s1, +u1, +n1, +r1, +p1, +b1, +o1, +i1, +w1}:
-          ndef_same_il(s1, u1, n1, r1, p1, b1, o1, i1, w1, s2, u2, n2, r2, p2, b2, o2, i2, w2, hs, hd)
-        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
-          nope(ndil(B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2}), hs)
-        case B.NImport{+txt, +no}:
-          nope(ndil(B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2}), hs)
-        case B.NDecl{+names, +no}:
-          nope(ndil(B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2}), hs)
-        case B.NBad{+txt, +no}:
-          nope(ndil(B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2}), hs)
-        case B.NErr{+msg, +no}:
-          nope(ndil(B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2}), hs)
-        case B.NBend{+lines, +no}:
-          nope(ndil(B.NDef{s2, u2, n2, r2, p2, b2, o2, i2, w2}), hs)
-    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
-      {==}
-    case B.NImport{+txt, +no}:
-      {==}
-    case B.NDecl{+names, +no}:
-      {==}
-    case B.NBad{+txt, +no}:
-      {==}
-    case B.NErr{+msg, +no}:
-      {==}
-    case B.NBend{+lines, +no}:
-      {==}
+  %Laws.nodes.same_eq(d, nd, hs) : {ndil(_) == True{} : Bool}
+  hd
 
 def in_k(c: Bool, +d: B.Node, +t: List<&2, B.Node>, +nd: B.Node, +e: {B.ndef.same(d, nd) == c : Bool}, +hin: {Bool.or(c, B.def.in(t, nd)) == True{} : Bool},
     +hd: {ndil(d) == True{} : Bool}, ih: @h:{B.def.in(t, nd) == True{} : Bool} -> {ndil(nd) == True{} : Bool}) -> {ndil(nd) == True{} : Bool}:
@@ -10992,3 +10989,5 @@ def Laws.markers.inline(files, trees, als, paths, us, res, mode, rtypes, ux, mt,
         B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
         ht, Laws.inline.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))),
           B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))), Laws.inline.members(trees, als, ht)))))
+
+
