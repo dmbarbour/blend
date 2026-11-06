@@ -7274,7 +7274,7 @@ def basename(path: String) -> String:
   base.k(until(List.reverse(&2, U32, codes(path)), 47))
 
 def usage() -> String:
-  "usage: bend blend.bend read|objects|resolve FILE.blend, or emit [--alone] FILE.blend... [DIR]"
+  "usage:\n  blend emit [--alone] FILE.blend... [DIR]  write each module's .bend beside it, or into DIR\n  blend read|objects|resolve FILE.blend     print a stage\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
 
 # 1 read, 2 objects, 3 resolve, 4 emit
 def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
@@ -7709,9 +7709,13 @@ def args.nl(xs: List<&2, String>) -> Bool:
     case Con{x, t}:
       holds(codes(x), [10]) || args.nl(t)
 
-def main.args.k(+flag: String, +xs: List<&2, String>) -> IO(Unit):
+def main.args.r(+flag: String, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), args.nl(xs), v => main.out(Out{False{}, "blend: a path holding a newline would break the lines naming it: refused"}),
     v => main.cmd(cmd.of(String.eq(flag, "read"), String.eq(flag, "objects"), String.eq(flag, "resolve"), String.eq(flag, "emit")), xs))
+
+def main.args.k(+flag: String, +xs: List<&2, String>) -> IO(Unit):
+  when(IO(Unit), String.eq(flag, "--help") || String.eq(flag, "-h"), u => main.out(Out{True{}, usage()}),
+    u => main.args.r(flag, xs))
 
 def main.args(xs: List<String>) -> IO(Unit):
   match xs:

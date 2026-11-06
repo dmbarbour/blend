@@ -33,9 +33,11 @@ Contingent:
 - `bench/` how Blend's cost grows with a module (its README)
 - `docs/` decisions and plans
 - `build.sh` builds Blend natively, once per version of it and of Bend;
-  `run.sh` runs it; `where.sh` maps an emitted line back to its source
+  `run.sh` runs it; `install.sh` installs `launcher.sh` as `blend` in
+  `~/.bend/bin`, running the checkout; `where.sh` maps an emitted line
+  back to its source
 - `check.sh` the gate; `check_generated.sh` the generated samples;
-  `samples/check.sh` the samples
+  `samples/check.sh` the samples; `launcher_check.sh` the launcher
 - `scripts/` the tools (`capped.sh`, `count.sh`, `results.py`, `kept.py`,
   `one_law.py`, `check_docs.py`, `check_laws.py`, `check_staged.py`,
   `cgroup-delegate.sh`), copied from glam-in-bend's at the split and
@@ -110,7 +112,8 @@ Bend 2.0.39 (`bend version`), Lean v4.34.0 for `--verdict` and `perf` for
 `count.sh`, as glam-in-bend's `scripts/dev-setup.sh` installs them;
 `scripts/cgroup-delegate.sh` at each container start, so that
 `capped.sh` caps memory in the kernel. Enable the hooks once per clone:
-`git config core.hooksPath .githooks`.
+`git config core.hooksPath .githooks`. `install.sh` puts `blend` on the
+path, running this checkout (glam-in-bend's `dev-setup.sh` runs it).
 
 ## Used by glam-in-bend
 

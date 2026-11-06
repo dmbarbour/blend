@@ -10,8 +10,12 @@ wants to be a definition it overrides rather than a template argument
 threaded through every signature (`docs/plans/Codegen_2026-11-04.md`,
 `codegen-vehicle.blend`).
 
-Status: the tool emits. `run.sh emit [--alone] FILE.blend...
-[DIR]` writes, for each module named, the `.bend` it makes, every
+Status: the tool emits. `install.sh` installs the command `blend`
+beside `bend`, in `~/.bend/bin`, running this checkout: the tool built
+natively, built again when Blend or Bend changes, else run through Bend
+(`blend version`, `blend rebuild`, `blend --help`;
+`blend-command-mirrors-bend`). `blend emit [--alone] FILE.blend...
+[DIR]` (or `run.sh emit ...`, the checkout's tool without installing) writes, for each module named, the `.bend` it makes, every
 concrete object's definitions, then its laws and their proofs where it
 has any, beside the module or into DIR, printing each path; or, writing nothing at all, the errors of
 any (on stderr, the status 1). A module's emission depends on nothing

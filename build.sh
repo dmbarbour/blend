@@ -6,8 +6,12 @@
 # the build takes 13 s and 0.4 GB.
 #
 #   build.sh          the executable's path, built first if stale
+#   build.sh --force  the same, built again whatever the key (`blend
+#                     rebuild`)
 #   run.sh ARGS...    the executable run (run.sh resolve F.blend)
 set -u
+force=0
+[ "${1:-}" = --force ] && force=1
 cd "$(dirname "$0")" || exit 1
 BLEND_ROOT=$PWD
 . ./tools.sh
@@ -24,7 +28,8 @@ lib=$(dirname "$real")/../bend2
 key=$({ "$BEND" version; stat -c '%s %Y %i' "$real"; cat "$lib"/base.bend "$lib"/effs/* 2>/dev/null
   for f in *.bend; do case $f in *LAWS.bend | *PROOF.bend) ;; *) cat "$f" ;; esac; done; } |
   sha256sum | cut -d' ' -f1)
-if [ ! -x "$out/blend" ] || [ "$(cat "$out/key" 2>/dev/null)" != "$key" ]; then
+if [ "$force" = 1 ] || [ ! -x "$out/blend" ] || [ "$(cat "$out/key" 2>/dev/null)" != "$key" ]; then
+  echo "blend: building the tool natively, once for each version of Blend and of Bend" >&2
   mkdir -p "$out" || exit 1
   "$TOOLS/capped.sh" 1500 300 "$BEND" blend.bend -o "$out/blend.new" >&2 || {
     echo "blend: the build failed" >&2; exit 1; }
