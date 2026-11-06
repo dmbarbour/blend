@@ -397,6 +397,56 @@ law deep.items:
   for +ls: List<&2, B.Ln>
   {B.items.deep(B.flat(ls)) == True{} : Bool}
 
+# LAW: lines numbered one more each, within a line, read as items: every
+# datatype's lines are numbered on from its line, the first its `type`
+# header, the rest blank or deeper than it, each within a line
+# (`bend.ok`), as `markers.datatypes` takes them.
+# Record: blend-adds-no-bend-logic
+law bends.items:
+  for +ls: List<&2, B.Ln>
+  for +k: U32
+  for +h: {B.ln.from(ls, k) == True{} : Bool}
+  for +hi: {B.lns.inline(ls) == True{} : Bool}
+  {B.items.bend(B.flat(ls)) == True{} : Bool}
+
+# LAW: and items so make a tree whose datatypes keep their lines so
+# (`nodes.bend`).
+# Record: blend-adds-no-bend-logic
+law bends.tree:
+  for +its: List<&2, B.Item>
+  for +h: {B.items.bend(its) == True{} : Bool}
+  {B.nodes.bend(B.tree(its)) == True{} : Bool}
+
+# LAW: so a file read: every datatype's lines as `markers.datatypes`
+# takes them.
+# Record: blend-adds-no-bend-logic
+law bends.read:
+  for +bs: List<&2, U32>
+  for +base: U32
+  {B.nodes.bend(B.read.at(bs, base)) == True{} : Bool}
+
+# LAW: and every object's members, the made objects' included, keep the
+# datatypes of the trees they come from so.
+# Record: blend-adds-no-bend-logic
+law bends.members:
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +h: {B.trees.bend(trees) == True{} : Bool}
+  {B.obs.mems.bend(B.obs.made(B.syn.of(als, B.obs(trees)))) == True{} : Bool}
+
+# LAW: so the datatypes the code's file is written with, the root's
+# members, are written as where.sh reads them (`markers.datatypes`), the
+# hypotheses the reader's alone: the files' names (`inline.files`) and the
+# trees as read (`bends.read`).
+# Record: blend-adds-no-bend-logic
+law datatypes.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +hf: {B.inlines(files) == True{} : Bool}
+  for +hb: {B.trees.bend(trees) == True{} : Bool}
+  {B.dts.where(B.ob.mems(B.ob.at(B.obs.made(B.syn.of(als, B.obs(trees))), 0)), files) == True{} : Bool}
+
 # LAW: and items so make a tree whose definitions keep their bodies so,
 # each line's depth and blankness kept (`bl.deep`).
 # Record: blend-adds-no-bend-logic
@@ -545,6 +595,23 @@ law markers.unambiguous:
   for +hf: {B.ec.inline(e) == True{} : Bool}
   for +hd: {B.rl.deep(B.un.lines(B.ec.un(e, s)), B.node.no(B.un.node(B.ec.un(e, s))), B.node.ind(B.un.node(B.ec.un(e, s))), True{}) == True{} : Bool}
   {B.wr.clear(e, s, x, j, b) == True{} : Bool}
+
+# LAW: the datatypes of the code's file as where.sh reads them: split at
+# its newlines, their text is an empty line, then for each datatype its
+# marker's line naming its first line, its lines below as read, then an
+# empty line (`dts.lines`), none of those lines beginning with `#`
+# (`dts.clear`); where each datatype's lines are numbered on from its
+# line, the first its `type` header, the rest blank or deeper, each
+# within a line (`bend.ok`), and the files' names hold no newline. So the
+# line k below a datatype's marker is the source's k - 1 below the line
+# it names, and no line of a datatype reads as a marker.
+# Record: blend-adds-no-bend-logic
+law markers.datatypes:
+  for +ns: List<&2, B.Node>
+  for +files: List<&2, List<&2, U32>>
+  for +hf: {B.inlines(files) == True{} : Bool}
+  for +hb: {B.nodes.bend(ns) == True{} : Bool}
+  {B.dts.where(ns, files) == True{} : Bool}
 
 # LAW: a file's lines hold no newline: it splits them there.
 # Record: blend-adds-no-bend-logic

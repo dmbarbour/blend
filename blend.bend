@@ -6117,6 +6117,147 @@ def datatypes(ns: List<&2, Node>, +files: List<&2, List<&2, U32>>) -> List<&2, U
         case _:
           datatypes(t, files)
 
+# The datatypes' terms (LAWS.bend, `markers.datatypes`): the text split
+# at its newlines, each datatype its marker's line, its lines as read,
+# then an empty line, none of those lines beginning with `#`
+
+# a datatype's lines as read: numbered on from its line, the first its
+# `type` header, the rest blank or deeper than it, each within a line
+def bend.ok(ls: List<&2, Ln>, +no: U32) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{l, +t}:
+      match l:
+        case Ln{+n, +i, +txt}:
+          U32.is_eq(n, no) && is.datatype(txt) && inline(txt) && ln.from(t, (no + 1 : U32)) && ln.deep(t, no, i, False{}) && lns.inline(t)
+
+# each datatype of a tree so, its objects' members' too
+def nodes.bend(ns: List<&2, Node>) -> Bool:
+  match ns:
+    case Nil{}:
+      True{}
+    case Con{nd, t}:
+      match nd:
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          nodes.bend(kids) && nodes.bend(t)
+        case NBend{lines, +no}:
+          bend.ok(lines, no) && nodes.bend(t)
+        case _:
+          nodes.bend(t)
+
+def trees.bend(ts: List<&2, List<&2, Node>>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{tr, t}:
+      nodes.bend(tr) && trees.bend(t)
+
+def item.bend(it: Item) -> Bool:
+  match it:
+    case IBend{lines, +no, +ind}:
+      bend.ok(lines, no)
+    case _:
+      True{}
+
+def items.bend(its: List<&2, Item>) -> Bool:
+  match its:
+    case Nil{}:
+      True{}
+    case Con{it, t}:
+      item.bend(it) && items.bend(t)
+
+def ob.mems.bend(o: Ob) -> Bool:
+  match o:
+    case Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+      nodes.bend(mems)
+
+def obs.mems.bend(obs: List<&2, Ob>) -> Bool:
+  match obs:
+    case Nil{}:
+      True{}
+    case Con{o, t}:
+      ob.mems.bend(o) && obs.mems.bend(t)
+
+# a line as written, and as read: its depth in spaces, then its text
+def ln.out(l: Ln) -> List<&2, U32>:
+  match l:
+    case Ln{+no, +ind, txt}:
+      List.append(&2, U32, spaces(U32.to_nat(ind)), txt)
+
+def lns.out(ls: List<&2, Ln>) -> List<&2, List<&2, U32>>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, t}:
+      Con{ln.out(l), lns.out(t)}
+
+# a line where.sh reads as no marker: its first byte no `#`
+def text.clear(xs: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{+h, t}:
+      Bool.not(U32.is_eq(h, 35))
+
+def lns.clear(ls: List<&2, Ln>) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{l, t}:
+      text.clear(ln.out(l)) && lns.clear(t)
+
+# the datatypes' lines as written: each its marker's line, its lines,
+# then an empty line
+def dts.lines(ns: List<&2, Node>, +files: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
+  match ns:
+    case Nil{}:
+      Nil{}
+    case Con{nd, t}:
+      match nd:
+        case NBend{lines, +no}:
+          Con{marker.line(files, no), List.append(&2, List<&2, U32>, lns.out(lines), Con{Nil{}, dts.lines(t, files)})}
+        case _:
+          dts.lines(t, files)
+
+def dts.clear(ns: List<&2, Node>) -> Bool:
+  match ns:
+    case Nil{}:
+      True{}
+    case Con{nd, t}:
+      match nd:
+        case NBend{lines, +no}:
+          lns.clear(lines) && dts.clear(t)
+        case _:
+          dts.clear(t)
+
+# the lines of a text, split at its newlines, the current one kept
+# reversed
+def nl.go(xs: List<&2, U32>, +cur: List<&2, U32>) -> List<&2, List<&2, U32>>:
+  match xs:
+    case Nil{}:
+      [List.reverse(&2, U32, cur)]
+    case Con{+h, +t}:
+      when(List<&2, List<&2, U32>>, U32.is_eq(h, 10), u => Con{List.reverse(&2, U32, cur), nl.go(t, Nil{})}, u => nl.go(t, Con{h, cur}))
+
+def nl.split(xs: List<&2, U32>) -> List<&2, List<&2, U32>>:
+  nl.go(xs, Nil{})
+
+def lines.same(a: List<&2, List<&2, U32>>, b: List<&2, List<&2, U32>>) -> Bool:
+  match a b:
+    case Nil{} Nil{}:
+      True{}
+    case Con{x, xt} Con{y, yt}:
+      same(x, y) && lines.same(xt, yt)
+    case _ _:
+      False{}
+
+# the datatypes' text as where.sh reads it: an empty line, then each
+# datatype's marker naming its line, its lines below it, each one more
+# (`bend.ok`), then an empty line; none of its lines read as a marker
+def dts.where(+ns: List<&2, Node>, +files: List<&2, List<&2, U32>>) -> Bool:
+  lines.same(nl.split(datatypes(ns, files)), Con{Nil{}, dts.lines(ns, files)}) && dts.clear(ns)
+
 # the code's file's table: after its header (kept reversed), the units
 # of the walk's order, from the last walked to the first (LAWS.bend,
 # `sharing.emitted`)
