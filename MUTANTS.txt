@@ -556,3 +556,17 @@ the table's keys counted from one
   pt.puts(A, xs, 0, ht.for(Pk<A>, List.length(&2, A, xs)))
 +++
   pt.puts(A, xs, 1, ht.for(Pk<A>, List.length(&2, A, xs)))
+
+=== nondef_lines markers.emitted
+a copy of a member that is no definition given a line
+--- blend.bend
+          (Rd{In{n, q, prior}, nd, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}})
++++
+          (Rd{In{n, q, prior}, nd, Nil{}, [Rl{7, 0, Nil{}}]}, Rb{Nil{}, Nil{}, Nil{}})
+
+=== missing_lines markers.emitted
+a copy of a definition not found given a line
+--- blend.bend
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
++++
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, [Rl{7, 0, Nil{}}]}, Rb{Nil{}, Nil{}, Nil{}}),
