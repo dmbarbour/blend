@@ -182,9 +182,9 @@ the search for a free head stopping at the first list's
 the merge's fuel the lists' lengths, one short when every turn takes
 one object
 --- blend.bend
-      lin.mg(id, c3.merge(1n+sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.take(List.append(&2, Sq, seqs, [Sq{id, ps}]), 4294967295), Nil{}))
+      lin.mg(id, c3.merge(1n+sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.lists(List.append(&2, Sq, seqs, [Sq{id, ps}])), Nil{}))
 +++
-      lin.mg(id, c3.merge(sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.take(List.append(&2, Sq, seqs, [Sq{id, ps}]), 4294967295), Nil{}))
+      lin.mg(id, c3.merge(sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.lists(List.append(&2, Sq, seqs, [Sq{id, ps}])), Nil{}))
 
 === object_dropped c3.first
 a linearization merged without its object before it
@@ -682,3 +682,17 @@ a copy of a member that is no definition given a line `#` at no depth: a line re
           (Rd{In{n, q, prior}, nd, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}})
 +++
           (Rd{In{n, q, prior}, nd, Nil{}, [Rl{7, 0, [RT{TSym{35}}]}]}, Rb{Nil{}, Nil{}, Nil{}})
+
+=== lin_drops_parents c3.lin
+the list of parents left out of the merge: a linearization that need not keep their order
+--- blend.bend
+      lin.mg(id, c3.merge(1n+sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.lists(List.append(&2, Sq, seqs, [Sq{id, ps}])), Nil{}))
++++
+      lin.mg(id, c3.merge(1n+sqs.len(List.append(&2, Sq, seqs, [Sq{id, ps}])), c3.lists(seqs), Nil{}))
+
+=== lists_drop_head c3.lin
+the lists to merge each lose a head equal to the last object: a parent dropped from the order
+--- blend.bend
+          c3.keep(o, xs, c3.lists(t))
++++
+          c3.keep(o, c3.head.drop(xs, 4294967295), c3.lists(t))

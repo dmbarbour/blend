@@ -3089,7 +3089,7 @@ def Laws.c3.first(id, ps, ss):
     case None{}:
       {==}
     case Some{+seqs}:
-      first_mg(id, B.c3.merge(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), Nil{}))
+      first_mg(id, B.c3.merge(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), Nil{}))
 
 # the merge without its accumulator, an object taken put before the rest
 def mcons(+g: U32, m: B.Mg) -> B.Mg:
@@ -3932,12 +3932,48 @@ def ok_mg(+id: U32, m: B.Mg) -> {B.mg.ok(m) == B.lz.ok(B.lin.mg(id, m)) : Bool}:
     case B.MFail{ss}:
       {==}
 
+# the lists merged, the empty ones dropped: no longer, kept as before,
+# and none empty
+def len_lists(ss: List<&2, B.Sq>) -> MNat.le(B.sqs.len(B.c3.lists(ss)), B.sqs.len(ss)):
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, +xs}:
+          %keep_len(o, xs, B.c3.lists(t)) : MNat.le(_, B.sqs.len(Con{B.Sq{o, xs}, t}))
+          le_add2(List.length(&2, U32, xs), List.length(&2, U32, xs), B.sqs.len(B.c3.lists(t)), B.sqs.len(t),
+            MNat.le_refl(List.length(&2, U32, xs)), len_lists(t))
+
+def kept_lists(ss: List<&2, B.Sq>, +ys: List<&2, U32>, +hk: {B.sqs.kept(ss, ys) == True{} : Bool}) -> {B.sqs.kept(B.c3.lists(ss), ys) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              kept_lists(t, ys, and_r(B.subseq(ys, Nil{}), B.sqs.kept(t, ys), hk))
+            case Con{+x, +r}:
+              and_intro(B.subseq(ys, Con{x, r}), B.sqs.kept(B.c3.lists(t), ys), and_l(B.subseq(ys, Con{x, r}), B.sqs.kept(t, ys), hk),
+                kept_lists(t, ys, and_r(B.subseq(ys, Con{x, r}), B.sqs.kept(t, ys), hk)))
+
+def full_lists(ss: List<&2, B.Sq>) -> {sqs.full(B.c3.lists(ss)) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, +xs}:
+          keep_full(o, xs, B.c3.lists(t), full_lists(t))
+
 def Laws.c3.complete(id, ps, seqs, ys, h1, h2):
-  %ok_mg(id, B.c3.merge(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), Nil{})) :
+  %ok_mg(id, B.c3.merge(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), Nil{})) :
     {_ == True{} : Bool}
-  merge_ok(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), ys, Nil{},
-    len_take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295), kept_take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295, ys, h1), h2,
-    full_take(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), 4294967295))
+  merge_ok(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), ys, Nil{},
+    len_lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), kept_lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]), ys, h1), h2,
+    full_lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])))
 
 # U32 sums
 # --------
@@ -13148,3 +13184,35 @@ def Laws.unambiguous.emitted(files, trees, als, paths, us, res, mode, rtypes, ux
     Laws.markers.inline(files, trees, als, paths, us, res, mode, rtypes, ux, mt, laws, hf, ht),
     dl_at(B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws), s, unsdl_filter(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws,
       unsdl_of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), Laws.deep.units(trees, als, B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), hd), units_e(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), mcopies_e(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))))))
+
+# A linearization sound (`c3.lin`): the merge's soundness (`c3.sound`)
+# over the lists without the empty ones, which drops none of what they
+# keep (`lists_kept`)
+
+def lists_kept(ss: List<&2, B.Sq>, +ys: List<&2, U32>, +hk: {B.sqs.kept(B.c3.lists(ss), ys) == True{} : Bool}) -> {B.sqs.kept(ss, ys) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +t}:
+      match s:
+        case B.Sq{+o, xs}:
+          match xs:
+            case Nil{}:
+              and_intro(B.subseq(ys, Nil{}), B.sqs.kept(t, ys), sub_nil(ys), lists_kept(t, ys, hk))
+            case Con{+x, +r}:
+              and_intro(B.subseq(ys, Con{x, r}), B.sqs.kept(t, ys), and_l(B.subseq(ys, Con{x, r}), B.sqs.kept(B.c3.lists(t), ys), hk),
+                lists_kept(t, ys, and_r(B.subseq(ys, Con{x, r}), B.sqs.kept(B.c3.lists(t), ys), hk)))
+
+def lin_mg_sound(+id: U32, m: B.Mg, +ss: List<&2, B.Sq>, +hs: {B.mg.sound(m, B.c3.lists(ss)) == True{} : Bool}) -> {B.lz.sound(B.lin.mg(id, m), id, ss) == True{} : Bool}:
+  match m:
+    case B.MOk{+ord}:
+      and_intro(Bool.and(U32.is_eq(id, id), B.sqs.kept(ss, ord)), B.distinct(ord),
+        and_intro(U32.is_eq(id, id), B.sqs.kept(ss, ord), u32_is_eq_refl(id),
+          lists_kept(ss, ord, and_l(B.sqs.kept(B.c3.lists(ss), ord), B.distinct(ord), hs))),
+        and_r(B.sqs.kept(B.c3.lists(ss), ord), B.distinct(ord), hs))
+    case B.MFail{+seqs}:
+      {==}
+
+def Laws.c3.lin(id, ps, seqs):
+  lin_mg_sound(id, B.c3.merge(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), Nil{}), List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]),
+    Laws.c3.sound(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]))))
