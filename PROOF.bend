@@ -7609,7 +7609,7 @@ def il_take(xs: List<&2, U32>, n: Nat, +h: {B.inline(xs) == True{} : Bool}) -> {
 
 # name.plain's and name.out's choices mirrored
 def np_k(+c: Bool, +n: List<&2, U32>) -> List<&2, U32>:
-  B.when(List<&2, U32>, c, u => List.take(&2, U32, n, Nat.sub(List.length(&2, U32, n), 1n)), u => n)
+  B.name.plain.k(c, n)
 
 def il_np(c: Bool, +n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B.inline(np_k(c, n)) == True{} : Bool}:
   match c:
@@ -7619,10 +7619,10 @@ def il_np(c: Bool, +n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B.
       h
 
 def il_plain(+n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B.inline(B.name.plain(n)) == True{} : Bool}:
-  il_np(Bool.or(B.ends(n, [35]), B.ends(n, [33])), n, h)
+  il_np(Bool.or(U32.is_eq(B.last.or(n, 0), 35), U32.is_eq(B.last.or(n, 0), 33)), n, h)
 
 def no_k(+c: Bool, +n: List<&2, U32>) -> List<&2, U32>:
-  B.when(List<&2, U32>, c, u => List.append(&2, U32, B.name.plain(n), B.codes(".as_declared")), u => B.name.plain(n))
+  B.name.out.k(c, n)
 
 def il_nok(c: Bool, +n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B.inline(no_k(c, n)) == True{} : Bool}:
   match c:
@@ -7632,7 +7632,7 @@ def il_nok(c: Bool, +n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B
       il_plain(n, h)
 
 def il_out(+n: List<&2, U32>, +h: {B.inline(n) == True{} : Bool}) -> {B.inline(B.name.out(n)) == True{} : Bool}:
-  il_nok(B.ends(n, [33]), n, h)
+  il_nok(U32.is_eq(B.last.or(n, 0), 33), n, h)
 
 def il_ob(o: B.Ob, h: {B.ob.inline(o) == True{} : Bool}) -> {B.inlines(B.ob.path(o)) == True{} : Bool}:
   match o:
@@ -11982,7 +11982,7 @@ def ers_names(+a: List<&2, B.Er>, +b: List<&2, B.Er>, +c: List<&2, B.Er>, +n: Li
 
 def Laws.unique.emitted(files, obs, us, als, own, res, paths, ux, roots, dse, mse, all, lwe, pfe, h):
   Laws.emit.unique(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))),
-    ers_names(dse, mse, B.er.laws(all, B.pt.of(B.Un, all), B.ux.of(all)),
+    ers_names(dse, mse, B.er.laws.if(B.units.lawful(all), all),
       B.er.names.of(B.names.all(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))))), List.append(&2, B.Er, lwe, pfe), h))
 
 # The dispositions joined at emission (`final.emitted`, `once.emitted`,
