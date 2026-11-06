@@ -75,6 +75,9 @@ section generated
 section samples
 samples/check.sh || status=1
 
+section launcher
+./launcher_check.sh || status=1
+
 section "bend files"
 # shellcheck disable=SC2046 # one argument a file
 python3 -I "$TOOLS/kept.py" check $(files '*.bend' ':!*LAWS.bend' ':!*PROOF.bend') || status=1
