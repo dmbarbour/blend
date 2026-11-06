@@ -1,6 +1,6 @@
 # Blend's command line mirrors Bend's
 
-`blend-command-mirrors-bend` · maintainer · rev de48ae7
+`blend-command-mirrors-bend` · maintainer · rev d98a825
 
 **Context.** Blend runs through scripts: `run.sh` builds the tool once
 for each version of its sources and of Bend, and runs it with a stage's
@@ -34,8 +34,9 @@ what a module reaches and a `deps` to list it, a dry run.
   build stays cached, rebuilt when Bend or Blend changes.
 - Each form has samples of its output and status, as `emit` has.
 - `check_generated.sh` may become a `deps` per directory.
-- Whether `blend FILE.blend` and its flags emit the module's tree or
-  only verify its imports is the plan's to settle (`blend-cli.bend`).
+- `blend FILE.blend` and its flags emit the module's tree, as
+  `emit --tree` does (the maintainer, 2026-11-06); where to is the
+  plan's to settle (`blend-cli.out`).
 
 **Rule lives in:** `docs/plans/Blend_2026-11-04.md`, `blend-cli`, until
 the command is built; then `README.md`, Status.
