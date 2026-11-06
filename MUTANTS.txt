@@ -414,3 +414,24 @@ a made object's path ending in its mixin's name after a newline
         u => syn.x(t, x, obs, Con{Ob{next, x, List.append(&2, List<&2, U32>, ob.path(ob.at(obs, x)), [n]), ob.abs(ob.at(obs, x)), Nil{}, Nil{},
 +++
         u => syn.x(t, x, obs, Con{Ob{next, x, List.append(&2, List<&2, U32>, ob.path(ob.at(obs, x)), [Con{10, n}]), ob.abs(ob.at(obs, x)), Nil{}, Nil{},
+
+=== final_nl inline.units
+a reference resolved to a name with a newline before it
+--- blend.bend
+    u => Rr{RR{mark, Rf{obj, n, False{}, obj}}, Nil{}, Nil{}})
++++
+    u => Rr{RR{mark, Rf{obj, Con{10, n}, False{}, obj}}, Nil{}, Nil{}})
+
+=== prior_nl inline.units
+a prior reached named with a newline before its name
+--- blend.bend
+    +c => Rr{RR{0, Rf{o, n, True{}, c}}, Nil{}, [In{n, c, True{}}]})
++++
+    +c => Rr{RR{0, Rf{o, n, True{}, c}}, Nil{}, [In{Con{10, n}, c, True{}}]})
+
+=== head_nl inline.units
+a copy's header given a token holding a newline
+--- blend.bend
+      (Rd{i, nd, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
++++
+      (Rd{i, nd, Con{RT{TSp{[10]}}, rl.join(hl)}, ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
