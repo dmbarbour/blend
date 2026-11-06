@@ -535,3 +535,24 @@ a name through another module's import kept as its alias, not its rest
       +p => Rr{RX{mark, p, drop(1n+List.length(&2, U32, List.head.or(parts(n))), n)}, Nil{}, Nil{}}),
 +++
       +p => Rr{RX{mark, p, List.head.or(parts(n))}, Nil{}, Nil{}}),
+
+=== find_any units.positions
+a lookup taking its leaf's first entry, whatever its key
+--- blend.bend
+          pk.pick(A, U32.is_eq(k, i), v, pk.find(A, t, i))
++++
+          pk.pick(A, True{}, v, pk.find(A, t, i))
+
+=== key_next units.positions
+each entry keyed one past its position
+--- blend.bend
+      ht.put(Pk<A>, pt.puts(A, r, (k + 1 : U32), t), (k .&. 1 : U32), k, Pk{k, x})
++++
+      ht.put(Pk<A>, pt.puts(A, r, (k + 1 : U32), t), (k .&. 1 : U32), k, Pk{(k + 1 : U32), x})
+
+=== keys_from_one units.positions
+the table's keys counted from one
+--- blend.bend
+  pt.puts(A, xs, 0, ht.for(Pk<A>, List.length(&2, A, xs)))
++++
+  pt.puts(A, xs, 1, ht.for(Pk<A>, List.length(&2, A, xs)))

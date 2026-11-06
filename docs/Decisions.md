@@ -68,6 +68,9 @@ its modules, namespaces and emitted names are Bend's.
 - [`blend-copies-keep-their-name`](decisions/blend-copies-keep-their-name.md):
   a copied definition is always emitted by its own name, and once more
   for each use.
+- [`blend-units-keyed`](decisions/blend-units-keyed.md): the units' table
+  keys each entry by its position, a lookup comparing it, so that it is
+  provably the list's.
 - [`blend-declares-witnessed`](decisions/blend-declares-witnessed.md): a
   typed declaration is bound in each concrete object to its own types
   and checked by a witness Bend checks, in the proofs' file.
