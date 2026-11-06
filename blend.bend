@@ -211,20 +211,37 @@ def line.of(xs: List<&2, U32>, +n: Nat, +no: U32) -> Ln:
 def lines.line(cur: List<&2, U32>, +no: U32) -> Ln:
   line.of(List.reverse(&2, U32, cur), 0n, no)
 
+# the lines read so far: the current one's bytes, kept reversed, its
+# number, and the lines done, kept reversed
+type Ls is Data:
+  Ls{cur: List<&2, U32>, +no: U32, out: List<&2, Ln>}
+
+# a byte read: a newline ends the line, a carriage return is dropped,
+# another kept; the tests passed as `Bool`s, so that the loop recurses
+# once, without a closure for each choice (`blend-perf.lines`)
+def lines.step(+nl: Bool, +cr: Bool, +b: U32, cur: List<&2, U32>, +no: U32, out: List<&2, Ln>) -> Ls:
+  match nl:
+    case True{}:
+      Ls{Nil{}, (no + 1 : U32), Con{lines.line(cur, no), out}}
+    case False{}:
+      match cr:
+        case True{}:
+          Ls{cur, no, out}
+        case False{}:
+          Ls{Con{b, cur}, no, out}
+
 # the lines, a newline ending each, a carriage return dropped; the bytes
 # tested, not matched, so that a law can follow (LAWS.bend,
 # `lines.join`)
-def lines.go(bs: List<&2, U32>, +cur: List<&2, U32>, +no: U32, +out: List<&2, Ln>) -> List<&2, Ln>:
-  match bs:
-    case Nil{}:
+def lines.go(bs: List<&2, U32>, st: Ls) -> List<&2, Ln>:
+  match bs st:
+    case Nil{} Ls{cur, +no, out}:
       List.reverse(&2, Ln, Con{lines.line(cur, no), out})
-    case Con{+b, +t}:
-      when(List<&2, Ln>, U32.is_eq(b, 10), u => lines.go(t, Nil{}, (no + 1 : U32), Con{lines.line(cur, no), out}),
-        u => when(List<&2, Ln>, U32.is_eq(b, 13), v => lines.go(t, cur, no, out), v => lines.go(t, Con{b, cur}, no, out)))
+    case Con{+b, t} Ls{cur, +no, out}:
+      lines.go(t, lines.step(U32.is_eq(b, 10), U32.is_eq(b, 13), b, cur, no, out))
 
-# a file's lines numbered from base + 1 (Locations, below)
 def lines.at(bs: List<&2, U32>, +base: U32) -> List<&2, Ln>:
-  lines.go(bs, Nil{}, (base + 1 : U32), Nil{})
+  lines.go(bs, Ls{Nil{}, (base + 1 : U32), Nil{}})
 
 def lines(bs: List<&2, U32>) -> List<&2, Ln>:
   lines.at(bs, 0)

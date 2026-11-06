@@ -56,6 +56,13 @@ it alone taught. Add to this file what a new proof teaches.
   helper's result (`f(pick(c, z, o))`) is no structural descent. Recurse
   on fuel instead, matched first, and let non-recursive helpers decide
   on the `Bool` (`ht.pick`, `ht.join`): 3 to 5% in the trie.
+- **A loop whose every arm recurses on the same tail is a step**: a
+  non-recursive function deciding on the tests as `Bool` parameters
+  returns the next state as a record, and the loop recurses once
+  (`lines.step`). A `when` there costs two closures, a wrap of each
+  value both capture, and a drop, at every turn: in `lines.go`, 8 to 10%
+  of Blend's instructions (`blend-perf.lines`). A proof's mirror of
+  the `when` becomes the step, its cases as before.
 - **A result read twice is a datatype read by projections**, not
   destructured in a lambda (`on.r(r, a => b => ...)`), which sticks a
   proof until the result reduces.
