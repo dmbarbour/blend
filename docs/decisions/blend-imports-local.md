@@ -16,7 +16,8 @@ of a `.blend` or a `.bend` file, is local: plain names (letters,
 digits, `_` and `-`) led by `./` at most, never `../` or `/`. Or it
 is a package's on Bend's hub, `0x<hash>/...` or `<name>@<version>/...`,
 passed to Bend as written, re-imported as written, Bend's to fetch and
-check; a package's Blend files are not read yet (`blend-packages`).
+check; importing a package's Blend files is not supported yet
+(`blend-packages`).
 
 **Consequences.**
 - A directory holds every file its modules import, so it can be shared

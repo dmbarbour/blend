@@ -1856,12 +1856,12 @@ def ext.of(+blend: Bool) -> List<&2, U32>:
     case False{}:
       codes(".bend")
 
-# a package's import passed to Bend, but its Blend files, not read yet
-# (`blend-packages`); a local one plain
+# a package's import passed to Bend, but of its Blend files, not
+# supported yet (`blend-packages`); a local one plain
 def im.path.ers(+pkg: Bool, +blend: Bool, +path: List<&2, U32>, +no: U32) -> List<&2, Er>:
   match pkg:
     case True{}:
-      when(List<&2, Er>, blend, u => [Er{no, "import " ++ text(path) ++ ": a package's Blend files are not read yet; import the .bend files it emits"}],
+      when(List<&2, Er>, blend, u => [Er{no, "import " ++ text(path) ++ ": importing a package's Blend files is not supported yet"}],
         u => Nil{})
     case False{}:
       when(List<&2, Er>, Bool.not(import.plain(path, ext.of(blend))),

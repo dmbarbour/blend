@@ -1,5 +1,6 @@
 # A package's Bend files are imported as Bend imports them, by its hash or
-# its name; its Blend files are not read yet (`blend-packages`).
+# its name; importing its Blend files is not supported yet
+# (`blend-packages`).
 import Base
 import shapes@1.0.0.0/shapes.blend as S
 
