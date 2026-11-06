@@ -1,11 +1,10 @@
 #!/bin/sh
 # Blend's generated files match what Blend writes now (glam-in-bend's
 # `generated-sources`): a sample directory's modules emitted all at once,
-# each module's code, and its laws and proofs beside it where it has any
-# (`blend-proofs-beside-code`), written into results/generated (out of
-# git, each file overwritten, none removed) and compared with the files
-# beside the samples; a laws or proofs file the emission no longer writes
-# is stale. Checks, never writes the files checked: a stale file fails,
+# each module's one file, its laws and proofs in it (`blend-laws-in-module`),
+# written into results/generated (out of git, each file overwritten, none
+# removed) and compared with the files beside the samples; a laws or
+# proofs file of the Blend before, left beside a sample, is stale. Checks, never writes the files checked: a stale file fails,
 # and regenerating it is the developer's step. Run by Blend's gate
 # (check.sh) and by the pre-commit hooks, Blend's and glam-in-bend's.
 # Blend runs built (build.sh): its build, 13 s, comes once for each

@@ -1023,6 +1023,34 @@ law plain.emitted:
   for +hs: {B.mult.share(y, B.pt.of(B.Un, us)) == 1 : U32}
   {B.ctr.at(B.tb.ctrs(B.module.table(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), acc)), y) == 1 : U32}
 
+# LAW: where the laws' check reports no error, every law among the units
+# has its proof: written beside the code (`blend-laws-in-module`), no law
+# is left open to stop a run of the file.
+# Record: blend-laws-in-module
+law laws.proven:
+  for +xs: List<&2, B.Un>
+  for +ut: B.Ht<B.Pk<B.Un>>
+  for +ux: B.Ht<B.Xe>
+  for +h: {B.er.laws(xs, ut, ux) == Nil{} : List<&2, B.Er>}
+  {B.laws.proven(xs, ux) == True{} : Bool}
+
+# LAW: so where emission reports no error, a module with laws has a
+# proof for every law it writes, its units' table its own (`laws.proven`,
+# the laws' check one part of emission's). The walk's errors, the
+# dispositions', the names' and the parts' are any.
+# Record: blend-laws-in-module
+law laws.emitted:
+  for +dse: List<&2, B.Er>
+  for +mse: List<&2, B.Er>
+  for +all: List<&2, B.Un>
+  for +order: List<&2, U32>
+  for +e: B.Ec
+  for +lwe: List<&2, B.Er>
+  for +pfe: List<&2, B.Er>
+  for +hl: {B.units.lawful(all) == True{} : Bool}
+  for +h: {B.emit.ers(dse, mse, all, order, e, lwe, pfe) == Nil{} : List<&2, B.Er>}
+  {B.laws.proven(all, B.ux.of(all)) == True{} : Bool}
+
 # LAW: and where emission reports no error, the definitions the code's
 # file is written with (`module.table`, by `emit.defs` those of the
 # walk's order reversed) are named each by a name of its own

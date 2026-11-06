@@ -1,0 +1,16 @@
+# A concrete object proves each law it has: its laws are written beside
+# its code, where a law no proof proves would stop every run of the file.
+# A law waiting for its proof belongs in an abstract object.
+import Base
+
+abstract object Monoid with
+  declare zero, op
+  law right_id:
+    for +x: Nat
+    {op(x, zero()) == x : Nat}
+
+object NatAdd extends Monoid with
+  def zero() -> Nat:
+    0n
+  def op(+a: Nat, +b: Nat) -> Nat:
+    Nat.add(a, b)

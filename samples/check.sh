@@ -3,7 +3,8 @@
 # emits from its .blend (a generated file, checked current by
 # check_generated.sh), runs under Bend to print what its .out says; each
 # invalid sample fails, its errors exactly its .err; each refused sample
-# emits, and Bend refuses its proofs' file, its output exactly its .err.
+# emits, and Bend refuses its file, its output exactly its .err (its
+# laws, proofs and witnesses there, `blend-laws-in-module`).
 # Run by Blend's gate (check.sh).
 #
 #   samples/check.sh
@@ -57,13 +58,13 @@ for src in refused/*.blend; do
   base=${base%.blend}
   [ -f "refused/$base.err" ] || { echo "blend: $src has no .err"; status=1; continue; }
   if ! "$CAPPED" 500 30 "$BLEND" emit --alone "$src" "$r" >/dev/null; then
-    echo "blend: $src does not emit, where Bend must refuse its proofs"
+    echo "blend: $src does not emit, where Bend must refuse it"
     status=1
-  elif got=$(cd "$r" && "$CAPPED" 1000 60 "$BEND" "${base}_PROOF.bend" 2>&1); then
-    echo "blend: Bend accepts ${base}_PROOF.bend, where it must refuse it"
+  elif got=$(cd "$r" && "$CAPPED" 1000 60 "$BEND" "${base}.bend" --check-only 2>&1); then
+    echo "blend: Bend accepts ${base}.bend, where it must refuse it"
     status=1
   elif [ "$got" != "$(cat "refused/$base.err")" ]; then
-    echo "blend: Bend gives '$got' on ${base}_PROOF.bend, not '$(cat "refused/$base.err")'"
+    echo "blend: Bend gives '$got' on ${base}.bend, not '$(cat "refused/$base.err")'"
     status=1
   fi
 done

@@ -42,3 +42,21 @@ def Counted.one(+x: U32) -> Counted.S():
 # blend: declares.blend:36
 def main() -> IO(Unit):
   IO.print(U32.show(Listed.size(Listed.one(5))) ++ " " ++ U32.show(Counted.size(Counted.one(5))))
+
+# blend: declares.blend:11
+def Listed.LAW.S.as_declared() -> Data: Listed.S()
+
+# blend: declares.blend:12
+def Listed.LAW.push.as_declared(st: Listed.S(), +x: U32) -> Listed.S(): Listed.push(st, x)
+
+# blend: declares.blend:13
+def Listed.LAW.empty.as_declared() -> Listed.S(): Listed.empty()
+
+# blend: declares.blend:11
+def Counted.LAW.S.as_declared() -> Data: Counted.S()
+
+# blend: declares.blend:12
+def Counted.LAW.push.as_declared(st: Counted.S(), +x: U32) -> Counted.S(): Counted.push(st, x)
+
+# blend: declares.blend:13
+def Counted.LAW.empty.as_declared() -> Counted.S(): Counted.empty()

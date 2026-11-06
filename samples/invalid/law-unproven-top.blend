@@ -1,0 +1,8 @@
+# A module's own law cannot be abstract: it is proved where it is stated.
+import Base
+
+def two() -> Nat:
+  2n
+
+law two_is_two:
+  {two() == 2n : Nat}

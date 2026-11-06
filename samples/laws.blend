@@ -5,9 +5,9 @@
 # proves it again where a family needs its own; a typed proof is a
 # lemma, stating what it proves. A proof's own law, named in it, is its
 # induction; another law named is that law's proof. Blend writes the
-# laws and the proofs into files of their own beside the code,
-# laws_LAWS.bend and laws_PROOF.bend, so that the program built carries
-# none.
+# laws and the proofs into laws.bend after the code, NatAdd.LAW.name and
+# LAW.name, where Bend checks them; the program built carries none, Bend
+# compiling what main reaches.
 import Base
 
 abstract object Monoid with

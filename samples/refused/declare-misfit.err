@@ -5,8 +5,8 @@ Error:
 Context:
 - st : List<&2, U32>
 - x  : U32
-Location: Wrong.push.as_declared
- 8 | # blend: declare-misfit.blend:8
- 9>| def Wrong.push.as_declared(st: Blend_0.Wrong.S(), +x: U32) -> Blend_0.Wrong.S(): Blend_0.Wrong.push(st, x)
-   |                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
-10 | 
+Location: Wrong.LAW.push.as_declared
+18 | # blend: declare-misfit.blend:8
+19>| def Wrong.LAW.push.as_declared(st: Wrong.S(), +x: U32) -> Wrong.S(): Wrong.push(st, x)
+   |                                                                      ^^^^^^^^^^^^^^^^^
+20 | 
