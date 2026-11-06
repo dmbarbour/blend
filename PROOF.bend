@@ -8906,3 +8906,315 @@ def Laws.inline.tree(its, h):
 
 def Laws.inline.read(bs, base):
   Laws.inline.tree(B.flat(B.lines.at(bs, base)), Laws.inline.items(B.lines.at(bs, base), Laws.inline.lines(bs, base)))
+
+# The objects' paths within a line (`inline.objects`): the nodes law's
+# walk, its mirrors reused, each path made of names and paths that are
+
+def ils_app(a: List<&2, List<&2, U32>>, +b: List<&2, List<&2, U32>>, +ha: {B.inlines(a) == True{} : Bool}, +hb: {B.inlines(b) == True{} : Bool}) ->
+    {B.inlines(List.append(&2, List<&2, U32>, a, b)) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{+x, +t}:
+      and_intro(B.inline(x), B.inlines(List.append(&2, List<&2, U32>, t, b)), and_l(B.inline(x), B.inlines(t), ha), ils_app(t, b, and_r(B.inline(x), B.inlines(t), ha), hb))
+
+def ils_one(+x: List<&2, U32>, +h: {B.inline(x) == True{} : Bool}) -> {B.inlines([x]) == True{} : Bool}:
+  and_intro(B.inline(x), True{}, h, {==})
+
+def il_lgo(xs: List<&2, List<&2, U32>>, +last: List<&2, U32>, +hx: {B.inlines(xs) == True{} : Bool}, +hl: {B.inline(last) == True{} : Bool}) ->
+    {B.inline(List.last.go(&2, List<&2, U32>, xs, last)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      hl
+    case Con{+x, +t}:
+      il_lgo(t, x, and_r(B.inline(x), B.inlines(t), hx), and_l(B.inline(x), B.inlines(t), hx))
+
+def il_plast(ps: List<&2, List<&2, U32>>, +h: {B.inlines(ps) == True{} : Bool}) -> {B.inline(B.path.last(ps)) == True{} : Bool}:
+  match ps:
+    case Nil{}:
+      {==}
+    case Con{+p, +t}:
+      il_lgo(t, p, and_r(B.inline(p), B.inlines(t), h), and_l(B.inline(p), B.inlines(t), h))
+
+def mnik(+c: Bool, +path: List<&2, List<&2, U32>>, +t: List<&2, B.Ob>, +q: U32) -> List<&2, List<&2, U32>>:
+  B.when(List<&2, List<&2, U32>>, c, u => Con{B.path.last(path), B.mixin.names.in(t, q)}, u => B.mixin.names.in(t, q))
+
+def mni_k(c: Bool, +path: List<&2, List<&2, U32>>, +t: List<&2, B.Ob>, +q: U32, +hp: {B.inlines(path) == True{} : Bool},
+    +ih: {B.inlines(B.mixin.names.in(t, q)) == True{} : Bool}) -> {B.inlines(mnik(c, path, t, q)) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(B.inline(B.path.last(path)), B.inlines(B.mixin.names.in(t, q)), il_plast(path, hp), ih)
+    case False{}:
+      ih
+
+def mni_il(os: List<&2, B.Ob>, +q: U32, +h: {B.obs.inline(os) == True{} : Bool}) -> {B.inlines(B.mixin.names.in(os, q)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, +path, +abs, parents, mems, +no, +kind, +tpl}:
+          mni_k(Bool.and(Bool.and(U32.is_eq(host, q), Bool.not(B.is.object(kind))), U32.is_eq(tpl, id)), path, t, q,
+            and_l(B.inlines(path), B.obs.inline(t), h), mni_il(t, q, and_r(B.inlines(path), B.obs.inline(t), h)))
+
+def nfk(+c: Bool, +n: List<&2, U32>, +t: List<&2, List<&2, U32>>, +seen: List<&2, List<&2, U32>>, +acc: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
+  B.when(List<&2, List<&2, U32>>, c, u => B.names.fresh(t, seen, acc), u => Con{n, B.names.fresh(t, seen, Con{n, acc})})
+
+def nf_k_o(c: Bool, +n: List<&2, U32>, +t: List<&2, List<&2, U32>>, +seen: List<&2, List<&2, U32>>, +acc: List<&2, List<&2, U32>>, +hn: {B.inline(n) == True{} : Bool},
+    ih1: {B.inlines(B.names.fresh(t, seen, acc)) == True{} : Bool}, ih2: {B.inlines(B.names.fresh(t, seen, Con{n, acc})) == True{} : Bool}) ->
+    {B.inlines(nfk(c, n, t, seen, acc)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      and_intro(B.inline(n), B.inlines(B.names.fresh(t, seen, Con{n, acc})), hn, ih2)
+
+def nf_il(ns: List<&2, List<&2, U32>>, +seen: List<&2, List<&2, U32>>, +acc: List<&2, List<&2, U32>>, +h: {B.inlines(ns) == True{} : Bool}) ->
+    {B.inlines(B.names.fresh(ns, seen, acc)) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{+n, +t}:
+      nf_k_o(Bool.or(B.names.has(seen, n), B.names.has(acc, n)), n, t, seen, acc, and_l(B.inline(n), B.inlines(t), h),
+        nf_il(t, seen, acc, and_r(B.inline(n), B.inlines(t), h)), nf_il(t, seen, Con{n, acc}, and_r(B.inline(n), B.inlines(t), h)))
+
+def mn_il(qs: List<&2, U32>, +obs: List<&2, B.Ob>, +seen: List<&2, List<&2, U32>>, +hobs: {B.obs.inline(obs) == True{} : Bool}) ->
+    {B.inlines(B.mixin.names(qs, obs, seen)) == True{} : Bool}:
+  match qs:
+    case Nil{}:
+      {==}
+    case Con{+q, +t}:
+      ils_app(B.names.fresh(B.mixin.names.in(obs, B.ob.tpl(B.ob.at(obs, q))), seen, Nil{}),
+        B.mixin.names(t, obs, List.append(&2, List<&2, U32>, B.names.fresh(B.mixin.names.in(obs, B.ob.tpl(B.ob.at(obs, q))), seen, Nil{}), seen)),
+        nf_il(B.mixin.names.in(obs, B.ob.tpl(B.ob.at(obs, q))), seen, Nil{}, mni_il(obs, B.ob.tpl(B.ob.at(obs, q)), hobs)),
+        mn_il(t, obs, List.append(&2, List<&2, U32>, B.names.fresh(B.mixin.names.in(obs, B.ob.tpl(B.ob.at(obs, q))), seen, Nil{}), seen), hobs))
+
+def wfil(st: List<&2, B.Wf>) -> Bool:
+  match st:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      match f:
+        case B.Wf{+host, path, nodes}:
+          Bool.and(Bool.and(B.inlines(path), B.nodes.inline(nodes)), wfil(t))
+
+def wf_on(+host: U32, +path: List<&2, List<&2, U32>>, +t: List<&2, B.Node>, +rest: List<&2, B.Wf>, +hp: {B.inlines(path) == True{} : Bool},
+    +ht: {B.nodes.inline(t) == True{} : Bool}, +hr: {wfil(rest) == True{} : Bool}) -> {wfil(Con{B.Wf{host, path, t}, rest}) == True{} : Bool}:
+  and_intro(Bool.and(B.inlines(path), B.nodes.inline(t)), wfil(rest), and_intro(B.inlines(path), B.nodes.inline(t), hp, ht), hr)
+
+def wf_p(+host: U32, +path: List<&2, List<&2, U32>>, +ns: List<&2, B.Node>, +rest: List<&2, B.Wf>, +h: {wfil(Con{B.Wf{host, path, ns}, rest}) == True{} : Bool}) ->
+    {B.inlines(path) == True{} : Bool}:
+  and_l(B.inlines(path), B.nodes.inline(ns), and_l(Bool.and(B.inlines(path), B.nodes.inline(ns)), wfil(rest), h))
+
+def wf_n(+host: U32, +path: List<&2, List<&2, U32>>, +ns: List<&2, B.Node>, +rest: List<&2, B.Wf>, +h: {wfil(Con{B.Wf{host, path, ns}, rest}) == True{} : Bool}) ->
+    {B.nodes.inline(ns) == True{} : Bool}:
+  and_r(B.inlines(path), B.nodes.inline(ns), and_l(Bool.and(B.inlines(path), B.nodes.inline(ns)), wfil(rest), h))
+
+def wf_r(+host: U32, +path: List<&2, List<&2, U32>>, +ns: List<&2, B.Node>, +rest: List<&2, B.Wf>, +h: {wfil(Con{B.Wf{host, path, ns}, rest}) == True{} : Bool}) ->
+    {wfil(rest) == True{} : Bool}:
+  and_r(Bool.and(B.inlines(path), B.nodes.inline(ns)), wfil(rest), h)
+
+# the objects walked: each one's path its host's and its name
+def og_il(n: Nat, st: List<&2, B.Wf>, +next: U32, +out: List<&2, B.Ob>, +hs: {wfil(st) == True{} : Bool}, +ho: {B.obs.inline(out) == True{} : Bool}) ->
+    {B.obs.inline(B.obs.go(n, st, next, out)) == True{} : Bool}:
+  match n:
+    case 0n:
+      ho
+    case 1n+(+k):
+      match st:
+        case Nil{}:
+          ho
+        case Con{f, +rest}:
+          match f:
+            case B.Wf{+host, +path, nodes}:
+              match nodes:
+                case Nil{}:
+                  og_il(k, rest, next, out, wf_r(host, path, Nil{}, rest, hs), ho)
+                case Con{nd, +t}:
+                  match nd:
+                    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+                      +hn = wf_n(host, path, Con{B.NObj{abs, ext, name, parents, kids, no}, t}, rest, hs)
+                      +hpn = ils_app(path, [name], wf_p(host, path, Con{B.NObj{abs, ext, name, parents, kids, no}, t}, rest, hs),
+                        ils_one(name, and_l(B.inline(name), B.nodes.inline(kids), and_l(Bool.and(B.inline(name), B.nodes.inline(kids)), B.nodes.inline(t), hn))))
+                      og_il(k, Con{B.Wf{next, List.append(&2, List<&2, U32>, path, [name]), kids}, Con{B.Wf{host, path, t}, rest}}, U32.add(next, 1),
+                        Con{B.Ob{next, host, List.append(&2, List<&2, U32>, path, [name]), abs, parents, kids, no, B.ob.kind.of(ext, path), next}, out},
+                        wf_on(next, List.append(&2, List<&2, U32>, path, [name]), kids, Con{B.Wf{host, path, t}, rest}, hpn,
+                          and_r(B.inline(name), B.nodes.inline(kids), and_l(Bool.and(B.inline(name), B.nodes.inline(kids)), B.nodes.inline(t), hn)),
+                          wf_on(host, path, t, rest, wf_p(host, path, Con{B.NObj{abs, ext, name, parents, kids, no}, t}, rest, hs),
+                            and_r(Bool.and(B.inline(name), B.nodes.inline(kids)), B.nodes.inline(t), hn), wf_r(host, path, Con{B.NObj{abs, ext, name, parents, kids, no}, t}, rest, hs))),
+                        and_intro(B.inlines(List.append(&2, List<&2, U32>, path, [name])), B.obs.inline(out), hpn, ho))
+                    case B.NDef{+share, +upd, +name, +rest2, +params, +body, +no, +ind, +what}:
+                      og_il(k, Con{B.Wf{host, path, t}, rest}, next, out,
+                        wf_on(host, path, t, rest, wf_p(host, path, Con{B.NDef{share, upd, name, rest2, params, body, no, ind, what}, t}, rest, hs),
+                          and_r(Bool.and(Bool.and(B.inline(name), B.inline(rest2)), B.bls.inline(body)), B.nodes.inline(t),
+                            wf_n(host, path, Con{B.NDef{share, upd, name, rest2, params, body, no, ind, what}, t}, rest, hs)),
+                          wf_r(host, path, Con{B.NDef{share, upd, name, rest2, params, body, no, ind, what}, t}, rest, hs)), ho)
+                    case B.NImport{+txt, +no}:
+                      og_il(k, Con{B.Wf{host, path, t}, rest}, next, out,
+                        wf_on(host, path, t, rest, wf_p(host, path, Con{B.NImport{txt, no}, t}, rest, hs),
+                          and_r(B.inline(txt), B.nodes.inline(t), wf_n(host, path, Con{B.NImport{txt, no}, t}, rest, hs)), wf_r(host, path, Con{B.NImport{txt, no}, t}, rest, hs)), ho)
+                    case B.NDecl{+names, +no}:
+                      og_il(k, Con{B.Wf{host, path, t}, rest}, next, out, hs, ho)
+                    case B.NBad{+txt, +no}:
+                      og_il(k, Con{B.Wf{host, path, t}, rest}, next, out, hs, ho)
+                    case B.NErr{+msg, +no}:
+                      og_il(k, Con{B.Wf{host, path, t}, rest}, next, out, hs, ho)
+                    case B.NBend{+lines, +no}:
+                      og_il(k, Con{B.Wf{host, path, t}, rest}, next, out, hs, ho)
+
+def obs_rgo(xs: List<&2, B.Ob>, +acc: List<&2, B.Ob>, +hx: {B.obs.inline(xs) == True{} : Bool}, +ha: {B.obs.inline(acc) == True{} : Bool}) ->
+    {B.obs.inline(List.reverse.go(&2, B.Ob, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+o, +t}:
+      obs_rgo(t, Con{o, acc}, and_r(B.ob.inline(o), B.obs.inline(t), hx), and_intro(B.ob.inline(o), B.obs.inline(acc), and_l(B.ob.inline(o), B.obs.inline(t), hx), ha))
+
+def obs_app(xs: List<&2, B.Ob>, +b: List<&2, B.Ob>, +hx: {B.obs.inline(xs) == True{} : Bool}, +hb: {B.obs.inline(b) == True{} : Bool}) ->
+    {B.obs.inline(List.append(&2, B.Ob, xs, b)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      hb
+    case Con{+o, +t}:
+      and_intro(B.ob.inline(o), B.obs.inline(List.append(&2, B.Ob, t, b)), and_l(B.ob.inline(o), B.obs.inline(t), hx), obs_app(t, b, and_r(B.ob.inline(o), B.obs.inline(t), hx), hb))
+
+def mods_il(ts: List<&2, List<&2, B.Node>>, +k: U32, +out: List<&2, B.Ob>, +ht: {B.trees.inline(ts) == True{} : Bool}, +ho: {B.obs.inline(out) == True{} : Bool}) ->
+    {B.obs.inline(B.obs.mods(ts, k, out)) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      ho
+    case Con{+tr, +t}:
+      mods_il(t, U32.add(k, 1), B.obs.mod(tr, k, out), and_r(B.nodes.inline(tr), B.trees.inline(t), ht),
+        og_il(Nat.add(Nat.add(B.count(tr), B.count(tr)), 2n), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
+          Con{B.Ob{U32.from_nat(List.length(&2, B.Ob, out)), U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, False{}, Nil{}, tr, U32.mul(k, 1000000), 0,
+            U32.from_nat(List.length(&2, B.Ob, out))}, out},
+          wf_on(U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr, Nil{}, {==}, and_l(B.nodes.inline(tr), B.trees.inline(t), ht), {==}), ho))
+
+def obs_il(+trees: List<&2, List<&2, B.Node>>, +h: {B.trees.inline(trees) == True{} : Bool}) -> {B.obs.inline(B.obs(trees)) == True{} : Bool}:
+  obs_rgo(B.obs.mods(trees, 0, Nil{}), Nil{}, mods_il(trees, 0, Nil{}, h, {==}), {==})
+
+def sxi_k(c: Bool, +n: List<&2, U32>, +t: List<&2, List<&2, U32>>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32,
+    ih1: {B.obs.inline(B.syn.x(t, x, obs, made, next)) == True{} : Bool},
+    ih2: {B.obs.inline(B.syn.x(t, x, obs, Con{B.Ob{next, x, List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(obs, x)), [n]), B.ob.abs(B.ob.at(obs, x)), Nil{}, Nil{}, B.ob.no(B.ob.at(obs, x)), 3, next}, made}, U32.add(next, 1))) == True{} : Bool}) ->
+    {B.obs.inline(sxk(c, n, t, x, obs, made, next)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+# a round's made objects: each its host's path and a mixin's name
+def sx_il(ns: List<&2, List<&2, U32>>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32, +hn: {B.inlines(ns) == True{} : Bool},
+    +hobs: {B.obs.inline(obs) == True{} : Bool}, +hm: {B.obs.inline(made) == True{} : Bool}) -> {B.obs.inline(B.syn.x(ns, x, obs, made, next)) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      hm
+    case Con{+n, +t}:
+      sxi_k(Bool.or(B.made.has(obs, x, n), B.made.has(made, x, n)), n, t, x, obs, made, next,
+        sx_il(t, x, obs, made, next, and_r(B.inline(n), B.inlines(t), hn), hobs, hm),
+        sx_il(t, x, obs, Con{B.Ob{next, x, List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(obs, x)), [n]), B.ob.abs(B.ob.at(obs, x)), Nil{}, Nil{}, B.ob.no(B.ob.at(obs, x)), 3, next}, made},
+          U32.add(next, 1), and_r(B.inline(n), B.inlines(t), hn), hobs,
+          and_intro(B.inlines(List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(obs, x)), [n])), B.obs.inline(made),
+            ils_app(B.ob.path(B.ob.at(obs, x)), [n], il_at(obs, x, hobs), ils_one(n, and_l(B.inline(n), B.inlines(t), hn))), hm)))
+
+def sri_k(c: Bool, +id: U32, +t: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>,
+    ih1: {B.obs.inline(B.syn.round(t, obs, ls, B.syn.x(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))))) == True{} : Bool},
+    ih2: {B.obs.inline(B.syn.round(t, obs, ls, made)) == True{} : Bool}) -> {B.obs.inline(srk(c, id, t, obs, ls, made)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+def sr_il(os: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>, +hobs: {B.obs.inline(obs) == True{} : Bool},
+    +hm: {B.obs.inline(made) == True{} : Bool}) -> {B.obs.inline(B.syn.round(os, obs, ls, made)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      hm
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+          sri_k(Bool.and(B.is.object(kind), Bool.not(U32.is_eq(id, host))), id, t, obs, ls, made,
+            sr_il(t, obs, ls, B.syn.x(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))), hobs,
+              sx_il(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))),
+                mn_il(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}, hobs), hobs, hm)),
+            sr_il(t, obs, ls, made, hobs, hm))
+
+def cti_k(c: Bool, +t: U32, +r: List<&2, U32>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32,
+    ih1: {B.obs.inline(B.copies.t(r, x, obs, made, next)) == True{} : Bool},
+    ih2: {B.obs.inline(B.copies.t(r, x, obs, Con{B.Ob{next, x, B.ob.path(B.ob.at(obs, t)), B.ob.abs(B.ob.at(obs, t)), Nil{}, B.ob.mems(B.ob.at(obs, t)), B.ob.no(B.ob.at(obs, t)), B.ob.kind(B.ob.at(obs, t)), t}, made}, U32.add(next, 1))) == True{} : Bool}) ->
+    {B.obs.inline(ctk(c, t, r, x, obs, made, next)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+# a mixin's bound copies: its path
+def ct_il(ts: List<&2, U32>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32, +hobs: {B.obs.inline(obs) == True{} : Bool},
+    +hm: {B.obs.inline(made) == True{} : Bool}) -> {B.obs.inline(B.copies.t(ts, x, obs, made, next)) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      hm
+    case Con{+t, +r}:
+      cti_k(B.copy.has(obs, made, t, x), t, r, x, obs, made, next, ct_il(r, x, obs, made, next, hobs, hm),
+        ct_il(r, x, obs, Con{B.Ob{next, x, B.ob.path(B.ob.at(obs, t)), B.ob.abs(B.ob.at(obs, t)), Nil{}, B.ob.mems(B.ob.at(obs, t)), B.ob.no(B.ob.at(obs, t)), B.ob.kind(B.ob.at(obs, t)), t}, made},
+          U32.add(next, 1), hobs, and_intro(B.inlines(B.ob.path(B.ob.at(obs, t))), B.obs.inline(made), il_at(obs, t, hobs), hm)))
+
+def sci_k(c: Bool, +host: U32, +path: List<&2, List<&2, U32>>, +t: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>,
+    ih1: {B.obs.inline(B.syn.copies(t, obs, ls, B.copies.t(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))))) == True{} : Bool},
+    ih2: {B.obs.inline(B.syn.copies(t, obs, ls, made)) == True{} : Bool}) -> {B.obs.inline(sck(c, host, path, t, obs, ls, made)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+def sc_il(os: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>, +hobs: {B.obs.inline(obs) == True{} : Bool},
+    +hm: {B.obs.inline(made) == True{} : Bool}) -> {B.obs.inline(B.syn.copies(os, obs, ls, made)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      hm
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, +path, +abs, parents, mems, +no, +kind, +tpl}:
+          sci_k(U32.is_eq(kind, 3), host, path, t, obs, ls, made,
+            sc_il(t, obs, ls, B.copies.t(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))), hobs,
+              ct_il(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))), hobs, hm)),
+            sc_il(t, obs, ls, made, hobs, hm))
+
+def sgi_k(c: Bool, +k: Nat, +als: List<&2, B.Al>, +obs: List<&2, B.Ob>, +npss: List<&2, List<&2, U32>>, +nls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>,
+    +h: {B.obs.inline(obs) == True{} : Bool}, ih: {B.obs.inline(B.sy.obs(B.syn.go(k, als, List.append(&2, B.Ob, obs, List.reverse(&2, B.Ob, made)), npss, nls))) == True{} : Bool}) ->
+    {B.obs.inline(B.sy.obs(sgk(c, k, als, obs, npss, nls, made))) == True{} : Bool}:
+  match c:
+    case True{}:
+      h
+    case False{}:
+      ih
+
+# the made objects' rounds keep every object's path within a line
+def sg_il(n: Nat, +als: List<&2, B.Al>, +obs: List<&2, B.Ob>, +pss: List<&2, List<&2, U32>>, +ls: List<&2, Maybe<&2, B.Lz>>, +h: {B.obs.inline(obs) == True{} : Bool}) ->
+    {B.obs.inline(B.sy.obs(B.syn.go(n, als, obs, pss, ls))) == True{} : Bool}:
+  match n:
+    case 0n:
+      h
+    case 1n+(+k):
+      sgi_k(Bool.and(B.obs.none(B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}))), B.pss.eq(B.pids(obs, als, obs, ls), pss)), k, als, obs, B.pids(obs, als, obs, ls), B.lins(B.pids(obs, als, obs, ls)), B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{})), h,
+        sg_il(k, als, List.append(&2, B.Ob, obs, List.reverse(&2, B.Ob, B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{})))), B.pids(obs, als, obs, ls), B.lins(B.pids(obs, als, obs, ls)),
+          obs_app(obs, List.reverse(&2, B.Ob, B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}))), h,
+            obs_rgo(B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{})), Nil{},
+              sc_il(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}), h, sr_il(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}, h, {==})), {==}))))
+
+def ma_il(os: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +pss: List<&2, List<&2, U32>>, +h: {B.obs.inline(os) == True{} : Bool}) -> {B.obs.inline(B.made.abs(os, obs, pss)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, +path, +abs, parents, +mems, +no, +kind, +tpl}:
+          and_intro(B.inlines(path), B.obs.inline(B.made.abs(t, obs, pss)), and_l(B.inlines(path), B.obs.inline(t), h),
+            ma_il(t, obs, pss, and_r(B.inlines(path), B.obs.inline(t), h)))
+
+def Laws.inline.objects(trees, als, h):
+  ma_il(B.sy.obs(B.syn.of(als, B.obs(trees))), B.sy.obs(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))),
+    sg_il(Nat.add(2n, Nat.add(List.length(&2, B.Ob, B.obs(trees)), List.length(&2, B.Ob, B.obs(trees)))), als, B.obs(trees), Nil{}, Nil{}, obs_il(trees, h)))

@@ -400,3 +400,17 @@ an import's node made with a newline before its text
       close.into(st, NImport{txt, no})
 +++
       close.into(st, NImport{Con{10, txt}, no})
+
+=== object_name_nl inline.objects
+an object's path ending in its name after a newline
+--- blend.bend
+                        (next + 1 : U32), Con{Ob{next, host, List.append(&2, List<&2, U32>, path, [name]), abs, parents, kids, no, ob.kind.of(ext, path), next}, out})
++++
+                        (next + 1 : U32), Con{Ob{next, host, List.append(&2, List<&2, U32>, path, [Con{10, name}]), abs, parents, kids, no, ob.kind.of(ext, path), next}, out})
+
+=== made_name_nl inline.objects
+a made object's path ending in its mixin's name after a newline
+--- blend.bend
+        u => syn.x(t, x, obs, Con{Ob{next, x, List.append(&2, List<&2, U32>, ob.path(ob.at(obs, x)), [n]), ob.abs(ob.at(obs, x)), Nil{}, Nil{},
++++
+        u => syn.x(t, x, obs, Con{Ob{next, x, List.append(&2, List<&2, U32>, ob.path(ob.at(obs, x)), [Con{10, n}]), ob.abs(ob.at(obs, x)), Nil{}, Nil{},
