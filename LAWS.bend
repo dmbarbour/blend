@@ -210,7 +210,7 @@ law mults.uses:
   for s: B.Ms
   for +h1: {B.ordered(xs, B.calls(rss)) == True{} : Bool}
   for +h2: {B.distinct(xs) == True{} : Bool}
-  {B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>}) ==
+  {B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.HLeaf{Nil{}} : B.Ht<B.Pk<List<&2, B.Ru>>>}) ==
     B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s) : B.Ms}
 
 # LAW: so for the order Blend walks: each unit's copies are those its uses
@@ -223,7 +223,7 @@ law mults.walked:
   for +obs: List<&2, B.Ob>
   for +us: List<&2, B.Un>
   for s: B.Ms
-  {B.mults(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(rss), obs, us))), B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>}) ==
+  {B.mults(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(rss), obs, us))), B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.HLeaf{Nil{}} : B.Ht<B.Pk<List<&2, B.Ru>>>}) ==
     B.mults.spec(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(rss), obs, us))), List.reverse(&2, U32, B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(rss), obs, us)))),
       rss, ut, obs, us, s) : B.Ms}
 
@@ -326,9 +326,9 @@ law sharing.copied:
   for +hc: {B.mult.share(y, ut) == 2 : U32}
   for +hm: {B.ec.mode(e) == 0 : U32}
   for +hut: {B.ec.ut(e) == ut : B.Ht<B.Pk<B.Un>>}
-  for +hms: {B.ec.ms(e) == B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>})), Nil{}} : B.Ms}
+  for +hms: {B.ec.ms(e) == B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.HLeaf{Nil{}} : B.Ht<B.Pk<List<&2, B.Ru>>>})), Nil{}} : B.Ms}
   for +hu: {B.uses.of.e(List.reverse(&2, U32, xs), e, y) == B.uses.of(List.reverse(&2, U32, xs), rss, y) : List<&2, B.Ru>}
-  {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, B.mu.m(B.ec.mu(e, y))) : U32}
+  {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.HLeaf{Nil{}}})), y) == U32.add(1, B.mu.m(B.ec.mu(e, y))) : U32}
 
 # LAW: where the dispositions report no error, each affine unit of the
 # order has one use at most: a second is an error, and an error stays.
@@ -752,7 +752,7 @@ law markers.inline:
   for +mode: U32
   for +rtypes: List<&2, List<&2, U32>>
   for +ux: B.Ht<B.Xe>
-  for +mt: B.Wm<B.Mu>
+  for +mt: B.Ht<B.Pk<B.Mu>>
   for +laws: Bool
   for +hf: {B.inlines(files) == True{} : Bool}
   for +ht: {B.trees.inline(trees) == True{} : Bool}
@@ -823,7 +823,7 @@ law markers.emitted:
   for +mode: U32
   for +rtypes: List<&2, List<&2, U32>>
   for +ux: B.Ht<B.Xe>
-  for +mt: B.Wm<B.Mu>
+  for +mt: B.Ht<B.Pk<B.Mu>>
   for +laws: Bool
   for +s: U32
   for +x: U32
@@ -864,7 +864,7 @@ law unambiguous.emitted:
   for +mode: U32
   for +rtypes: List<&2, List<&2, U32>>
   for +ux: B.Ht<B.Xe>
-  for +mt: B.Wm<B.Mu>
+  for +mt: B.Ht<B.Pk<B.Mu>>
   for +laws: Bool
   for +s: U32
   for +x: U32

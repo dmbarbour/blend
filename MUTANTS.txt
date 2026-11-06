@@ -593,9 +593,9 @@ the writer reads each unit through the table one past it
 === mults_reversed sharing.emitted
 the dispositions made in the order emitted, callees first, not users first
 --- blend.bend
-  mults(order, pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{WmNone{}, Nil{}}, WmNone{})
+  mults(order, pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{HLeaf{Nil{}}, Nil{}}, HLeaf{Nil{}})
 +++
-  mults(List.reverse(&2, U32, order), pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{WmNone{}, Nil{}}, WmNone{})
+  mults(List.reverse(&2, U32, order), pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{HLeaf{Nil{}}, Nil{}}, HLeaf{Nil{}})
 
 === names_unchecked unique.emitted
 emission checks no name emitted twice
@@ -609,7 +609,7 @@ the writer given no dispositions: every unit written as if never copied
 --- blend.bend
   Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, ut, mt}
 +++
-  Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, ut, WmNone{}}
+  Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, ut, HLeaf{Nil{}}}
 
 === writer_uses_twice once.emitted
 the writer reads each unit's uses twice: an affine unit used once seen used twice
@@ -722,3 +722,10 @@ a datatype's node numbered as the line after its header: its marker one line off
       close.into(st, NBend{lines, no})
 +++
       close.into(st, NBend{lines, (no + 1 : U32)})
+
+=== map_drops_leaf mults.uses
+a put into a map drops the other keys its leaf holds
+--- blend.bend
+      HLeaf{Con{Pk{k, v}, pk.del(A, es, k)}}
++++
+      HLeaf{[Pk{k, v}]}

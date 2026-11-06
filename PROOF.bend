@@ -2716,114 +2716,191 @@ def mpick(-A: Data, b: Bool, x: Maybe<&2, A>, y: Maybe<&2, A>) -> Maybe<&2, A>:
     case False{}:
       y
 
-def get_none(-A: Data, n: Nat, c: Word(n)) -> {B.wm.get(A, n, c, B.WmNone{}) == None{} : Maybe<&2, A>}:
-  match n:
-    case 0n:
-      {==}
-    case 1n+p:
-      match c:
-        case WCon{b, r}:
-          match b:
-            case True{}:
-              {==}
-            case False{}:
-              {==}
+# A map by key (`blend-perf.tables`): a put lands first in its key's
+# leaf, the key's other entries dropped (`km_leaf`); a put at another key
+# leaves a lookup of i as it was, wherever it lands (`km_else`); so a
+# lookup after a put finds the value put at its key, else what it found
+# (`um_get_put`), as the units' table's map laws (`leaf_put`,
+# `put_else`) have it
 
-def get_put.k(-A: Data, a: Bool, b: Bool, +p: Nat, +xr: Word(p), +cr: Word(p), +v: A, t: B.Wm<A>,
-    ih: @s:B.Wm<A> -> {B.wm.get(A, p, cr, B.wm.put(A, p, xr, v, s)) == mpick(A, Cmp.is_eq(Word.cmp(p, xr, cr)), Some{v}, B.wm.get(A, p, cr, s)) : Maybe<&2, A>}) ->
-    {B.wm.get(A, 1n+p, WCon{b, cr}, B.wm.put(A, 1n+p, WCon{a, xr}, v, t)) ==
-      mpick(A, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), Cmp.is_eq(Bool.cmp(a, b))), Some{v}, B.wm.get(A, 1n+p, WCon{b, cr}, t)) : Maybe<&2, A>}:
-  match a b:
-    case True{} True{}:
-      match t:
-        case B.WmNode{f, tt}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), True{}), Cmp.is_eq(Word.cmp(p, xr, cr)), MB.and_true(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{True{}, cr}, B.wm.put(A, 1n+p, WCon{True{}, xr}, v, B.WmNode{f, tt})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{True{}, cr}, B.WmNode{f, tt})) : Maybe<&2, A>}
-          ih(tt)
-        case B.WmNone{}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), True{}), Cmp.is_eq(Word.cmp(p, xr, cr)), MB.and_true(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{True{}, cr}, B.wm.put(A, 1n+p, WCon{True{}, xr}, v, B.WmNone{})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{True{}, cr}, B.WmNone{})) : Maybe<&2, A>}
-          %get_none(A, p, cr) : {B.wm.get(A, p, cr, B.wm.put(A, p, xr, v, B.WmNone{})) == mpick(A, Cmp.is_eq(Word.cmp(p, xr, cr)), Some{v}, _) : Maybe<&2, A>}
-          ih(B.WmNone{})
-        case B.WmLeaf{l}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), True{}), Cmp.is_eq(Word.cmp(p, xr, cr)), MB.and_true(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{True{}, cr}, B.wm.put(A, 1n+p, WCon{True{}, xr}, v, B.WmLeaf{l})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{True{}, cr}, B.WmLeaf{l})) : Maybe<&2, A>}
-          %get_none(A, p, cr) : {B.wm.get(A, p, cr, B.wm.put(A, p, xr, v, B.WmNone{})) == mpick(A, Cmp.is_eq(Word.cmp(p, xr, cr)), Some{v}, _) : Maybe<&2, A>}
-          ih(B.WmNone{})
-    case True{} False{}:
-      match t:
-        case B.WmNode{f, tt}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), False{}), False{}, MB.and_false(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{False{}, cr}, B.wm.put(A, 1n+p, WCon{True{}, xr}, v, B.WmNode{f, tt})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{False{}, cr}, B.WmNode{f, tt})) : Maybe<&2, A>}
-          {==}
-        case B.WmNone{}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), False{}), False{}, MB.and_false(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{False{}, cr}, B.wm.put(A, 1n+p, WCon{True{}, xr}, v, B.WmNone{})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{False{}, cr}, B.WmNone{})) : Maybe<&2, A>}
-          get_none(A, p, cr)
-        case B.WmLeaf{l}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), False{}), False{}, MB.and_false(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{False{}, cr}, B.wm.put(A, 1n+p, WCon{True{}, xr}, v, B.WmLeaf{l})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{False{}, cr}, B.WmLeaf{l})) : Maybe<&2, A>}
-          get_none(A, p, cr)
-    case False{} True{}:
-      match t:
-        case B.WmNode{f, tt}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), False{}), False{}, MB.and_false(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{True{}, cr}, B.wm.put(A, 1n+p, WCon{False{}, xr}, v, B.WmNode{f, tt})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{True{}, cr}, B.WmNode{f, tt})) : Maybe<&2, A>}
-          {==}
-        case B.WmNone{}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), False{}), False{}, MB.and_false(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{True{}, cr}, B.wm.put(A, 1n+p, WCon{False{}, xr}, v, B.WmNone{})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{True{}, cr}, B.WmNone{})) : Maybe<&2, A>}
-          get_none(A, p, cr)
-        case B.WmLeaf{l}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), False{}), False{}, MB.and_false(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{True{}, cr}, B.wm.put(A, 1n+p, WCon{False{}, xr}, v, B.WmLeaf{l})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{True{}, cr}, B.WmLeaf{l})) : Maybe<&2, A>}
-          get_none(A, p, cr)
-    case False{} False{}:
-      match t:
-        case B.WmNode{f, tt}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), True{}), Cmp.is_eq(Word.cmp(p, xr, cr)), MB.and_true(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{False{}, cr}, B.wm.put(A, 1n+p, WCon{False{}, xr}, v, B.WmNode{f, tt})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{False{}, cr}, B.WmNode{f, tt})) : Maybe<&2, A>}
-          ih(f)
-        case B.WmNone{}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), True{}), Cmp.is_eq(Word.cmp(p, xr, cr)), MB.and_true(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{False{}, cr}, B.wm.put(A, 1n+p, WCon{False{}, xr}, v, B.WmNone{})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{False{}, cr}, B.WmNone{})) : Maybe<&2, A>}
-          %get_none(A, p, cr) : {B.wm.get(A, p, cr, B.wm.put(A, p, xr, v, B.WmNone{})) == mpick(A, Cmp.is_eq(Word.cmp(p, xr, cr)), Some{v}, _) : Maybe<&2, A>}
-          ih(B.WmNone{})
-        case B.WmLeaf{l}:
-          %Equal.sym(Bool, Bool.and(Cmp.is_eq(Word.cmp(p, xr, cr)), True{}), Cmp.is_eq(Word.cmp(p, xr, cr)), MB.and_true(Cmp.is_eq(Word.cmp(p, xr, cr)))) :
-            {B.wm.get(A, 1n+p, WCon{False{}, cr}, B.wm.put(A, 1n+p, WCon{False{}, xr}, v, B.WmLeaf{l})) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{False{}, cr}, B.WmLeaf{l})) : Maybe<&2, A>}
-          %get_none(A, p, cr) : {B.wm.get(A, p, cr, B.wm.put(A, p, xr, v, B.WmNone{})) == mpick(A, Cmp.is_eq(Word.cmp(p, xr, cr)), Some{v}, _) : Maybe<&2, A>}
-          ih(B.WmNone{})
-
-# a value put at a word, then one asked for: the value where they are
-# equal, else what was there
-def get_put(-A: Data, n: Nat, x: Word(n), c: Word(n), +v: A, t: B.Wm<A>) ->
-    {B.wm.get(A, n, c, B.wm.put(A, n, x, v, t)) == mpick(A, Cmp.is_eq(Word.cmp(n, x, c)), Some{v}, B.wm.get(A, n, c, t)) : Maybe<&2, A>}:
-  match n:
-    case 0n:
-      {==}
-    case 1n+(+p):
-      match x:
-        case WCon{+a, +xr}:
-          match c:
-            case WCon{+b, +cr}:
-              %fin_eq(a, b, Word.cmp(p, xr, cr)) :
-                {B.wm.get(A, 1n+p, WCon{b, cr}, B.wm.put(A, 1n+p, WCon{a, xr}, v, t)) == mpick(A, _, Some{v}, B.wm.get(A, 1n+p, WCon{b, cr}, t)) : Maybe<&2, A>}
-              get_put.k(A, a, b, p, xr, cr, v, t, s => get_put(A, p, xr, cr, v, s))
-
-def um_get_put(-A: Data, +t: B.Wm<A>, x: U32, c: U32, +v: A) ->
-    {B.um.get(A, B.um.put(A, t, x, v), c) == mpick(A, U32.is_eq(x, c), Some{v}, B.um.get(A, t, c)) : Maybe<&2, A>}:
-  match x c:
-    case U32{xw} U32{cw}:
-      get_put(A, 32n, xw, cw, v, t)
-
-def um_get_none(-A: Data, c: U32) -> {B.um.get(A, B.WmNone{}, c) == None{} : Maybe<&2, A>}:
+# the entries keyed k dropped: a lookup of another key as before
+def km_del.k(-A: Data, c: Bool, +k2: U32, +v: A, +t: List<&2, B.Pk<A>>, +k: U32, +i: U32, ec: {U32.is_eq(k2, k) == c : Bool},
+    +he: {U32.is_eq(k, i) == False{} : Bool}, ih: {B.pk.find(A, B.pk.del(A, t, k), i) == B.pk.find(A, t, i) : Maybe<&2, A>}) ->
+    {B.pk.find(A, B.pk.keep(A, c, B.Pk{k2, v}, B.pk.del(A, t, k)), i) == B.pk.find(A, Con{B.Pk{k2, v}, t}, i) : Maybe<&2, A>}:
   match c:
-    case U32{w}:
-      get_none(A, 32n, w)
+    case True{}:
+      %Equal.sym(U32, k2, k, u32_eq_of_is_eq(k2, k, ec)) : {B.pk.find(A, B.pk.del(A, t, k), i) == B.pk.pick(A, U32.is_eq(_, i), v, B.pk.find(A, t, i)) : Maybe<&2, A>}
+      %Equal.sym(Bool, U32.is_eq(k, i), False{}, he) : {B.pk.find(A, B.pk.del(A, t, k), i) == B.pk.pick(A, _, v, B.pk.find(A, t, i)) : Maybe<&2, A>}
+      ih
+    case False{}:
+      %Equal.sym(Maybe<&2, A>, B.pk.find(A, B.pk.del(A, t, k), i), B.pk.find(A, t, i), ih) : {B.pk.pick(A, U32.is_eq(k2, i), v, _) == B.pk.find(A, Con{B.Pk{k2, v}, t}, i) : Maybe<&2, A>}
+      {==}
+
+def km_del(-A: Data, es: List<&2, B.Pk<A>>, +k: U32, +i: U32, +he: {U32.is_eq(k, i) == False{} : Bool}) ->
+    {B.pk.find(A, B.pk.del(A, es, k), i) == B.pk.find(A, es, i) : Maybe<&2, A>}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{e, +t}:
+      match e:
+        case B.Pk{+k2, +v}:
+          km_del.k(A, U32.is_eq(k2, k), k2, v, t, k, i, {==}, he, km_del(A, t, k, i, he))
+
+# a leaf set at k: a lookup of another key as before
+def km_set_else(-A: Data, +es: List<&2, B.Pk<A>>, +k: U32, +v: A, +i: U32, +he: {U32.is_eq(k, i) == False{} : Bool}) ->
+    {B.pk.find(A, Con{B.Pk{k, v}, B.pk.del(A, es, k)}, i) == B.pk.find(A, es, i) : Maybe<&2, A>}:
+  Equal.trans(Maybe<&2, A>, B.pk.find(A, Con{B.Pk{k, v}, B.pk.del(A, es, k)}, i), B.pk.find(A, B.pk.del(A, es, k), i), B.pk.find(A, es, i),
+    skip_e(A, B.Pk{k, v}, B.pk.del(A, es, k), i, he), km_del(A, es, k, i, he))
+
+# a leaf's lookup: its entries, whatever the fuel
+def leaf_go_leaf(-A: Data, f: Nat, +es: List<&2, A>, +b: U32, +h: U32) -> {B.ht.leaf.go(A, f, B.HLeaf{es}, b, h) == es : List<&2, A>}:
+  match f:
+    case 0n:
+      {==}
+    case 1n+g:
+      {==}
+
+def km_leaf.k(-A: Data, c: Bool, +f: Nat, +z: B.Ht<B.Pk<A>>, +o: B.Ht<B.Pk<A>>, +b: U32, +h: U32, +k: U32, +v: A, eq: {c == U32.is_eq(b, 0) : Bool},
+    ih: @s:B.Ht<B.Pk<A>> -> {B.ht.leaf.go(B.Pk<A>, f, B.km.put.go(A, f, s, nb(h), nh(h), k, v), nb(h), nh(h)) == Con{B.Pk{k, v}, B.pk.del(A, B.ht.leaf.go(B.Pk<A>, f, s, nb(h), nh(h)), k)} : List<&2, B.Pk<A>>}) ->
+    {B.ht.leaf.go(B.Pk<A>, 1n+f, B.ht.join(B.Pk<A>, c, B.km.put.go(A, f, B.ht.pick(B.Pk<A>, c, z, o), nb(h), nh(h), k, v), B.ht.pick(B.Pk<A>, c, o, z)), b, h) ==
+      Con{B.Pk{k, v}, B.pk.del(A, B.ht.leaf.go(B.Pk<A>, 1n+f, B.HNode{z, o}, b, h), k)} : List<&2, B.Pk<A>>}:
+  match c:
+    case True{}:
+      %eq : {B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, B.km.put.go(A, f, z, nb(h), nh(h), k, v), o), nb(h), nh(h)) ==
+        Con{B.Pk{k, v}, B.pk.del(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, z, o), nb(h), nh(h)), k)} : List<&2, B.Pk<A>>}
+      ih(z)
+    case False{}:
+      %eq : {B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, z, B.km.put.go(A, f, o, nb(h), nh(h), k, v)), nb(h), nh(h)) ==
+        Con{B.Pk{k, v}, B.pk.del(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, z, o), nb(h), nh(h)), k)} : List<&2, B.Pk<A>>}
+      ih(o)
+
+def km_leaf.l(-A: Data, c: Bool, +f: Nat, +es: List<&2, B.Pk<A>>, +b: U32, +h: U32, +k: U32, +v: A, eq: {c == U32.is_eq(b, 0) : Bool},
+    ih: {B.ht.leaf.go(B.Pk<A>, f, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), nb(h), nh(h)) == Con{B.Pk{k, v}, B.pk.del(A, B.ht.leaf.go(B.Pk<A>, f, B.HLeaf{es}, nb(h), nh(h)), k)} : List<&2, B.Pk<A>>}) ->
+    {B.ht.leaf.go(B.Pk<A>, 1n+f, B.ht.join(B.Pk<A>, c, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), B.HLeaf{es}), b, h) ==
+      Con{B.Pk{k, v}, B.pk.del(A, es, k)} : List<&2, B.Pk<A>>}:
+  match c:
+    case True{}:
+      %eq : {B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), B.HLeaf{es}), nb(h), nh(h)) ==
+        Con{B.Pk{k, v}, B.pk.del(A, es, k)} : List<&2, B.Pk<A>>}
+      %leaf_go_leaf(B.Pk<A>, f, es, nb(h), nh(h)) : {B.ht.leaf.go(B.Pk<A>, f, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), nb(h), nh(h)) == Con{B.Pk{k, v}, B.pk.del(A, _, k)} : List<&2, B.Pk<A>>}
+      ih
+    case False{}:
+      %eq : {B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, B.HLeaf{es}, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v)), nb(h), nh(h)) ==
+        Con{B.Pk{k, v}, B.pk.del(A, es, k)} : List<&2, B.Pk<A>>}
+      %leaf_go_leaf(B.Pk<A>, f, es, nb(h), nh(h)) : {B.ht.leaf.go(B.Pk<A>, f, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), nb(h), nh(h)) == Con{B.Pk{k, v}, B.pk.del(A, _, k)} : List<&2, B.Pk<A>>}
+      ih
+
+# a put at k: first in k's leaf, k's other entries dropped
+def km_leaf(-A: Data, fuel: Nat, t: B.Ht<B.Pk<A>>, +b: U32, +h: U32, +k: U32, +v: A) ->
+    {B.ht.leaf.go(B.Pk<A>, fuel, B.km.put.go(A, fuel, t, b, h, k, v), b, h) == Con{B.Pk{k, v}, B.pk.del(A, B.ht.leaf.go(B.Pk<A>, fuel, t, b, h), k)} : List<&2, B.Pk<A>>}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          {==}
+        case B.HNode{z, o}:
+          {==}
+    case 1n+(+f):
+      match t:
+        case B.HLeaf{+es}:
+          km_leaf.l(A, U32.is_eq(b, 0), f, es, b, h, k, v, {==}, km_leaf(A, f, B.HLeaf{es}, nb(h), nh(h), k, v))
+        case B.HNode{+z, +o}:
+          km_leaf.k(A, U32.is_eq(b, 0), f, z, o, b, h, k, v, {==}, s => km_leaf(A, f, s, nb(h), nh(h), k, v))
+
+def km_else.k(-A: Data, c: Bool, c2: Bool, +f: Nat, +z: B.Ht<B.Pk<A>>, +o: B.Ht<B.Pk<A>>, +h: U32, +b2: U32, +h2: U32, +k: U32, +v: A, +i: U32,
+    eq2: {c2 == U32.is_eq(b2, 0) : Bool},
+    ih: @s:B.Ht<B.Pk<A>> -> {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.km.put.go(A, f, s, nb(h), nh(h), k, v), nb(h2), nh(h2)), i) == B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, s, nb(h2), nh(h2)), i) : Maybe<&2, A>}) ->
+    {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, 1n+f, B.ht.join(B.Pk<A>, c, B.km.put.go(A, f, B.ht.pick(B.Pk<A>, c, z, o), nb(h), nh(h), k, v), B.ht.pick(B.Pk<A>, c, o, z)), b2, h2), i) ==
+      B.pk.find(A, B.ht.leaf.go(B.Pk<A>, 1n+f, B.HNode{z, o}, b2, h2), i) : Maybe<&2, A>}:
+  match c:
+    case True{}:
+      match c2:
+        case True{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, B.km.put.go(A, f, z, nb(h), nh(h), k, v), o), nb(h2), nh(h2)), i) ==
+            B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, z, o), nb(h2), nh(h2)), i) : Maybe<&2, A>}
+          ih(z)
+        case False{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, B.km.put.go(A, f, z, nb(h), nh(h), k, v), o), nb(h2), nh(h2)), i) ==
+            B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, z, o), nb(h2), nh(h2)), i) : Maybe<&2, A>}
+          {==}
+    case False{}:
+      match c2:
+        case True{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, z, B.km.put.go(A, f, o, nb(h), nh(h), k, v)), nb(h2), nh(h2)), i) ==
+            B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, z, o), nb(h2), nh(h2)), i) : Maybe<&2, A>}
+          {==}
+        case False{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, z, B.km.put.go(A, f, o, nb(h), nh(h), k, v)), nb(h2), nh(h2)), i) ==
+            B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, z, o), nb(h2), nh(h2)), i) : Maybe<&2, A>}
+          ih(o)
+
+def km_else.l(-A: Data, c: Bool, c2: Bool, +f: Nat, +es: List<&2, B.Pk<A>>, +h: U32, +b2: U32, +h2: U32, +k: U32, +v: A, +i: U32,
+    eq2: {c2 == U32.is_eq(b2, 0) : Bool},
+    ih: {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), nb(h2), nh(h2)), i) == B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.HLeaf{es}, nb(h2), nh(h2)), i) : Maybe<&2, A>}) ->
+    {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, 1n+f, B.ht.join(B.Pk<A>, c, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), B.HLeaf{es}), b2, h2), i) ==
+      B.pk.find(A, es, i) : Maybe<&2, A>}:
+  match c:
+    case True{}:
+      match c2:
+        case True{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), B.HLeaf{es}), nb(h2), nh(h2)), i) == B.pk.find(A, es, i) : Maybe<&2, A>}
+          %leaf_go_leaf(B.Pk<A>, f, es, nb(h2), nh(h2)) : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), nb(h2), nh(h2)), i) == B.pk.find(A, _, i) : Maybe<&2, A>}
+          ih
+        case False{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), B.HLeaf{es}), nb(h2), nh(h2)), i) == B.pk.find(A, es, i) : Maybe<&2, A>}
+          %leaf_go_leaf(B.Pk<A>, f, es, nb(h2), nh(h2)) : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.HLeaf{es}, nb(h2), nh(h2)), i) == B.pk.find(A, _, i) : Maybe<&2, A>}
+          {==}
+    case False{}:
+      match c2:
+        case True{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, B.HLeaf{es}, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v)), nb(h2), nh(h2)), i) == B.pk.find(A, es, i) : Maybe<&2, A>}
+          %leaf_go_leaf(B.Pk<A>, f, es, nb(h2), nh(h2)) : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.HLeaf{es}, nb(h2), nh(h2)), i) == B.pk.find(A, _, i) : Maybe<&2, A>}
+          {==}
+        case False{}:
+          %eq2 : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.ht.pick(B.Pk<A>, _, B.HLeaf{es}, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v)), nb(h2), nh(h2)), i) == B.pk.find(A, es, i) : Maybe<&2, A>}
+          %leaf_go_leaf(B.Pk<A>, f, es, nb(h2), nh(h2)) : {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, f, B.km.put.go(A, f, B.HLeaf{es}, nb(h), nh(h), k, v), nb(h2), nh(h2)), i) == B.pk.find(A, _, i) : Maybe<&2, A>}
+          ih
+
+# a put at another key than i: what a lookup of i finds, as before
+def km_else(-A: Data, fuel: Nat, t: B.Ht<B.Pk<A>>, +b: U32, +h: U32, +b2: U32, +h2: U32, +k: U32, +v: A, +i: U32, +he: {U32.is_eq(k, i) == False{} : Bool}) ->
+    {B.pk.find(A, B.ht.leaf.go(B.Pk<A>, fuel, B.km.put.go(A, fuel, t, b, h, k, v), b2, h2), i) == B.pk.find(A, B.ht.leaf.go(B.Pk<A>, fuel, t, b2, h2), i) : Maybe<&2, A>}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{+es}:
+          km_set_else(A, es, k, v, i, he)
+        case B.HNode{z, o}:
+          km_set_else(A, Nil{}, k, v, i, he)
+    case 1n+(+f):
+      match t:
+        case B.HLeaf{+es}:
+          km_else.l(A, U32.is_eq(b, 0), U32.is_eq(b2, 0), f, es, h, b2, h2, k, v, i, {==},
+            km_else(A, f, B.HLeaf{es}, nb(h), nh(h), nb(h2), nh(h2), k, v, i, he))
+        case B.HNode{+z, +o}:
+          km_else.k(A, U32.is_eq(b, 0), U32.is_eq(b2, 0), f, z, o, h, b2, h2, k, v, i, {==}, s => km_else(A, f, s, nb(h), nh(h), nb(h2), nh(h2), k, v, i, he))
+
+def ugp_k(-A: Data, b: Bool, +t: B.Ht<B.Pk<A>>, +x: U32, +c: U32, +v: A, e: {U32.is_eq(x, c) == b : Bool}) ->
+    {B.um.get(A, B.um.put(A, t, x, v), c) == mpick(A, b, Some{v}, B.um.get(A, t, c)) : Maybe<&2, A>}:
+  match b:
+    case True{}:
+      %u32_eq_of_is_eq(x, c, e) : {B.um.get(A, B.um.put(A, t, x, v), _) == Some{v} : Maybe<&2, A>}
+      %Equal.sym(List<&2, B.Pk<A>>, B.ht.leaf.go(B.Pk<A>, 16n, B.km.put.go(A, 16n, t, U32.and(x, 1), x, x, v), U32.and(x, 1), x),
+          Con{B.Pk{x, v}, B.pk.del(A, B.ht.leaf.go(B.Pk<A>, 16n, t, U32.and(x, 1), x), x)}, km_leaf(A, 16n, t, U32.and(x, 1), x, x, v)) :
+        {B.pk.find(A, _, x) == Some{v} : Maybe<&2, A>}
+      %Equal.sym(Bool, U32.is_eq(x, x), True{}, u32_is_eq_refl(x)) : {B.pk.pick(A, _, v, B.pk.find(A, B.pk.del(A, B.ht.leaf.go(B.Pk<A>, 16n, t, U32.and(x, 1), x), x), x)) == Some{v} : Maybe<&2, A>}
+      {==}
+    case False{}:
+      km_else(A, 16n, t, U32.and(x, 1), x, U32.and(c, 1), c, x, v, c, e)
+
+def um_get_put(-A: Data, +t: B.Ht<B.Pk<A>>, +x: U32, +c: U32, +v: A) ->
+    {B.um.get(A, B.um.put(A, t, x, v), c) == mpick(A, U32.is_eq(x, c), Some{v}, B.um.get(A, t, c)) : Maybe<&2, A>}:
+  ugp_k(A, U32.is_eq(x, c), t, x, c, v, {==})
+
+def um_get_none(-A: Data, +c: U32) -> {B.um.get(A, B.HLeaf{Nil{}}, c) == None{} : Maybe<&2, A>}:
+  {==}
 
 # a user's uses handed on: each its callee's, first, in the user's order
-def pend_uses.k(hit: Bool, +c: U32, +y: U32, +u: U32, +no: U32, +t: List<&2, B.Ru>, +pp: B.Wm<List<&2, B.Ru>>, +p: B.Wm<List<&2, B.Ru>>,
+def pend_uses.k(hit: Bool, +c: U32, +y: U32, +u: U32, +no: U32, +t: List<&2, B.Ru>, +pp: B.Ht<B.Pk<List<&2, B.Ru>>>, +p: B.Ht<B.Pk<List<&2, B.Ru>>>,
     +e: {hit == U32.is_eq(c, y) : Bool},
     +ih: {B.pend.at(pp, y) == List.append(&2, B.Ru, B.uses.in(t, u, y), B.pend.at(p, y)) : List<&2, B.Ru>}) ->
     {B.rus.or(mpick(List<&2, B.Ru>, hit, Some{Con{B.Ru{u, no}, B.pend.at(pp, c)}}, B.um.get(List<&2, B.Ru>, pp, y))) ==
@@ -2836,7 +2913,7 @@ def pend_uses.k(hit: Bool, +c: U32, +y: U32, +u: U32, +no: U32, +t: List<&2, B.R
     case False{}:
       ih
 
-def pend_uses(rs: List<&2, B.Ru>, +u: U32, +p: B.Wm<List<&2, B.Ru>>, +y: U32) ->
+def pend_uses(rs: List<&2, B.Ru>, +u: U32, +p: B.Ht<B.Pk<List<&2, B.Ru>>>, +y: U32) ->
     {B.pend.at(B.pend.uses(rs, u, p), y) == List.append(&2, B.Ru, B.uses.in(rs, u, y), B.pend.at(p, y)) : List<&2, B.Ru>}:
   match rs:
     case Nil{}:
@@ -2851,10 +2928,10 @@ def pend_uses(rs: List<&2, B.Ru>, +u: U32, +p: B.Wm<List<&2, B.Ru>>, +y: U32) ->
           pend_uses.k(U32.is_eq(c, y), c, y, u, no, t, B.pend.uses(t, u, p), p, {==}, pend_uses(t, u, p, y))
 
 # the table after the units q, the last taken first
-def pa(q: List<&2, U32>, +rt: B.Ht<B.Pk<List<&2, B.Ru>>>) -> B.Wm<List<&2, B.Ru>>:
+def pa(q: List<&2, U32>, +rt: B.Ht<B.Pk<List<&2, B.Ru>>>) -> B.Ht<B.Pk<List<&2, B.Ru>>>:
   match q:
     case Nil{}:
-      B.WmNone{}
+      B.HLeaf{Nil{}}
     case Con{+x, t}:
       B.pend.uses(B.rus.or(B.pw.get(List<&2, B.Ru>, rt, x)), x, pa(t, rt))
 
@@ -2862,7 +2939,7 @@ def pa(q: List<&2, U32>, +rt: B.Ht<B.Pk<List<&2, B.Ru>>>) -> B.Wm<List<&2, B.Ru>
 def pa_at(q: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +y: U32) -> {B.pend.at(pa(q, B.pw.of(List<&2, B.Ru>, rss)), y) == B.uses.of(q, rss, y) : List<&2, B.Ru>}:
   match q:
     case Nil{}:
-      %Equal.sym(Maybe<&2, List<&2, B.Ru>>, B.um.get(List<&2, B.Ru>, B.WmNone{}, y), None{}, um_get_none(List<&2, B.Ru>, y)) : {B.rus.or(_) == Nil{} : List<&2, B.Ru>}
+      %Equal.sym(Maybe<&2, List<&2, B.Ru>>, B.um.get(List<&2, B.Ru>, B.HLeaf{Nil{}}, y), None{}, um_get_none(List<&2, B.Ru>, y)) : {B.rus.or(_) == Nil{} : List<&2, B.Ru>}
       {==}
     case Con{+e, +t}:
       %Equal.sym(List<&2, B.Ru>, B.pend.at(B.pend.uses(B.rus.or(B.pw.get(List<&2, B.Ru>, B.pw.of(List<&2, B.Ru>, rss), e)), e, pa(t, B.pw.of(List<&2, B.Ru>, rss))), y),
@@ -2999,7 +3076,7 @@ def Laws.mults.uses(xs, rss, ut, obs, us, s, h1, h2):
 
 def Laws.mults.walked(roots, rss, ut, obs, us, s):
   %Equal.sym(B.Ds, B.df.ds(B.walk.fast(roots, B.calls(rss), obs, us)), B.walk(roots, B.calls(rss), obs, us), Laws.order.fast(roots, B.calls(rss), obs, us)) :
-    {B.mults(B.ds.order(_), B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, B.WmNone{}) ==
+    {B.mults(B.ds.order(_), B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, B.HLeaf{Nil{}}) ==
       B.mults.spec(B.ds.order(_), List.reverse(&2, U32, B.ds.order(_)), rss, ut, obs, us, s) : B.Ms}
   Laws.mults.uses(B.ds.order(B.walk(roots, B.calls(rss), obs, us)), rss, ut, obs, us, s,
     Laws.order.callees_first(roots, B.calls(rss), obs, us), Laws.order.once(roots, B.calls(rss), obs, us))
@@ -4884,12 +4961,12 @@ def um_ms(rs: List<&2, B.Ru>, +ut: B.Ht<B.Pk<B.Un>>, +s: B.Ms) -> {B.uses.m(rs, 
 # y's disposition as the writer reads it
 def mu_y(+xs: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +s: B.Ms, +e: B.Ec, +y: U32,
     +h1: {B.ordered(xs, B.calls(rss)) == True{} : Bool}, +h2: {B.distinct(xs) == True{} : Bool}, +hy: {B.has(xs, y) == True{} : Bool},
-    +hc: {B.mult.share(y, ut) == 2 : U32}, +hms: {B.ec.ms(e) == B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>})), Nil{}} : B.Ms}) ->
+    +hc: {B.mult.share(y, ut) == 2 : U32}, +hms: {B.ec.ms(e) == B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.HLeaf{Nil{}} : B.Ht<B.Pk<List<&2, B.Ru>>>})), Nil{}} : B.Ms}) ->
     {B.ec.mu(e, y) == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}:
   %Equal.sym(B.Mu, B.ec.mu(e, y), B.ms.mu(B.ec.ms(e), y), mu_e(e, y)) : {_ == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}
-  %Equal.sym(B.Ms, B.ec.ms(e), B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>})), Nil{}}, hms) : {B.ms.mu(_, y) == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}
-  %ms_mu_ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>}), y) : {_ == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}
-  %Equal.sym(B.Ms, B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.WmNone{} : B.Wm<List<&2, B.Ru>>}), B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s), Laws.mults.uses(xs, rss, ut, obs, us, s, h1, h2)) : {B.ms.mu(_, y) == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}
+  %Equal.sym(B.Ms, B.ec.ms(e), B.Ms{B.ms.ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.HLeaf{Nil{}} : B.Ht<B.Pk<List<&2, B.Ru>>>})), Nil{}}, hms) : {B.ms.mu(_, y) == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}
+  %ms_mu_ms(B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.HLeaf{Nil{}} : B.Ht<B.Pk<List<&2, B.Ru>>>}), y) : {_ == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}
+  %Equal.sym(B.Ms, B.mults(xs, B.pw.of(List<&2, B.Ru>, rss), ut, obs, us, s, {B.HLeaf{Nil{}} : B.Ht<B.Pk<List<&2, B.Ru>>>}), B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s), Laws.mults.uses(xs, rss, ut, obs, us, s, h1, h2)) : {B.ms.mu(_, y) == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1} : B.Mu}
   Laws.sharing.final(xs, rss, ut, obs, us, s, y, h1, h2, hy, hc)
 
 def kind_y(+e: B.Ec, +y: U32, +u: U32, h: {B.ec.mu(e, y) == B.Mu{u, 1} : B.Mu}) -> {B.mu.kind(B.ec.mu(e, y)) == 1 : U32}:
@@ -4897,14 +4974,14 @@ def kind_y(+e: B.Ec, +y: U32, +u: U32, h: {B.ec.mu(e, y) == B.Mu{u, 1} : B.Mu}) 
   {==}
 
 def Laws.sharing.copied(xs, rss, ut, obs, us, s, e, acc, y, h1, h2, hy, hc, hm, hut, hms, hu):
-  %Equal.sym(B.Mu, B.ec.mu(e, y), B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1}, mu_y(xs, rss, ut, obs, us, s, e, y, h1, h2, hy, hc, hms)) : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, B.mu.m(_)) : U32}
-  %Equal.sym(U32, B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.Ms{B.ms.ms(B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), Nil{}}), um_ms(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s))) : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, _) : U32}
-  %Laws.mults.uses(xs, rss, ut, obs, us, s, h1, h2) : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.Ms{B.ms.ms(_), Nil{}})) : U32}
-  %hms : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, _)) : U32}
-  %hut : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), _, B.ec.ms(e))) : U32}
-  %hu : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(1, B.uses.m(_, B.ec.ut(e), B.ec.ms(e))) : U32}
-  %um_get_none(U32, y) : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}})), y) == U32.add(B.ctr.or(_), B.uses.m(B.uses.of.e(List.reverse(&2, U32, xs), e, y), B.ec.ut(e), B.ec.ms(e))) : U32}
-  Laws.sharing.counts(List.reverse(&2, U32, xs), e, B.Tb{acc, B.WmNone{}}, y, hm,
+  %Equal.sym(B.Mu, B.ec.mu(e, y), B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), 1}, mu_y(xs, rss, ut, obs, us, s, e, y, h1, h2, hy, hc, hms)) : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.HLeaf{Nil{}}})), y) == U32.add(1, B.mu.m(_)) : U32}
+  %Equal.sym(U32, B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.Ms{B.ms.ms(B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), Nil{}}), um_ms(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s))) : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.HLeaf{Nil{}}})), y) == U32.add(1, _) : U32}
+  %Laws.mults.uses(xs, rss, ut, obs, us, s, h1, h2) : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.HLeaf{Nil{}}})), y) == U32.add(1, B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.Ms{B.ms.ms(_), Nil{}})) : U32}
+  %hms : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.HLeaf{Nil{}}})), y) == U32.add(1, B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, _)) : U32}
+  %hut : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.HLeaf{Nil{}}})), y) == U32.add(1, B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), _, B.ec.ms(e))) : U32}
+  %hu : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.HLeaf{Nil{}}})), y) == U32.add(1, B.uses.m(_, B.ec.ut(e), B.ec.ms(e))) : U32}
+  %um_get_none(U32, y) : {B.ctr.at(B.tb.ctrs(B.order.put(List.reverse(&2, U32, xs), e, B.Tb{acc, B.HLeaf{Nil{}}})), y) == U32.add(B.ctr.or(_), B.uses.m(B.uses.of.e(List.reverse(&2, U32, xs), e, y), B.ec.ut(e), B.ec.ms(e))) : U32}
+  Laws.sharing.counts(List.reverse(&2, U32, xs), e, B.Tb{acc, B.HLeaf{Nil{}}}, y, hm,
     kind_y(e, y, B.uses.m(B.uses.of(List.reverse(&2, U32, xs), rss, y), ut, B.mults.spec(xs, List.reverse(&2, U32, xs), rss, ut, obs, us, s)), mu_y(xs, rss, ut, obs, us, s, e, y, h1, h2, hy, hc, hms)))
 
 # The affine units
@@ -4978,7 +5055,7 @@ def ers_grow(t: List<&2, U32>, +es: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>
       ers_grow(r, es, rss, ut, obs, us, B.mult.of(x, B.mult.share(x, ut), B.uses.of(es, rss, x), obs, us, ut, s),
         of_k_ers(U32.is_eq(B.mult.share(x, ut), 1), U32.is_eq(B.mult.share(x, ut), 2), x, B.uses.of(es, rss, x), obs, us, ut, s, h))
 
-def nil_some(+ms: B.Wm<B.Mu>, +ers: List<&2, B.Er>, he: {ers == Nil{} : List<&2, B.Er>}) -> {False{} == has_ers(B.Ms{ms, ers}) : Bool}:
+def nil_some(+ms: B.Ht<B.Pk<B.Mu>>, +ers: List<&2, B.Er>, he: {ers == Nil{} : List<&2, B.Er>}) -> {False{} == has_ers(B.Ms{ms, ers}) : Bool}:
   %Equal.sym(List<&2, B.Er>, ers, Nil{}, he) : {False{} == has_ers(B.Ms{ms, _}) : Bool}
   {==}
 
@@ -11850,7 +11927,7 @@ def get_refs(us: List<&2, B.Un>, d: Nat, +k: U32, +x: U32, +ux: B.Ht<B.Xe>, +hd:
           get_refs(t, d2, U32.add(k, 1), x, ux, hd_next(k, x, d2, hd))
 
 def ue_x(+files: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +us0: List<&2, B.Un>, +als: List<&2, B.Al>, +own: List<&2, B.Ci>, +res: List<&2, List<&2, U32>>,
-    +paths: List<&2, List<&2, U32>>, +mode: U32, +rtypes: List<&2, List<&2, U32>>, +ux: B.Ht<B.Xe>, +us: List<&2, B.Un>, +mt: B.Wm<B.Mu>, +x: U32) ->
+    +paths: List<&2, List<&2, U32>>, +mode: U32, +rtypes: List<&2, List<&2, U32>>, +ux: B.Ht<B.Xe>, +us: List<&2, B.Un>, +mt: B.Ht<B.Pk<B.Mu>>, +x: U32) ->
     {B.uses.e(B.Ec{files, obs, us0, als, own, res, paths, mode, rtypes, ux, B.pt.of(B.Un, us), mt}, x) == B.rus.at(B.refss(us, ux, 0), x) : List<&2, B.Ru>}:
   %Equal.sym(B.Un, B.ut.un(B.pt.of(B.Un, us), x), B.un.at(us, x), Laws.units.positions(us, x)) : {ufs(_, ux, x) == B.rus.at(B.refss(us, ux, 0), x) : List<&2, B.Ru>}
   Equal.sym(List<&2, B.Ru>, B.rus.or(List.get(&2, List<&2, B.Ru>, B.refss(us, ux, 0), U32.to_nat(x))), ufs(B.un.or(List.get(&2, B.Un, us, U32.to_nat(x))), ux, x),
@@ -11859,7 +11936,7 @@ def ue_x(+files: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +us0: List<&2, B
 # the writer's uses of y by the units xs: those mults reads
 def ue_of(xs: List<&2, U32>, +files: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +us0: List<&2, B.Un>, +als: List<&2, B.Al>, +own: List<&2, B.Ci>,
     +res: List<&2, List<&2, U32>>, +paths: List<&2, List<&2, U32>>, +mode: U32, +rtypes: List<&2, List<&2, U32>>, +ux: B.Ht<B.Xe>, +us: List<&2, B.Un>,
-    +mt: B.Wm<B.Mu>, +y: U32) -> {B.uses.of.e(xs, B.Ec{files, obs, us0, als, own, res, paths, mode, rtypes, ux, B.pt.of(B.Un, us), mt}, y) == B.uses.of(xs, B.refss(us, ux, 0), y) : List<&2, B.Ru>}:
+    +mt: B.Ht<B.Pk<B.Mu>>, +y: U32) -> {B.uses.of.e(xs, B.Ec{files, obs, us0, als, own, res, paths, mode, rtypes, ux, B.pt.of(B.Un, us), mt}, y) == B.uses.of(xs, B.refss(us, ux, 0), y) : List<&2, B.Ru>}:
   match xs:
     case Nil{}:
       {==}
@@ -11881,9 +11958,9 @@ def o_once(+roots: List<&2, U32>, +cal: List<&2, List<&2, U32>>, +obs: List<&2, 
   Laws.order.once(roots, cal, obs, us)
 
 def Laws.sharing.emitted(files, obs, us, als, own, res, paths, ux, roots, acc, y, hy, hc):
-  Laws.sharing.copied(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us))), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}, B.Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, B.pt.of(B.Un, us), B.ms.ms(B.mults(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us))), B.pw.of(List<&2, B.Ru>, B.refss(us, ux, 0)), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}, {B.WmNone{} : B.Wm<List<&2, B.Ru>>}))}, acc, y,
+  Laws.sharing.copied(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us))), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}, B.Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, B.pt.of(B.Un, us), B.ms.ms(B.mults(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us))), B.pw.of(List<&2, B.Ru>, B.refss(us, ux, 0)), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}, {B.HLeaf{Nil{}} : B.Ht<B.Pk<List<&2, B.Ru>>>}))}, acc, y,
     o_first(roots, B.calls(B.refss(us, ux, 0)), obs, us), o_once(roots, B.calls(B.refss(us, ux, 0)), obs, us), hy, hc, {==}, {==}, {==},
-    ue_of(List.reverse(&2, U32, B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us)))), files, obs, us, als, own, res, paths, 0, Nil{}, ux, us, B.ms.ms(B.mults(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us))), B.pw.of(List<&2, B.Ru>, B.refss(us, ux, 0)), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}, {B.WmNone{} : B.Wm<List<&2, B.Ru>>})), y))
+    ue_of(List.reverse(&2, U32, B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us)))), files, obs, us, als, own, res, paths, 0, Nil{}, ux, us, B.ms.ms(B.mults(B.ds.order(B.df.ds(B.walk.fast(roots, B.calls(B.refss(us, ux, 0)), obs, us))), B.pw.of(List<&2, B.Ru>, B.refss(us, ux, 0)), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}, {B.HLeaf{Nil{}} : B.Ht<B.Pk<List<&2, B.Ru>>>})), y))
 
 # Emission's errors none, its names check's none (`unique.emitted`):
 # an append that is empty has each side empty
@@ -11924,23 +12001,23 @@ def Laws.unique.emitted(files, obs, us, als, own, res, paths, ux, roots, dse, ms
 # dispositions' (`ec.mu` of `emit.ec`, by computation)
 
 def ms_walked(+roots: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>) ->
-    {B.emit.ms(B.ds.order(B.emit.walk(roots, rss, obs, us)), rss, ut, obs, us) == B.mults.spec(B.ds.order(B.emit.walk(roots, rss, obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, rss, obs, us))), rss, ut, obs, us, B.Ms{B.WmNone{}, Nil{}}) : B.Ms}:
-  Laws.mults.walked(roots, rss, ut, obs, us, B.Ms{B.WmNone{}, Nil{}})
+    {B.emit.ms(B.ds.order(B.emit.walk(roots, rss, obs, us)), rss, ut, obs, us) == B.mults.spec(B.ds.order(B.emit.walk(roots, rss, obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, rss, obs, us))), rss, ut, obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}) : B.Ms}:
+  Laws.mults.walked(roots, rss, ut, obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}})
 
 def Laws.final.emitted(files, obs, us, als, own, res, paths, ux, roots, y, hy, hc):
   %Equal.sym(List<&2, B.Ru>, B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y), B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y), ue_of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), files, obs, us, als, own, res, paths, 0, Nil{}, ux, us, B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)), y)) : {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.Mu{B.uses.m(_, B.pt.of(B.Un, us), B.Ms{B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)), Nil{}}), 1} : B.Mu}
-  %Equal.sym(B.Ms, B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us), B.mults.spec(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}), ms_walked(roots, B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)) : {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y), B.pt.of(B.Un, us), B.Ms{B.ms.ms(_), Nil{}}), 1} : B.Mu}
-  %um_ms(B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y), B.pt.of(B.Un, us), B.mults.spec(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}})) : {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.Mu{_, 1} : B.Mu}
-  mu_y(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}, B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y, o_first(roots, B.calls(B.refss(us, ux, 0)), obs, us), o_once(roots, B.calls(B.refss(us, ux, 0)), obs, us), hy, hc, {==})
+  %Equal.sym(B.Ms, B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us), B.mults.spec(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}), ms_walked(roots, B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)) : {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.Mu{B.uses.m(B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y), B.pt.of(B.Un, us), B.Ms{B.ms.ms(_), Nil{}}), 1} : B.Mu}
+  %um_ms(B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y), B.pt.of(B.Un, us), B.mults.spec(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}})) : {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.Mu{_, 1} : B.Mu}
+  mu_y(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}, B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y, o_first(roots, B.calls(B.refss(us, ux, 0)), obs, us), o_once(roots, B.calls(B.refss(us, ux, 0)), obs, us), hy, hc, {==})
 
 def he_spec(+roots: List<&2, U32>, +rss: List<&2, List<&2, B.Ru>>, +ut: B.Ht<B.Pk<B.Un>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>,
-    he: {B.ms.ers(B.emit.ms(B.ds.order(B.emit.walk(roots, rss, obs, us)), rss, ut, obs, us)) == Nil{} : List<&2, B.Er>}) -> {B.ms.ers(B.mults.spec(B.ds.order(B.emit.walk(roots, rss, obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, rss, obs, us))), rss, ut, obs, us, B.Ms{B.WmNone{}, Nil{}})) == Nil{} : List<&2, B.Er>}:
+    he: {B.ms.ers(B.emit.ms(B.ds.order(B.emit.walk(roots, rss, obs, us)), rss, ut, obs, us)) == Nil{} : List<&2, B.Er>}) -> {B.ms.ers(B.mults.spec(B.ds.order(B.emit.walk(roots, rss, obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, rss, obs, us))), rss, ut, obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}})) == Nil{} : List<&2, B.Er>}:
   %ms_walked(roots, rss, ut, obs, us) : {B.ms.ers(_) == Nil{} : List<&2, B.Er>}
   he
 
 def Laws.once.emitted(files, obs, us, als, own, res, paths, ux, roots, y, hy, ha, he):
   %Equal.sym(List<&2, B.Ru>, B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y), B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y), ue_of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), files, obs, us, als, own, res, paths, 0, Nil{}, ux, us, B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)), y)) : {Nat.is_le(List.length(&2, B.Ru, _), 1n) == True{} : Bool}
-  Laws.sharing.once(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}, y, hy, ha, he_spec(roots, B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, he))
+  Laws.sharing.once(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}, y, hy, ha, he_spec(roots, B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, he))
 
 def hl_u(+files: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +us: List<&2, B.Un>, +als: List<&2, B.Al>, +own: List<&2, B.Ci>, +res: List<&2, List<&2, U32>>,
     +paths: List<&2, List<&2, U32>>, +ux: B.Ht<B.Xe>, +roots: List<&2, U32>, +y: U32, hl: {List.length(&2, B.Ru, B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y)) == 1n : Nat}) ->
@@ -11951,8 +12028,8 @@ def hl_u(+files: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +us: List<&2, B.
 def Laws.affine.emitted(files, obs, us, als, own, res, paths, ux, roots, y, hy, ha, hl):
   %Equal.sym(List<&2, B.Ru>, B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y), B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y), ue_of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), files, obs, us, als, own, res, paths, 0, Nil{}, ux, us, B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)), y)) : {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.mu.after(B.mu.m(B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ru.user(_))), B.Mu{0, 0}) : B.Mu}
   %um_get_none(B.Mu, y) : {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.mu.after(B.mu.m(B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ru.user(B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y)))), B.mu.or(_)) : B.Mu}
-  %Equal.sym(B.Ms, B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us), B.mults.spec(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}), ms_walked(roots, B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)) : {B.ms.mu(_, y) == B.mu.after(B.mu.m(B.ms.mu(_, B.ru.user(B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y)))), B.ms.mu(B.Ms{B.WmNone{}, Nil{}}, y)) : B.Mu}
-  Laws.sharing.affine(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.WmNone{}, Nil{}}, y, o_first(roots, B.calls(B.refss(us, ux, 0)), obs, us), o_once(roots, B.calls(B.refss(us, ux, 0)), obs, us), hy, ha,
+  %Equal.sym(B.Ms, B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us), B.mults.spec(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}), ms_walked(roots, B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)) : {B.ms.mu(_, y) == B.mu.after(B.mu.m(B.ms.mu(_, B.ru.user(B.uses.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.refss(us, ux, 0), y)))), B.ms.mu(B.Ms{B.HLeaf{Nil{}}, Nil{}}, y)) : B.Mu}
+  Laws.sharing.affine(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us, B.Ms{B.HLeaf{Nil{}}, Nil{}}, y, o_first(roots, B.calls(B.refss(us, ux, 0)), obs, us), o_once(roots, B.calls(B.refss(us, ux, 0)), obs, us), hy, ha,
     hl_u(files, obs, us, als, own, res, paths, ux, roots, y, hl))
 
 # No line read as a marker (`markers.unambiguous`): the first byte of the
