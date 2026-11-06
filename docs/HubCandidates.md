@@ -55,3 +55,7 @@ Left out, as the hub has them under other names: `and_intro`
 
 - `some_inj`: `Some{g} == Some{h}` gives `g == h`.
 - `some_none`, `cons_ne_nil`: a constructor's clash refuted.
+- `app_nil_l`, `app_nil_r` (stated over `Er`): `List.append(a, b) ==
+  Nil` gives `a == Nil` and `b == Nil`, an empty append's sides each
+  empty; with `er_cons`, a `Con` is no `Nil`. The hub has `append_nil`
+  and `nil_append`, the converse direction.

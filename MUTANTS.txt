@@ -570,3 +570,38 @@ a copy of a definition not found given a line
         u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
 +++
         u => (Rd{i, NBad{Nil{}, 0}, Nil{}, [Rl{7, 0, Nil{}}]}, Rb{Nil{}, Nil{}, Nil{}}),
+
+=== refs_unnumbered sharing.emitted
+each unit's references taken as the first's: mults reads uses the writer does not
+--- blend.bend
+refs.rls(un.lines(x), ux, k)), refss(t, ux, (k + 1 : U32))}
++++
+refs.rls(un.lines(x), ux, k)), refss(t, ux, k)}
+
+=== writer_lines_first sharing.emitted
+the writer reads a unit's lines' uses as the first unit's
+--- blend.bend
+refs.rls(un.lines(ec.un(e, x)), ec.ux(e), x))
++++
+refs.rls(un.lines(ec.un(e, x)), ec.ux(e), 0))
+
+=== writer_next_unit sharing.emitted
+the writer reads each unit through the table one past it
+--- blend.bend
+      ut.un(ut, i)
++++
+      ut.un(ut, (i + 1 : U32))
+
+=== mults_reversed sharing.emitted
+the dispositions made in the order emitted, callees first, not users first
+--- blend.bend
+  mults(order, pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{WmNone{}, Nil{}}, WmNone{})
++++
+  mults(List.reverse(&2, U32, order), pw.of(List<&2, Ru>, rss), ut, obs, us, Ms{WmNone{}, Nil{}}, WmNone{})
+
+=== names_unchecked unique.emitted
+emission checks no name emitted twice
+--- blend.bend
+    List.append(&2, Er, er.names.of(names.all(List.reverse(&2, U32, order), e)), List.append(&2, Er, lwe, pfe)))))
++++
+    List.append(&2, Er, Nil{}, List.append(&2, Er, lwe, pfe)))))

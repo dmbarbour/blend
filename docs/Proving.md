@@ -67,6 +67,15 @@ it alone taught. Add to this file what a new proof teaches.
   line, past 2^32 lines too; tested on the first line alone
   (`rls.put`'s `first`), the later lines' newlines hold by computation
   (`markers.writer`).
+- **Name a composite's parts to join laws at it**: a law cannot name
+  a function's locals, so `emitted`'s walk, dispositions, writer's
+  context, table and errors are definitions of their own (`emit.walk`,
+  `emit.ms`, `emit.ec`, `module.table`, `emit.ers`), `emitted` calling
+  each and the joined laws naming them (`sharing.emitted`,
+  `unique.emitted`); a mutation of a part then fails the join, where a
+  law restating the composition by hand would not see it. With one
+  caller each they cost nothing, but pass a part the fields it reads,
+  not the records holding them (AGENTS.md, Measuring).
 
 ## Writing proofs
 
