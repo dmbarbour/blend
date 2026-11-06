@@ -605,3 +605,24 @@ emission checks no name emitted twice
     List.append(&2, Er, er.names.of(names.all(List.reverse(&2, U32, order), e)), List.append(&2, Er, lwe, pfe)))))
 +++
     List.append(&2, Er, Nil{}, List.append(&2, Er, lwe, pfe)))))
+
+=== writer_no_dispositions final.emitted
+the writer given no dispositions: every unit written as if never copied
+--- blend.bend
+  Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, ut, mt}
++++
+  Ec{files, obs, us, als, own, res, paths, 0, Nil{}, ux, ut, WmNone{}}
+
+=== writer_uses_twice once.emitted
+the writer reads each unit's uses twice: an affine unit used once seen used twice
+--- blend.bend
+      List.append(&2, Ru, uses.in(uses.e(e, x), x, y), uses.of.e(t, e, y))
++++
+      List.append(&2, Ru, uses.in(uses.e(e, x), x, y), List.append(&2, Ru, uses.in(uses.e(e, x), x, y), uses.of.e(t, e, y)))
+
+=== writer_mu_next affine.emitted
+the writer reads each unit's disposition as the next unit's
+--- blend.bend
+      mu.or(um.get(Mu, mt, i))
++++
+      mu.or(um.get(Mu, mt, (i + 1 : U32)))

@@ -756,3 +756,64 @@ law unique.emitted:
   for +pfe: List<&2, B.Er>
   for +h: {B.emit.ers(dse, mse, all, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), lwe, pfe) == Nil{} : List<&2, B.Er>}
   {B.nms.distinct(B.defs.names(B.defs.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))))) == True{} : Bool}
+
+# LAW: in the code's file as emitted, each copied unit of the walk's
+# order has the copies its uses by the units written ask for, as the
+# writer reads those uses and their users' copies (`sharing.final`): the
+# dispositions `emitted` makes are those its writer's uses ask for.
+# Record: blend-copies-keep-their-name
+law final.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +als: List<&2, B.Al>
+  for +own: List<&2, B.Ci>
+  for +res: List<&2, List<&2, U32>>
+  for +paths: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +roots: List<&2, U32>
+  for +y: U32
+  for +hy: {B.has(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), y) == True{} : Bool}
+  for +hc: {B.mult.share(y, B.pt.of(B.Un, us)) == 2 : U32}
+  {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.Mu{B.uses.m(B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y), B.ec.ut(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)))), B.ec.ms(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))))), 1} : B.Mu}
+
+# LAW: and where the dispositions report no error, each affine unit of
+# the walk's order is used once at most by the units written, as the
+# writer reads their uses (`sharing.once`).
+# Record: blend-copies-keep-their-name
+law once.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +als: List<&2, B.Al>
+  for +own: List<&2, B.Ci>
+  for +res: List<&2, List<&2, U32>>
+  for +paths: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +roots: List<&2, U32>
+  for +y: U32
+  for +hy: {B.has(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), y) == True{} : Bool}
+  for +ha: {B.mult.share(y, B.pt.of(B.Un, us)) == 0 : U32}
+  for +he: {B.ms.ers(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)) == Nil{} : List<&2, B.Er>}
+  {Nat.is_le(List.length(&2, B.Ru, B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y)), 1n) == True{} : Bool}
+
+# LAW: and an affine unit of the walk's order used once by the units
+# written, as the writer reads their uses, ends with its user's copies,
+# of the affine kind where there are any, else with none
+# (`sharing.affine`).
+# Record: blend-copies-keep-their-name
+law affine.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +obs: List<&2, B.Ob>
+  for +us: List<&2, B.Un>
+  for +als: List<&2, B.Al>
+  for +own: List<&2, B.Ci>
+  for +res: List<&2, List<&2, U32>>
+  for +paths: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +roots: List<&2, U32>
+  for +y: U32
+  for +hy: {B.has(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), y) == True{} : Bool}
+  for +ha: {B.mult.share(y, B.pt.of(B.Un, us)) == 0 : U32}
+  for +hl: {List.length(&2, B.Ru, B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y)) == 1n : Nat}
+  {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.mu.after(B.mu.m(B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ru.user(B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y)))), B.Mu{0, 0}) : B.Mu}
