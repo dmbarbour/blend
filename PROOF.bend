@@ -11533,3 +11533,306 @@ def Laws.units.positions(us, i):
       plist(B.Un, us, 0, i, B.ht.for(B.Pk<B.Un>, List.length(&2, B.Un, us))), List.get(&2, B.Un, us, U32.to_nat(i)),
       puts_at(B.Un, us, 0, i, B.ht.for(B.Pk<B.Un>, List.length(&2, B.Un, us))),
       pl_get(B.Un, us, U32.to_nat(i), 0, i, B.ht.for(B.Pk<B.Un>, List.length(&2, B.Un, us)), empty_at(B.Un, List.length(&2, B.Un, us), i), MNat.add_zero(U32.to_nat(i)))))
+
+# The markers joined at emission (`markers.emitted`): a unit whose node
+# is no definition has no lines (`units_e`), so every unit's lines are
+# numbered on from its definition's (`lined`), the table's too
+# (`units.positions`); with the context (`markers.inline`), the writer's
+# law has its hypotheses.
+
+def rle(ls: List<&2, B.Rl>) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{l, t}:
+      False{}
+
+def rde(r: B.Rd) -> Bool:
+  match r:
+    case B.Rd{i, nd, hd, ls}:
+      match nd:
+        case B.NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          True{}
+        case _:
+          rle(ls)
+
+def ck_e(i: B.In, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: U32, +ind: U32, +what: U32,
+    h: B.Rb, b: B.Rb, sh: List<&2, B.Er>) -> {rde(Pair.fst(B.Rd, B.Rb, B.copy.k(i, B.NDef{share, upd, name, rest, params, body, no, ind, what}, h, b, sh))) == True{} : Bool}:
+  match h b:
+    case B.Rb{hl, he, hi} B.Rb{ls, es, more}:
+      {==}
+
+def cn_e(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node) -> {rde(Pair.fst(B.Rd, B.Rb, B.copy.node(cx, o, i, nd))) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          ck_e(B.In{n, q, prior}, share, upd, name, rest, params, body, no, ind, what,
+            B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
+            B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+            B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
+              u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
+                B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))))
+        case B.NImport{+txt, +no}:
+          {==}
+        case B.NDecl{+names, +no}:
+          {==}
+        case B.NBad{+txt, +no}:
+          {==}
+        case B.NErr{+msg, +no}:
+          {==}
+        case B.NBend{+lines, +no}:
+          {==}
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          {==}
+
+def oc_e(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool) -> {rde(Pair.fst(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior))) == True{} : Bool}:
+  match mb:
+    case None{}:
+      {==}
+    case Some{nd}:
+      cn_e(cx, o, B.In{n, q, prior}, nd)
+
+def rd_e(+cx: B.Cx, +o: U32, i: B.In) -> {rde(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i))) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      oc_e(B.cx.mem(cx, q, n), cx, o, n, q, prior)
+
+def rdse(rs: List<&2, B.Rd>) -> Bool:
+  match rs:
+    case Nil{}:
+      True{}
+    case Con{+r, t}:
+      Bool.and(rde(r), rdse(t))
+
+def cpe(c: B.Cp) -> Bool:
+  match c:
+    case B.Cp{rds, ers, done}:
+      rdse(rds)
+
+def cpadd_e(+rd: B.Rd, b: B.Rb, c: B.Cp, +hr: {rde(rd) == True{} : Bool}, +hc: {cpe(c) == True{} : Bool}) -> {cpe(B.cp.add(rd, b, c)) == True{} : Bool}:
+  match b:
+    case B.Rb{ls, es, more}:
+      match c:
+        case B.Cp{+rds, ers, done}:
+          and_intro(rde(rd), rdse(rds), hr, hc)
+
+def cg_e(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    ht: {cpe(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == True{} : Bool}, hf: {cpe(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == True{} : Bool}) ->
+    {cpe(cgk(c, k, cx, o, i, t, rds, ers, done)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ht
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cpe(_) == True{} : Bool}
+      hf
+
+def copies_e(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +hc: {cpe(c) == True{} : Bool}) -> {cpe(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
+  match n:
+    case 0n:
+      hc
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          hc
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              cg_e(B.done.has(done, i), k, cx, o, i, t, rds, ers, done,
+                copies_e(k, cx, o, t, B.Cp{rds, ers, done}, hc),
+                copies_e(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}),
+                  cpadd_e(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}, rd_e(cx, o, i), hc)))
+
+def ocse(os: List<&2, B.Oc>) -> Bool:
+  match os:
+    case Nil{}:
+      True{}
+    case Con{oc, t}:
+      match oc:
+        case B.Oc{+id, c}:
+          Bool.and(cpe(c), ocse(t))
+
+def mc_e(c1: Bool, abs: Bool, +id: U32, +t: List<&2, B.Ob>, +cx: B.Cx, +ih: {ocse(B.module.copies(t, cx)) == True{} : Bool}) -> {ocse(mck(c1, abs, id, t, cx)) == True{} : Bool}:
+  match c1 abs:
+    case True{} _:
+      ih
+    case False{} True{}:
+      ih
+    case False{} False{}:
+      and_intro(cpe(B.copies(cx, id)), ocse(B.module.copies(t, cx)),
+        copies_e(1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))), cx, id, B.ins.finals(B.cx.map(cx, id)),
+          B.Cp{Nil{}, Nil{}, B.ht.for(B.In, 1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))))}, {==}), ih)
+
+def mcopies_e(os: List<&2, B.Ob>, +cx: B.Cx) -> {ocse(B.module.copies(os, cx)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+          mc_e(Bool.or(Bool.not(U32.is_eq(B.loc.mod(no), 0)), Bool.not(B.is.object(kind))), abs, id, t, cx, mcopies_e(t, cx))
+
+def une(u: B.Un) -> Bool:
+  match u:
+    case B.Un{+o, i, nd, hd, ls}:
+      match nd:
+        case B.NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          True{}
+        case _:
+          rle(ls)
+
+def unse(us: List<&2, B.Un>) -> Bool:
+  match us:
+    case Nil{}:
+      True{}
+    case Con{+u, t}:
+      Bool.and(une(u), unse(t))
+
+def rdse_rev(xs: List<&2, B.Rd>, +acc: List<&2, B.Rd>, +hx: {rdse(xs) == True{} : Bool}, +ha: {rdse(acc) == True{} : Bool}) -> {rdse(List.reverse.go(&2, B.Rd, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+r, +t}:
+      rdse_rev(t, Con{r, acc}, and_r(rde(r), rdse(t), hx), and_intro(rde(r), rdse(acc), and_l(rde(r), rdse(t), hx), ha))
+
+def urds_e(+o: U32, rs: List<&2, B.Rd>, +h: {rdse(rs) == True{} : Bool}) -> {unse(B.un.rds(o, rs)) == True{} : Bool}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{r, +t}:
+      match r:
+        case B.Rd{+i, nd, +hd, +ls}:
+          match nd:
+            case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+              and_intro(True{}, unse(B.un.rds(o, t)), {==}, urds_e(o, t, and_r(True{}, rdse(t), h)))
+            case B.NImport{+txt, +no}:
+              and_intro(rle(ls), unse(B.un.rds(o, t)), and_l(rle(ls), rdse(t), h), urds_e(o, t, and_r(rle(ls), rdse(t), h)))
+            case B.NDecl{+names, +no}:
+              and_intro(rle(ls), unse(B.un.rds(o, t)), and_l(rle(ls), rdse(t), h), urds_e(o, t, and_r(rle(ls), rdse(t), h)))
+            case B.NBad{+txt, +no}:
+              and_intro(rle(ls), unse(B.un.rds(o, t)), and_l(rle(ls), rdse(t), h), urds_e(o, t, and_r(rle(ls), rdse(t), h)))
+            case B.NErr{+msg, +no}:
+              and_intro(rle(ls), unse(B.un.rds(o, t)), and_l(rle(ls), rdse(t), h), urds_e(o, t, and_r(rle(ls), rdse(t), h)))
+            case B.NBend{+lines, +no}:
+              and_intro(rle(ls), unse(B.un.rds(o, t)), and_l(rle(ls), rdse(t), h), urds_e(o, t, and_r(rle(ls), rdse(t), h)))
+            case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+              and_intro(rle(ls), unse(B.un.rds(o, t)), and_l(rle(ls), rdse(t), h), urds_e(o, t, and_r(rle(ls), rdse(t), h)))
+
+def unse_app(a: List<&2, B.Un>, +b: List<&2, B.Un>, +ha: {unse(a) == True{} : Bool}, +hb: {unse(b) == True{} : Bool}) -> {unse(List.append(&2, B.Un, a, b)) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{+u, +t}:
+      and_intro(une(u), unse(List.append(&2, B.Un, t, b)), and_l(une(u), unse(t), ha), unse_app(t, b, and_r(une(u), unse(t), ha), hb))
+
+# the units copied: none but a definition's has lines
+def units_e(os: List<&2, B.Oc>, +h: {ocse(os) == True{} : Bool}) -> {unse(B.units(os)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{oc, +t}:
+      match oc:
+        case B.Oc{+id, c}:
+          match c:
+            case B.Cp{+rds, ers, done}:
+              unse_app(B.un.rds(id, List.reverse(&2, B.Rd, rds)), B.units(t),
+                urds_e(id, List.reverse(&2, B.Rd, rds), rdse_rev(rds, Nil{}, and_l(rdse(rds), ocse(t), h), {==})), units_e(t, and_r(rdse(rds), ocse(t), h)))
+
+# a unit's lines numbered on from its definition's line, or the line after
+def lined(+u: B.Un) -> Bool:
+  B.rls.from(B.un.lines(u), B.node.no(B.un.node(u)))
+
+def lined_of(u: B.Un, +hk: {B.un.ok(u) == True{} : Bool}, +he: {une(u) == True{} : Bool}) -> {lined(u) == True{} : Bool}:
+  match u:
+    case B.Un{+o, +i, nd, +hd, ls}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          hk
+        case B.NImport{+txt, +no}:
+          match ls:
+            case Nil{}:
+              {==}
+            case Con{+l, +t}:
+              nope(lined(B.Un{o, i, B.NImport{txt, no}, hd, Con{l, t}}), he)
+        case B.NDecl{+names, +no}:
+          match ls:
+            case Nil{}:
+              {==}
+            case Con{+l, +t}:
+              nope(lined(B.Un{o, i, B.NDecl{names, no}, hd, Con{l, t}}), he)
+        case B.NBad{+txt, +no}:
+          match ls:
+            case Nil{}:
+              {==}
+            case Con{+l, +t}:
+              nope(lined(B.Un{o, i, B.NBad{txt, no}, hd, Con{l, t}}), he)
+        case B.NErr{+msg, +no}:
+          match ls:
+            case Nil{}:
+              {==}
+            case Con{+l, +t}:
+              nope(lined(B.Un{o, i, B.NErr{msg, no}, hd, Con{l, t}}), he)
+        case B.NBend{+lines, +no}:
+          match ls:
+            case Nil{}:
+              {==}
+            case Con{+l, +t}:
+              nope(lined(B.Un{o, i, B.NBend{lines, no}, hd, Con{l, t}}), he)
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          match ls:
+            case Nil{}:
+              {==}
+            case Con{+l, +t}:
+              nope(lined(B.Un{o, i, B.NObj{abs, ext, name, parents, kids, no}, hd, Con{l, t}}), he)
+
+def unsl(us: List<&2, B.Un>) -> Bool:
+  match us:
+    case Nil{}:
+      True{}
+    case Con{+u, t}:
+      Bool.and(lined(u), unsl(t))
+
+def unsl_of(us: List<&2, B.Un>, +hk: {B.units.ok(us) == True{} : Bool}, +he: {unse(us) == True{} : Bool}) -> {unsl(us) == True{} : Bool}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      and_intro(lined(u), unsl(t), lined_of(u, and_l(B.un.ok(u), B.units.ok(t), hk), and_l(une(u), unse(t), he)),
+        unsl_of(t, and_r(B.un.ok(u), B.units.ok(t), hk), and_r(une(u), unse(t), he)))
+
+def uol_k(c: Bool, +u: B.Un, +t: List<&2, B.Un>, +laws: Bool, +hu: {lined(u) == True{} : Bool}, +ih: {unsl(B.units.of(t, laws)) == True{} : Bool}) ->
+    {unsl(uok(c, u, t, laws)) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(lined(u), unsl(B.units.of(t, laws)), hu, ih)
+    case False{}:
+      ih
+
+def unsl_filter(us: List<&2, B.Un>, +laws: Bool, +h: {unsl(us) == True{} : Bool}) -> {unsl(B.units.of(us, laws)) == True{} : Bool}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      uol_k(Bool.not(Bool.xor(laws, U32.is_gt(B.node.what(B.un.node(u)), 0))), u, t, laws, and_l(lined(u), unsl(t), h), unsl_filter(t, laws, and_r(lined(u), unsl(t), h)))
+
+def lined_get(us: List<&2, B.Un>, n: Nat, +h: {unsl(us) == True{} : Bool}) -> {lined(B.un.or(List.get(&2, B.Un, us, n))) == True{} : Bool}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      match n:
+        case 0n:
+          and_l(lined(u), unsl(t), h)
+        case 1n+k:
+          lined_get(t, k, and_r(lined(u), unsl(t), h))
+
+# the unit the table finds: the list's, so numbered so
+def hl_at(+us: List<&2, B.Un>, +s: U32, +h: {unsl(us) == True{} : Bool}) -> {lined(B.ut.un(B.pt.of(B.Un, us), s)) == True{} : Bool}:
+  %Equal.sym(B.Un, B.ut.un(B.pt.of(B.Un, us), s), B.un.at(us, s), Laws.units.positions(us, s)) : {lined(_) == True{} : Bool}
+  lined_get(us, U32.to_nat(s), h)
+
+def Laws.markers.emitted(files, trees, als, paths, us, res, mode, rtypes, ux, mt, laws, s, x, j, b, hf, ht, hk):
+  Laws.markers.writer(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als, B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), res, paths, mode, rtypes, ux, B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}, s, x, j, b,
+    Laws.markers.inline(files, trees, als, paths, us, res, mode, rtypes, ux, mt, laws, hf, ht),
+    hl_at(B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws), s, unsl_filter(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws,
+      unsl_of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), Laws.markers.units(trees, als, B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), hk), units_e(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), mcopies_e(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))))))

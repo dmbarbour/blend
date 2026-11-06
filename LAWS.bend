@@ -665,3 +665,44 @@ law units.positions:
   for +us: List<&2, B.Un>
   for +i: U32
   {B.ut.un(B.pt.of(B.Un, us), i) == B.un.at(us, i) : B.Un}
+
+# LAW: so every unit emission writes, for the code's file or the laws'
+# and proofs', is written as where.sh reads it (`markers.writer`): its
+# context holding no newline (`markers.inline`), its lines numbered on
+# from its definition's (`markers.units`), the table finding the units'
+# own (`units.positions`). Its hypotheses the reader's alone: the files'
+# names (`inline.files`), the trees as read (`inline.read`,
+# `markers.read`).
+# Record: blend-adds-no-bend-logic
+law markers.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +us: List<&2, B.Un>
+  for +res: List<&2, List<&2, U32>>
+  for +mode: U32
+  for +rtypes: List<&2, List<&2, U32>>
+  for +ux: B.Ht<B.Xe>
+  for +mt: B.Wm<B.Mu>
+  for +laws: Bool
+  for +s: U32
+  for +x: U32
+  for +j: U32
+  for +b: B.Tb
+  for +hf: {B.inlines(files) == True{} : Bool}
+  for +ht: {B.trees.inline(trees) == True{} : Bool}
+  for +hk: {B.trees.ok(trees) == True{} : Bool}
+  {B.wr.unit(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als,
+    B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
+      B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
+      als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
+      B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
+      B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}),
+    res, paths, mode, rtypes, ux,
+    B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
+      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
+        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
+        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
+        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
+        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}, s, x, j, b) == True{} : Bool}
