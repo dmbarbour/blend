@@ -1006,6 +1006,32 @@ def items.ok(its: List<&2, Item>) -> Bool:
     case Con{it, t}:
       item.ok(it) && items.ok(t)
 
+# a body's lines clear of a marker's place: each blank or deeper than its
+# header, but a first numbered as the header, which the writer keeps on
+# the header's line (LAWS.bend, `deep.items`)
+def ln.deep(ls: List<&2, Ln>, +no: U32, +ind: U32, +first: Bool) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{l, t}:
+      match l:
+        case Ln{+n, +i, txt}:
+          ((first && U32.is_eq(n, no)) || blank(txt) || U32.is_gt(i, ind)) && ln.deep(t, no, ind, False{})
+
+def item.deep(it: Item) -> Bool:
+  match it:
+    case IDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+      ln.deep(body, no, ind, True{})
+    case _:
+      True{}
+
+def items.deep(its: List<&2, Item>) -> Bool:
+  match its:
+    case Nil{}:
+      True{}
+    case Con{it, t}:
+      item.deep(it) && items.deep(t)
+
 # The tree
 # --------
 
@@ -4040,6 +4066,45 @@ def trees.ok(ts: List<&2, List<&2, Node>>) -> Bool:
     case Con{tr, t}:
       defs.ok(tr) && trees.ok(t)
 
+# The terms of a body clear of a marker's place, for the tree and the
+# units (LAWS.bend, `deep.tree`, `deep.units`), as `ln.deep`
+
+def toks.blank(ts: List<&2, Tok>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{t, r}:
+      False{}
+
+def bl.deep(bs: List<&2, Bl>, +no: U32, +ind: U32, +first: Bool) -> Bool:
+  match bs:
+    case Nil{}:
+      True{}
+    case Con{b, t}:
+      match b:
+        case Bl{+n, +i, ts}:
+          ((first && U32.is_eq(n, no)) || toks.blank(ts) || U32.is_gt(i, ind)) && bl.deep(t, no, ind, False{})
+
+def defs.deep(ns: List<&2, Node>) -> Bool:
+  match ns:
+    case Nil{}:
+      True{}
+    case Con{nd, t}:
+      match nd:
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          defs.deep(kids) && defs.deep(t)
+        case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          bl.deep(body, no, ind, True{}) && defs.deep(t)
+        case _:
+          defs.deep(t)
+
+def trees.deep(ts: List<&2, List<&2, Node>>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{tr, t}:
+      defs.deep(tr) && trees.deep(t)
+
 # a unit's lines numbered on from its definition's line, or the line
 # after, where it is a definition
 def un.ok(u: Un) -> Bool:
@@ -4057,6 +4122,39 @@ def units.ok(us: List<&2, Un>) -> Bool:
       True{}
     case Con{u, t}:
       un.ok(u) && units.ok(t)
+
+def rts.blank(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{t, r}:
+      False{}
+
+def rl.deep(ls: List<&2, Rl>, +no: U32, +ind: U32, +first: Bool) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{l, t}:
+      match l:
+        case Rl{+n, +i, ts}:
+          ((first && U32.is_eq(n, no)) || rts.blank(ts) || U32.is_gt(i, ind)) && rl.deep(t, no, ind, False{})
+
+# a unit's lines clear of a marker's place, where it is a definition
+def un.deep(u: Un) -> Bool:
+  match u:
+    case Un{+o, i, nd, hd, ls}:
+      match nd:
+        case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          rl.deep(ls, no, ind, True{})
+        case _:
+          True{}
+
+def units.deep(us: List<&2, Un>) -> Bool:
+  match us:
+    case Nil{}:
+      True{}
+    case Con{u, t}:
+      un.deep(u) && units.deep(t)
 
 # the units of one file: the code's (what 0) or the laws' and proofs'
 def units.of(us: List<&2, Un>, +laws: Bool) -> List<&2, Un>:
@@ -5817,6 +5915,49 @@ def wr.unit(+e: Ec, +s: U32, +x: U32, +j: U32, +b: Tb) -> Bool:
   +dind = node.ind(un.node(ec.un(e, s)))
   +fin = tb.acc(unit.body(e, s, x, j, b))
   wr.head(e, s, x, j, b) && (wr.at(ls, e, s, j, dind, True{}, h, tb.nls(h), no, fin) || wr.at(ls, e, s, j, dind, True{}, h, 1n+tb.nls(h), (no + 1 : U32), fin))
+
+# the first byte of a text's last line, the text kept reversed; a newline
+# where that line is empty (LAWS.bend, `markers.unambiguous`): a byte
+# before the rest of its line, which first.at keeps where that is empty
+def first.at(+e: Bool, +h: U32, +f: U32) -> U32:
+  match e:
+    case True{}:
+      h
+    case False{}:
+      f
+
+def first.k(+nl: Bool, +h: U32, +f: U32) -> U32:
+  match nl:
+    case True{}:
+      10
+    case False{}:
+      first.at(U32.is_eq(f, 10), h, f)
+
+def line.first(xs: List<&2, U32>) -> U32:
+  match xs:
+    case Nil{}:
+      10
+    case Con{+h, t}:
+      first.k(U32.is_eq(h, 10), h, line.first(t))
+
+# the text's last line one where.sh reads no marker: its first byte no
+# `#`
+def tb.clear(+b: Tb) -> Bool:
+  Bool.not(U32.is_eq(line.first(tb.acc(b)), 35))
+
+# each of a body's lines written after b so, as each ends
+def wc.at(ls: List<&2, Rl>, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: Tb) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{+l, t}:
+      tb.clear(rl.put(l, e, x, j, dind, first, b)) && wc.at(t, e, x, j, dind, False{}, rl.put(l, e, x, j, dind, first, b))
+
+# a unit's copy written after b, no line after its marker's one where.sh
+# reads as a marker: its header's line, and each body line as it ends
+def wr.clear(+e: Ec, +s: U32, +x: U32, +j: U32, +b: Tb) -> Bool:
+  +h = unit.head(e, s, x, j, b)
+  tb.clear(h) && wc.at(un.lines(ec.un(e, s)), e, s, j, node.ind(un.node(ec.un(e, s))), True{}, h)
 
 # Imports
 # -------

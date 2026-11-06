@@ -474,6 +474,25 @@ law markers.writer:
   for +hl: {B.rls.from(B.un.lines(B.ec.un(e, s)), B.node.no(B.un.node(B.ec.un(e, s)))) == True{} : Bool}
   {B.wr.unit(e, s, x, j, b) == True{} : Bool}
 
+# LAW: and no line of a unit's copy after its marker's is one where.sh
+# reads as a marker, as each line ends: its header's begins with `def` or
+# `law`, and each body line on its own begins after a newline with its
+# depth in spaces, or is empty; where the unit's lines are blank or
+# deeper than its header but a first numbered as the header, kept on the
+# header's line (`rl.deep`, `deep.units`), and what the writer reads from
+# its context holds no newline (`ec.inline`). So the nearest marker above
+# each of its lines is its definition's.
+# Record: blend-adds-no-bend-logic
+law markers.unambiguous:
+  for +e: B.Ec
+  for +s: U32
+  for +x: U32
+  for +j: U32
+  for +b: B.Tb
+  for +hf: {B.ec.inline(e) == True{} : Bool}
+  for +hd: {B.rl.deep(B.un.lines(B.ec.un(e, s)), B.node.no(B.un.node(B.ec.un(e, s))), B.node.ind(B.un.node(B.ec.un(e, s))), True{}) == True{} : Bool}
+  {B.wr.clear(e, s, x, j, b) == True{} : Bool}
+
 # LAW: a file's lines hold no newline: it splits them there.
 # Record: blend-adds-no-bend-logic
 law inline.lines:

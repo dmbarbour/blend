@@ -626,3 +626,17 @@ the writer reads each unit's disposition as the next unit's
       mu.or(um.get(Mu, mt, i))
 +++
       mu.or(um.get(Mu, mt, (i + 1 : U32)))
+
+=== lead_no_spaces markers.unambiguous
+a body line written after its newline without its depth's spaces: its tokens start the line
+--- blend.bend
+      Con{10, spaces(n)}
++++
+      Con{10, Nil{}}
+
+=== depth_one_short markers.unambiguous
+a body line written one space shallower: one a space deeper than its header starts the line with its tokens
+--- blend.bend
+U32.to_nat(when(U32, U32.is_gt(ind, dind), v => (ind - dind : U32), v => 0)))))
++++
+U32.to_nat(when(U32, U32.is_gt(ind, dind), v => (ind - dind - 1 : U32), v => 0)))))
