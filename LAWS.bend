@@ -506,3 +506,13 @@ law inline.read:
   for +bs: List<&2, U32>
   for +base: U32
   {B.nodes.inline(B.read.at(bs, base)) == True{} : Bool}
+
+# LAW: the objects made from trees whose texts hold no newline have paths
+# holding none: each object's name joined to its host's path, a made
+# object's name its mixin's, a copy's path its template's.
+# Record: blend-adds-no-bend-logic
+law inline.objects:
+  for +trees: List<&2, List<&2, B.Node>>
+  for +als: List<&2, B.Al>
+  for +h: {B.trees.inline(trees) == True{} : Bool}
+  {B.obs.inline(B.obs.made(B.syn.of(als, B.obs(trees)))) == True{} : Bool}

@@ -5649,6 +5649,13 @@ def nodes.inline(ns: List<&2, Node>) -> Bool:
         case _:
           nodes.inline(t)
 
+def trees.inline(ts: List<&2, List<&2, Node>>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{tr, t}:
+      nodes.inline(tr) && trees.inline(t)
+
 # a body's lines numbered on from its header's line, or the line after
 def rls.from(+ls: List<&2, Rl>, +no: U32) -> Bool:
   rl.from(ls, no) || rl.from(ls, (no + 1 : U32))
