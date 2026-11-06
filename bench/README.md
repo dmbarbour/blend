@@ -23,5 +23,12 @@ at N, 2N and 4N, as one size hides superlinear growth.
 
       bench/measure.sh chain|fan|dense|down|copies N [MB SECONDS]
 
+- `andor.bend` reproduces a Bend behavior Blend's code must reckon
+  with: `&&` and `||` evaluate both sides in a native build, a false
+  left side under `&&` and a true one under `||` costing the right
+  side's work (Bend 2.0.39, 2026-11-06; each case's work grows with N,
+  the control's too). Decide on a cheap test in a helper matching a
+  `Bool` parameter instead (`docs/Proving.md`).
+      bend bench/andor.bend -o andor; andor CASE N
 Results and what they found are in the plan step that uses them,
 `blend-scale` (`docs/plans/Blend_2026-11-04.md`).

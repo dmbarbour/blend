@@ -13371,6 +13371,14 @@ def dt_same(+ns: List<&2, B.Node>, +files: List<&2, List<&2, U32>>, +hf: {B.inli
 
 # Each line's first byte no `#`
 
+# a datatype's header starts `type `
+def dt_hnot(c: Bool, +xs: List<&2, U32>, +p: List<&2, U32>, h: {B.holds.not(c, xs, p) == True{} : Bool}) -> {c == True{} : Bool}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({False{} == True{} : Bool}, MB.false_ne_true()(h))
+
 def dt_hc(m: Nat, txt: List<&2, U32>, hd: {B.is.datatype(txt) == True{} : Bool}) -> {B.text.clear(List.append(&2, U32, B.spaces(m), txt)) == True{} : Bool}:
   match m:
     case 0n:
@@ -13379,7 +13387,7 @@ def dt_hc(m: Nat, txt: List<&2, U32>, hd: {B.is.datatype(txt) == True{} : Bool})
           {==}
         case Con{+h, +r}:
           %Equal.sym(U32, h, 116, u32_eq_of_is_eq(h, 116, and_l(U32.is_eq(h, 116), B.starts.s(r, "ype "),
-              and_l(B.starts.s(Con{h, r}, "type "), Bool.not(B.holds(Con{h, r}, B.codes(" = "))), hd)))) :
+              dt_hnot(B.starts.s(Con{h, r}, "type "), Con{h, r}, B.codes(" = "), hd)))) :
             {B.text.clear(Con{_, r}) == True{} : Bool}
           {==}
     case 1n+k:

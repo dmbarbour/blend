@@ -808,12 +808,21 @@ def decl.witness(+name: List<&2, U32>, +ps: List<&2, U32>, +ret: List<&2, U32>, 
     u => Con{IBad{txt, no, ind}, out})
 
 # whether xs holds Con{ph, pt}: its first byte tested before the rest
+# p's rest at a byte that is its first: `&&` evaluates both sides, so the
+# rest is tried only where the first matched (`blend-perf.strict`)
+def holds.at(+c: Bool, t: List<&2, U32>, pt: List<&2, U32>) -> Bool:
+  match c:
+    case True{}:
+      starts(t, pt)
+    case False{}:
+      False{}
+
 def holds.c(xs: List<&2, U32>, +ph: U32, +pt: List<&2, U32>) -> Bool:
   match xs:
     case Nil{}:
       False{}
     case Con{+h, +t}:
-      (U32.is_eq(h, ph) && starts(t, pt)) || holds.c(t, ph, pt)
+      holds.at(U32.is_eq(h, ph), t, pt) || holds.c(t, ph, pt)
 
 # whether xs holds p
 def holds(+xs: List<&2, U32>, p: List<&2, U32>) -> Bool:
@@ -887,11 +896,28 @@ def flat.line(+skip: Bool, +imp: Bool, +abs: Bool, +obj: Bool, +decl: Bool, +txt
 # Bend erases it. `type Name is Kind:` with its lines is a datatype of
 # Bend's, passed through.
 
+# a line's test of what it holds, made only where its start passed: the
+# whole line read only for a line that starts as one of a type's
+# (`blend-perf.strict`)
+def holds.if(+c: Bool, xs: List<&2, U32>, p: List<&2, U32>) -> Bool:
+  match c:
+    case True{}:
+      holds(xs, p)
+    case False{}:
+      False{}
+
+def holds.not(+c: Bool, xs: List<&2, U32>, p: List<&2, U32>) -> Bool:
+  match c:
+    case True{}:
+      Bool.not(holds(xs, p))
+    case False{}:
+      False{}
+
 def is.member.type(+xs: List<&2, U32>) -> Bool:
-  (starts.s(xs, "type ") || starts.s(xs, "upd type ")) && holds(xs, codes(" = "))
+  holds.if(starts.s(xs, "type ") || starts.s(xs, "upd type "), xs, codes(" = "))
 
 def is.datatype(+xs: List<&2, U32>) -> Bool:
-  starts.s(xs, "type ") && Bool.not(holds(xs, codes(" = ")))
+  holds.not(starts.s(xs, "type "), xs, codes(" = "))
 
 # xs split at the first p, p dropped
 def split.at(xs: List<&2, U32>, +p: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32> & List<&2, U32>:
