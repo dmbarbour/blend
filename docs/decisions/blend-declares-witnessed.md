@@ -1,6 +1,6 @@
 # A typed declaration is checked by a witness Bend checks
 
-`blend-declares-witnessed` · maintainer · rev 146d156
+`blend-declares-witnessed` · maintainer · rev 9402c1d
 
 **Context.** `declare foo` said only that a concrete family must define
 `foo`, with no way to say its type, while types may be overridden (the
@@ -22,9 +22,9 @@ checker and adds no Bend logic of its own (`blend-adds-no-bend-logic`).
    Blend_0.Listed.S(): Blend_0.Listed.push(st, x)`, or for a kind
    `def Listed.S.as_declared() -> Data: Blend_0.Listed.S()`, its marker
    naming the declaration, in the module's proofs' file beside its code
-   (`blend-proofs-beside-code`), never in the program: a witness is a
-   second caller, which would make Bend split the definition into a
-   segment of its own. `--verdict` accepts a witness as any total def
+   (`blend-proofs-beside-code`), to go into the module's own file
+   (`blend-laws-in-module`): a witness no `main` reaches is not
+   compiled, and makes no second caller (the kernel, 2026-11-06). `--verdict` accepts a witness as any total def
    (tried 2026-11-05).
 
 4. The maintainer (2026-11-05): the name `f.as_declared` is accepted.

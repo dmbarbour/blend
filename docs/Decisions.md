@@ -94,6 +94,10 @@ its modules, namespaces and emitted names are Bend's.
   emission writes only the modules a command names, or with `--tree`
   every import they reach short of a package, and verifies each import
   none names against its emission, unless `--alone`.
+- [`blend-laws-in-module`](decisions/blend-laws-in-module.md): a module's
+  laws and proofs written into its own file, `Obj.LAW.name` and
+  `LAW.name`, a law unproven only an abstract object's; replaces
+  `blend-proofs-beside-code` once built.
 - [`blend-proofs-beside-code`](decisions/blend-proofs-beside-code.md): a
   Blend module's laws and proofs are written into files of their own
   beside its code, `X_LAWS.bend` and `X_PROOF.bend`, by the emission
