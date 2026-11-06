@@ -626,3 +626,59 @@ the writer reads each unit's disposition as the next unit's
       mu.or(um.get(Mu, mt, i))
 +++
       mu.or(um.get(Mu, mt, (i + 1 : U32)))
+
+=== lead_no_spaces markers.unambiguous
+a body line written after its newline without its depth's spaces: its tokens start the line
+--- blend.bend
+      Con{10, spaces(n)}
++++
+      Con{10, Nil{}}
+
+=== depth_one_short markers.unambiguous
+a body line written one space shallower: one a space deeper than its header starts the line with its tokens
+--- blend.bend
+U32.to_nat(when(U32, U32.is_gt(ind, dind), v => (ind - dind : U32), v => 0)))))
++++
+U32.to_nat(when(U32, U32.is_gt(ind, dind), v => (ind - dind - 1 : U32), v => 0)))))
+
+=== body_takes_sibling deep.items
+a line as deep as its header read into its body: a sibling definition's header swallowed
+--- blend.bend
+          when(List<&2, Ln> & List<&2, Ln>, blank(txt) || U32.is_gt(li, ind), u => body.go(t, ind, Con{Ln{no, li, txt}, acc}),
++++
+          when(List<&2, Ln> & List<&2, Ln>, blank(txt) || U32.is_ge(li, ind), u => body.go(t, ind, Con{Ln{no, li, txt}, acc}),
+
+=== member_line_after deep.items
+a type member's one line numbered after its header, at the header's depth: written at a line's start
+--- blend.bend
+      params.go(commas(ps)), [Ln{no, (ind + 2 : U32), ty}], no, ind, 0},
++++
+      params.go(commas(ps)), [Ln{(no + 1 : U32), ind, ty}], no, ind, 0},
+
+=== line_depth_lost deep.tree
+a body line's depth lost as the tree is made: every line at no depth
+--- blend.bend
+          Con{Bl{no, ind, toks(txt)}, toks.lines(t)}
++++
+          Con{Bl{no, 0, toks(txt)}, toks.lines(t)}
+
+=== header_deeper deep.tree
+a definition's node a space deeper than its header: a line one deeper written at a line's start
+--- blend.bend
+      close.into(st, NDef{share, upd, name, rest, params, toks.lines(body), no, ind, what})
++++
+      close.into(st, NDef{share, upd, name, rest, params, toks.lines(body), no, (ind + 1 : U32), what})
+
+=== resolved_depth_lost deep.units
+a body line resolved at no depth: its tokens start the line written
+--- blend.bend
+      Rb{[Rl{no, ind, rl.join(ls)}], es, more}
++++
+      Rb{[Rl{no, 0, rl.join(ls)}], es, more}
+
+=== nondef_hash_line unambiguous.emitted
+a copy of a member that is no definition given a line `#` at no depth: a line read as a marker
+--- blend.bend
+          (Rd{In{n, q, prior}, nd, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}})
++++
+          (Rd{In{n, q, prior}, nd, Nil{}, [Rl{7, 0, [RT{TSym{35}}]}]}, Rb{Nil{}, Nil{}, Nil{}})

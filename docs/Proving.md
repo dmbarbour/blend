@@ -67,6 +67,17 @@ it alone taught. Add to this file what a new proof teaches.
   line, past 2^32 lines too; tested on the first line alone
   (`rls.put`'s `first`), the later lines' newlines hold by computation
   (`markers.writer`).
+- **Carry a second invariant in the relation a walk carries**: where a
+  long walk (the copies') carries a relation between what it makes and
+  what it read (`nos`, a unit's lines its body's number for number),
+  strengthen the relation (`lk`: the same depth, a blank line blank)
+  rather than walk again: only the lemmas that build and read it change
+  (`deep.units`).
+- **A predicate per invariant costs a copy of the makers' lemmas**: an
+  invariant of items through every item maker (`deep.items` beside
+  `markers.items`) wants each maker's lemma again, its mirror defs
+  shared; derive the twins from the proved ones by renaming the
+  predicate and the hypothesis, and write by hand only what differs.
 - **Name a composite's parts to join laws at it**: a law cannot name
   a function's locals, so `emitted`'s walk, dispositions, writer's
   context, table and errors are definitions of their own (`emit.walk`,
