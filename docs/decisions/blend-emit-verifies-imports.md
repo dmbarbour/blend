@@ -1,6 +1,6 @@
 # Emission writes the modules named and verifies their imports
 
-`blend-emit-verifies-imports` · maintainer · rev d935c10
+`blend-emit-verifies-imports` · maintainer · rev de48ae7
 
 **Context.** A module's emission depends on nothing that imports it:
 every definition is emitted and no top-level object can be extended, so
@@ -17,14 +17,19 @@ compares each file beside it, byte for byte, with what it would write;
 a file stale, missing, or no longer emitted (a laws file of a module
 that has no laws now) is reported, and the command writes nothing.
 `emit --alone` emits the modules named individually, leaving their
-imports unverified.
+imports unverified. `emit --tree` (the maintainer, 2026-11-06) is an
+explicit request for the modules named and every import they reach,
+written imports first, all or none as ever; it stops at a package's
+boundary, a package's modules verified, never written.
 
 **Consequences.**
 - Verification costs each unnamed import's emission again; a stamp of
   the sources' hash in each emitted header may make it cheaper
-  (`blend-cli`).
+  (`blend-cli.stamps`).
 - `bend blend.bend -- emit --alone ...` under Bend, whose CLI takes a
   dashed argument as its own; the built tool takes it directly.
+- `blend deps` lists what `--tree` would reach and whether each is
+  current, a dry run of it (`blend-command-mirrors-bend`).
 - check_generated.sh, emitting each directory's modules, verifies
   the imports the other directories emit; samples/check.sh holds
   a stale import to its error and `--alone` to its bypass.
