@@ -39,6 +39,9 @@ Left out, as the hub has them under other names: `and_intro`
 
 - `mod_add_l`: `Nat.mod(Nat.mod(x, n) + y, n) == Nat.mod(x + y, n)`.
 - `nat_succ_ne`, `succ_add_ne`: `Nat.is_eq(1n + k + n, n) == False`.
+- `uq_nsub`: `Nat.is_lt(y, x) == True` gives `Nat.is_eq(Nat.sub(x, y),
+  0n) == False`, a positive difference as a test a match can use. The
+  hub's `lt_sub_iff_add_lt` (with 0) has it as `Nat.is_lt(0n, x - y)`.
 
 ## Bool
 
@@ -50,6 +53,10 @@ Left out, as the hub has them under other names: `and_intro`
 - `or_drop`: an or true with one side false has the other true.
 - `or_cases`, `or_map`: a case split on an or that is true.
 - `nope`: `False == True` gives any `P == True`.
+- `dpu_imp`: `Bool.or(Bool.not(a), b) == True` and `a == True` give
+  `b == True`, an implication kept as a `Bool`.
+- `dt_or`: in `Bool.or(Bool.or(f, a), g) == True`, `a` traded for an
+  `a2` it gives.
 
 ## Maybe and List
 
