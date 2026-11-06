@@ -696,3 +696,31 @@ the lists to merge each lose a head equal to the last object: a parent dropped f
           c3.keep(o, xs, c3.lists(t))
 +++
           c3.keep(o, c3.head.drop(xs, 4294967295), c3.lists(t))
+
+=== datatype_unindented markers.datatypes
+a datatype's lines written without their depth: a body line `#` written at a line's start
+--- blend.bend
+          Con{10, List.append(&2, U32, spaces(U32.to_nat(ind)), List.append(&2, U32, txt, bend.lines(t)))}
++++
+          Con{10, List.append(&2, U32, txt, bend.lines(t))}
+
+=== datatype_marker_next markers.datatypes
+a datatype's marker naming the line after its header: where.sh one line off
+--- blend.bend
+          List.append(&2, U32, marker.at(files, no), List.append(&2, U32, bend.lines(lines), Con{10, datatypes(t, files)}))
++++
+          List.append(&2, U32, marker.at(files, (no + 1 : U32)), List.append(&2, U32, bend.lines(lines), Con{10, datatypes(t, files)}))
+
+=== datatype_headless bends.items
+a datatype read without its header's line: written without its `type` line
+--- blend.bend
+  when(Item, is.datatype(txt), u => IBend{Con{Ln{no, ind, txt}, body}, no, ind},
++++
+  when(Item, is.datatype(txt), u => IBend{body, no, ind},
+
+=== datatype_node_next bends.tree
+a datatype's node numbered as the line after its header: its marker one line off
+--- blend.bend
+      close.into(st, NBend{lines, no})
++++
+      close.into(st, NBend{lines, (no + 1 : U32)})

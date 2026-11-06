@@ -13216,3 +13216,974 @@ def lin_mg_sound(+id: U32, m: B.Mg, +ss: List<&2, B.Sq>, +hs: {B.mg.sound(m, B.c
 def Laws.c3.lin(id, ps, seqs):
   lin_mg_sound(id, B.c3.merge(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), Nil{}), List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]),
     Laws.c3.sound(1n+B.sqs.len(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}])), B.c3.lists(List.append(&2, B.Sq, seqs, [B.Sq{id, ps}]))))
+
+# The datatypes as where.sh reads them (`markers.datatypes`): text within
+# a line goes to the current line (`dt_onto`), a newline starts the next;
+# each line as read after a newline of its own (`dt_lines`), each
+# datatype after its marker's line (`dt_text`); a line's first byte a
+# space, where deeper or blank, or its header's `t` (`dt_dc`).
+
+# nl.go's step mirrored
+def dt_k(+c: Bool, +h: U32, +t: List<&2, U32>, +cur: List<&2, U32>) -> List<&2, List<&2, U32>>:
+  B.when(List<&2, List<&2, U32>>, c, u => Con{List.reverse(&2, U32, cur), B.nl.go(t, Nil{})}, u => B.nl.go(t, Con{h, cur}))
+
+def dt_kf(c: Bool, +h: U32, +t: List<&2, U32>, +cur: List<&2, U32>, hc: {c == False{} : Bool}) -> {dt_k(c, h, t, cur) == B.nl.go(t, Con{h, cur}) : List<&2, List<&2, U32>>}:
+  match c:
+    case True{}:
+      Empty.absurd({dt_k(True{}, h, t, cur) == B.nl.go(t, Con{h, cur}) : List<&2, List<&2, U32>>}, MB.false_ne_true()(Equal.sym(Bool, True{}, False{}, hc)))
+    case False{}:
+      {==}
+
+# text within a line: on the current line
+def dt_onto(xs: List<&2, U32>, +ys: List<&2, U32>, +cur: List<&2, U32>, +hx: {B.inline(xs) == True{} : Bool}) ->
+    {B.nl.go(List.append(&2, U32, xs, ys), cur) == B.nl.go(ys, B.rev.onto(xs, cur)) : List<&2, List<&2, U32>>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      Equal.trans(List<&2, List<&2, U32>>, B.nl.go(Con{h, List.append(&2, U32, t, ys)}, cur), B.nl.go(List.append(&2, U32, t, ys), Con{h, cur}), B.nl.go(ys, B.rev.onto(t, Con{h, cur})),
+        dt_kf(U32.is_eq(h, 10), h, List.append(&2, U32, t, ys), cur, ne10(h, t, hx)),
+        dt_onto(t, ys, Con{h, cur}, il_tail(h, t, hx)))
+
+def dt_ro(xs: List<&2, U32>, +acc: List<&2, U32>) -> {B.rev.onto(xs, acc) == List.reverse.go(&2, U32, xs, acc) : List<&2, U32>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      dt_ro(t, Con{h, acc})
+
+# a line gathered reversed, read back
+def dt_back(+xs: List<&2, U32>) -> {List.reverse(&2, U32, B.rev.onto(xs, Nil{})) == xs : List<&2, U32>}:
+  Equal.trans(List<&2, U32>, List.reverse(&2, U32, B.rev.onto(xs, Nil{})), List.reverse(&2, U32, List.reverse(&2, U32, xs)), xs,
+    Equal.cong(List<&2, U32>, List<&2, U32>, ys => List.reverse(&2, U32, ys), B.rev.onto(xs, Nil{}), List.reverse(&2, U32, xs), dt_ro(xs, Nil{})),
+    ML.reverse_reverse(&2, U32, xs))
+
+def dt_back2(+s: List<&2, U32>, +t: List<&2, U32>) -> {List.reverse(&2, U32, B.rev.onto(t, B.rev.onto(s, Nil{}))) == List.append(&2, U32, s, t) : List<&2, U32>}:
+  %onto_app(s, t, Nil{}) : {List.reverse(&2, U32, _) == List.append(&2, U32, s, t) : List<&2, U32>}
+  dt_back(List.append(&2, U32, s, t))
+
+# a line after its newline: its depth's spaces and its text, then the rest
+def dt_inner(+s: List<&2, U32>, +txt: List<&2, U32>, +bl: List<&2, U32>, +c: List<&2, U32>, +rest: List<&2, List<&2, U32>>, +hs: {B.inline(s) == True{} : Bool}, +ht: {B.inline(txt) == True{} : Bool},
+    ih: {B.nl.go(List.append(&2, U32, bl, c), B.rev.onto(txt, B.rev.onto(s, Nil{}))) == Con{List.reverse(&2, U32, B.rev.onto(txt, B.rev.onto(s, Nil{}))), rest} : List<&2, List<&2, U32>>}) ->
+    {B.nl.go(List.append(&2, U32, List.append(&2, U32, s, List.append(&2, U32, txt, bl)), c), Nil{}) == Con{List.append(&2, U32, s, txt), rest} : List<&2, List<&2, U32>>}:
+  %Equal.sym(List<&2, U32>, List.append(&2, U32, List.append(&2, U32, s, List.append(&2, U32, txt, bl)), c), List.append(&2, U32, s, List.append(&2, U32, List.append(&2, U32, txt, bl), c)),
+      ML.append_assoc(&2, U32, s, List.append(&2, U32, txt, bl), c)) : {B.nl.go(_, Nil{}) == Con{List.append(&2, U32, s, txt), rest} : List<&2, List<&2, U32>>}
+  %Equal.sym(List<&2, U32>, List.append(&2, U32, List.append(&2, U32, txt, bl), c), List.append(&2, U32, txt, List.append(&2, U32, bl, c)), ML.append_assoc(&2, U32, txt, bl, c)) :
+    {B.nl.go(List.append(&2, U32, s, _), Nil{}) == Con{List.append(&2, U32, s, txt), rest} : List<&2, List<&2, U32>>}
+  %Equal.sym(List<&2, List<&2, U32>>, B.nl.go(List.append(&2, U32, s, List.append(&2, U32, txt, List.append(&2, U32, bl, c))), Nil{}), B.nl.go(List.append(&2, U32, txt, List.append(&2, U32, bl, c)), B.rev.onto(s, Nil{})),
+      dt_onto(s, List.append(&2, U32, txt, List.append(&2, U32, bl, c)), Nil{}, hs)) : {_ == Con{List.append(&2, U32, s, txt), rest} : List<&2, List<&2, U32>>}
+  %Equal.sym(List<&2, List<&2, U32>>, B.nl.go(List.append(&2, U32, txt, List.append(&2, U32, bl, c)), B.rev.onto(s, Nil{})), B.nl.go(List.append(&2, U32, bl, c), B.rev.onto(txt, B.rev.onto(s, Nil{}))),
+      dt_onto(txt, List.append(&2, U32, bl, c), B.rev.onto(s, Nil{}), ht)) : {_ == Con{List.append(&2, U32, s, txt), rest} : List<&2, List<&2, U32>>}
+  %Equal.sym(List<&2, List<&2, U32>>, B.nl.go(List.append(&2, U32, bl, c), B.rev.onto(txt, B.rev.onto(s, Nil{}))), Con{List.reverse(&2, U32, B.rev.onto(txt, B.rev.onto(s, Nil{}))), rest}, ih) :
+    {_ == Con{List.append(&2, U32, s, txt), rest} : List<&2, List<&2, U32>>}
+  %Equal.sym(List<&2, U32>, List.reverse(&2, U32, B.rev.onto(txt, B.rev.onto(s, Nil{}))), List.append(&2, U32, s, txt), dt_back2(s, txt)) :
+    {Con{_, rest} == Con{List.append(&2, U32, s, txt), rest} : List<&2, List<&2, U32>>}
+  {==}
+
+# a datatype's lines, each after a newline of its own, then the rest
+def dt_lines(ls: List<&2, B.Ln>, +cur: List<&2, U32>, +r: List<&2, U32>, +hl: {B.lns.inline(ls) == True{} : Bool}) ->
+    {B.nl.go(List.append(&2, U32, B.bend.lines(ls), Con{10, r}), cur) == Con{List.reverse(&2, U32, cur), List.append(&2, List<&2, U32>, B.lns.out(ls), B.nl.go(r, Nil{}))} : List<&2, List<&2, U32>>}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +lt}:
+      match l:
+        case B.Ln{+n, +i, +txt}:
+          Equal.cong(List<&2, List<&2, U32>>, List<&2, List<&2, U32>>, z => Con{List.reverse(&2, U32, cur), z},
+            B.nl.go(List.append(&2, U32, List.append(&2, U32, B.spaces(U32.to_nat(i)), List.append(&2, U32, txt, B.bend.lines(lt))), Con{10, r}), Nil{}),
+            Con{List.append(&2, U32, B.spaces(U32.to_nat(i)), txt), List.append(&2, List<&2, U32>, B.lns.out(lt), B.nl.go(r, Nil{}))},
+            dt_inner(B.spaces(U32.to_nat(i)), txt, B.bend.lines(lt), Con{10, r}, List.append(&2, List<&2, U32>, B.lns.out(lt), B.nl.go(r, Nil{})), il_spaces(U32.to_nat(i)),
+              and_l(B.inline(txt), B.lns.inline(lt), hl),
+              dt_lines(lt, B.rev.onto(txt, B.rev.onto(B.spaces(U32.to_nat(i)), Nil{})), r, and_r(B.inline(txt), B.lns.inline(lt), hl))))
+
+# a datatype's lines within a line, its own conjuncts taken apart
+def bo_il(ls: List<&2, B.Ln>, +no: U32, +h: {B.bend.ok(ls, no) == True{} : Bool}) -> {B.lns.inline(ls) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +t}:
+      match l:
+        case B.Ln{+n, +i, +txt}:
+          and_intro(B.inline(txt), B.lns.inline(t), and_r(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt), and_l(Bool.and(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(t, U32.add(no, 1)), and_l(Bool.and(Bool.and(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(t, U32.add(no, 1))), B.ln.deep(t, no, i, False{}), and_l(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(t, U32.add(no, 1))), B.ln.deep(t, no, i, False{})), B.lns.inline(t), h)))), and_r(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(t, U32.add(no, 1))), B.ln.deep(t, no, i, False{})), B.lns.inline(t), h))
+
+def dt_mk(+ml: List<&2, U32>, +y: List<&2, U32>, +lines: List<&2, B.Ln>, +dt: List<&2, U32>, +rest: List<&2, List<&2, U32>>, +hm: {B.inline(ml) == True{} : Bool},
+    +hl: {B.lns.inline(lines) == True{} : Bool}, ih: {B.nl.go(dt, Nil{}) == Con{Nil{}, rest} : List<&2, List<&2, U32>>}) ->
+    {B.nl.go(List.append(&2, U32, ml, List.append(&2, U32, B.bend.lines(lines), Con{10, dt})), Nil{}) == Con{ml, List.append(&2, List<&2, U32>, B.lns.out(lines), Con{Nil{}, rest})} : List<&2, List<&2, U32>>}:
+  %Equal.sym(List<&2, List<&2, U32>>, B.nl.go(List.append(&2, U32, ml, List.append(&2, U32, B.bend.lines(lines), Con{10, dt})), Nil{}), B.nl.go(List.append(&2, U32, B.bend.lines(lines), Con{10, dt}), B.rev.onto(ml, Nil{})),
+      dt_onto(ml, List.append(&2, U32, B.bend.lines(lines), Con{10, dt}), Nil{}, hm)) : {_ == Con{ml, List.append(&2, List<&2, U32>, B.lns.out(lines), Con{Nil{}, rest})} : List<&2, List<&2, U32>>}
+  %Equal.sym(List<&2, List<&2, U32>>, B.nl.go(List.append(&2, U32, B.bend.lines(lines), Con{10, dt}), B.rev.onto(ml, Nil{})),
+      Con{List.reverse(&2, U32, B.rev.onto(ml, Nil{})), List.append(&2, List<&2, U32>, B.lns.out(lines), B.nl.go(dt, Nil{}))}, dt_lines(lines, B.rev.onto(ml, Nil{}), dt, hl)) :
+    {_ == Con{ml, List.append(&2, List<&2, U32>, B.lns.out(lines), Con{Nil{}, rest})} : List<&2, List<&2, U32>>}
+  %Equal.sym(List<&2, List<&2, U32>>, B.nl.go(dt, Nil{}), Con{Nil{}, rest}, ih) : {Con{List.reverse(&2, U32, B.rev.onto(ml, Nil{})), List.append(&2, List<&2, U32>, B.lns.out(lines), _)} == Con{ml, List.append(&2, List<&2, U32>, B.lns.out(lines), Con{Nil{}, rest})} : List<&2, List<&2, U32>>}
+  %Equal.sym(List<&2, U32>, List.reverse(&2, U32, B.rev.onto(ml, Nil{})), ml, dt_back(ml)) : {Con{_, List.append(&2, List<&2, U32>, B.lns.out(lines), Con{Nil{}, rest})} == Con{ml, List.append(&2, List<&2, U32>, B.lns.out(lines), Con{Nil{}, rest})} : List<&2, List<&2, U32>>}
+  {==}
+
+# the datatypes' text, each after its marker's line
+def dt_text(ns: List<&2, B.Node>, +files: List<&2, List<&2, U32>>, +cur: List<&2, U32>, +hf: {B.inlines(files) == True{} : Bool}, +hb: {B.nodes.bend(ns) == True{} : Bool}) ->
+    {B.nl.go(B.datatypes(ns, files), cur) == Con{List.reverse(&2, U32, cur), B.dts.lines(ns, files)} : List<&2, List<&2, U32>>}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NBend{+lines, +no}:
+          Equal.cong(List<&2, List<&2, U32>>, List<&2, List<&2, U32>>, z => Con{List.reverse(&2, U32, cur), z},
+            B.nl.go(List.append(&2, U32, B.marker.line(files, no), List.append(&2, U32, B.bend.lines(lines), Con{10, B.datatypes(t, files)})), Nil{}),
+            Con{B.marker.line(files, no), List.append(&2, List<&2, U32>, B.lns.out(lines), Con{Nil{}, B.dts.lines(t, files)})},
+            dt_mk(B.marker.line(files, no), List.append(&2, U32, B.bend.lines(lines), Con{10, B.datatypes(t, files)}), lines, B.datatypes(t, files), B.dts.lines(t, files),
+              il_marker(files, no, hf), bo_il(lines, no, and_l(B.bend.ok(lines, no), B.nodes.bend(t), hb)),
+              dt_text(t, files, Nil{}, hf, and_r(B.bend.ok(lines, no), B.nodes.bend(t), hb))))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          dt_text(t, files, cur, hf, and_r(B.nodes.bend(kids), B.nodes.bend(t), hb))
+        case B.NImport{+txt, +no}:
+          dt_text(t, files, cur, hf, hb)
+        case B.NDecl{+names, +no}:
+          dt_text(t, files, cur, hf, hb)
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          dt_text(t, files, cur, hf, hb)
+        case B.NBad{+txt, +no}:
+          dt_text(t, files, cur, hf, hb)
+        case B.NErr{+msg, +no}:
+          dt_text(t, files, cur, hf, hb)
+
+def dt_lsr(xss: List<&2, List<&2, U32>>) -> {B.lines.same(xss, xss) == True{} : Bool}:
+  match xss:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(B.same(x, x), B.lines.same(t, t), Laws.names.same_refl(x), dt_lsr(t))
+
+def dt_same(+ns: List<&2, B.Node>, +files: List<&2, List<&2, U32>>, +hf: {B.inlines(files) == True{} : Bool}, +hb: {B.nodes.bend(ns) == True{} : Bool}) ->
+    {B.lines.same(B.nl.split(B.datatypes(ns, files)), Con{Nil{}, B.dts.lines(ns, files)}) == True{} : Bool}:
+  %Equal.sym(List<&2, List<&2, U32>>, B.nl.go(B.datatypes(ns, files), Nil{}), Con{Nil{}, B.dts.lines(ns, files)}, dt_text(ns, files, Nil{}, hf, hb)) :
+    {B.lines.same(_, Con{Nil{}, B.dts.lines(ns, files)}) == True{} : Bool}
+  dt_lsr(Con{Nil{}, B.dts.lines(ns, files)})
+
+# Each line's first byte no `#`
+
+def dt_hc(m: Nat, txt: List<&2, U32>, hd: {B.is.datatype(txt) == True{} : Bool}) -> {B.text.clear(List.append(&2, U32, B.spaces(m), txt)) == True{} : Bool}:
+  match m:
+    case 0n:
+      match txt:
+        case Nil{}:
+          {==}
+        case Con{+h, +r}:
+          %Equal.sym(U32, h, 116, u32_eq_of_is_eq(h, 116, and_l(U32.is_eq(h, 116), B.starts.s(r, "ype "),
+              and_l(B.starts.s(Con{h, r}, "type "), Bool.not(B.holds(Con{h, r}, B.codes(" = "))), hd)))) :
+            {B.text.clear(Con{_, r}) == True{} : Bool}
+          {==}
+    case 1n+k:
+      {==}
+
+def dt_blank_c(m: Nat, txt: List<&2, U32>, h: {B.blank(txt) == True{} : Bool}) -> {B.text.clear(List.append(&2, U32, B.spaces(m), txt)) == True{} : Bool}:
+  match m:
+    case 0n:
+      match txt:
+        case Nil{}:
+          {==}
+        case Con{c, r}:
+          Empty.absurd({B.text.clear(List.append(&2, U32, B.spaces(0n), Con{c, r})) == True{} : Bool}, MB.false_ne_true()(h))
+    case 1n+k:
+      {==}
+
+def dt_gt_c(m: Nat, +txt: List<&2, U32>, i0: Nat, h: {Nat.is_gt(m, i0) == True{} : Bool}) -> {B.text.clear(List.append(&2, U32, B.spaces(m), txt)) == True{} : Bool}:
+  match m i0:
+    case 0n 0n:
+      Empty.absurd({B.text.clear(List.append(&2, U32, B.spaces(0n), txt)) == True{} : Bool}, MB.false_ne_true()(h))
+    case 0n 1n+j:
+      Empty.absurd({B.text.clear(List.append(&2, U32, B.spaces(0n), txt)) == True{} : Bool}, MB.false_ne_true()(h))
+    case 1n+k _:
+      {==}
+
+# a datatype's body lines: blank or deeper than its header, so a space
+# first or empty
+def dt_body(ls: List<&2, B.Ln>, +no: U32, +i: U32, +hd: {B.ln.deep(ls, no, i, False{}) == True{} : Bool}) -> {B.lns.clear(ls) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +t}:
+      match l:
+        case B.Ln{+n2, +i2, +txt2}:
+          and_intro(B.text.clear(List.append(&2, U32, B.spaces(U32.to_nat(i2)), txt2)), B.lns.clear(t),
+            or_cases(B.blank(txt2), U32.is_gt(i2, i), B.text.clear(List.append(&2, U32, B.spaces(U32.to_nat(i2)), txt2)),
+              and_l(Bool.or(B.blank(txt2), U32.is_gt(i2, i)), B.ln.deep(t, no, i, False{}), hd),
+              p => dt_blank_c(U32.to_nat(i2), txt2, p),
+              q => dt_gt_c(U32.to_nat(i2), txt2, U32.to_nat(i),
+                Equal.trans(Bool, Nat.is_gt(U32.to_nat(i2), U32.to_nat(i)), U32.is_gt(i2, i), True{}, Equal.sym(Bool, U32.is_gt(i2, i), Nat.is_gt(U32.to_nat(i2), U32.to_nat(i)), MU.u32_is_gt_to_nat(i2, i)), q))),
+            dt_body(t, no, i, and_r(Bool.or(B.blank(txt2), U32.is_gt(i2, i)), B.ln.deep(t, no, i, False{}), hd)))
+
+def dt_lc(ls: List<&2, B.Ln>, +no: U32, +h: {B.bend.ok(ls, no) == True{} : Bool}) -> {B.lns.clear(ls) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +t}:
+      match l:
+        case B.Ln{+n, +i, +txt}:
+          and_intro(B.text.clear(List.append(&2, U32, B.spaces(U32.to_nat(i)), txt)), B.lns.clear(t),
+            dt_hc(U32.to_nat(i), txt, and_r(U32.is_eq(n, no), B.is.datatype(txt), and_l(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt), and_l(Bool.and(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(t, U32.add(no, 1)), and_l(Bool.and(Bool.and(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(t, U32.add(no, 1))), B.ln.deep(t, no, i, False{}), and_l(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(t, U32.add(no, 1))), B.ln.deep(t, no, i, False{})), B.lns.inline(t), h)))))),
+            dt_body(t, no, i, and_r(Bool.and(Bool.and(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(t, U32.add(no, 1))), B.ln.deep(t, no, i, False{}), and_l(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(n, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(t, U32.add(no, 1))), B.ln.deep(t, no, i, False{})), B.lns.inline(t), h))))
+
+def dt_dc(ns: List<&2, B.Node>, +hb: {B.nodes.bend(ns) == True{} : Bool}) -> {B.dts.clear(ns) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NBend{+lines, +no}:
+          and_intro(B.lns.clear(lines), B.dts.clear(t), dt_lc(lines, no, and_l(B.bend.ok(lines, no), B.nodes.bend(t), hb)), dt_dc(t, and_r(B.bend.ok(lines, no), B.nodes.bend(t), hb)))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          dt_dc(t, and_r(B.nodes.bend(kids), B.nodes.bend(t), hb))
+        case B.NImport{+txt, +no}:
+          dt_dc(t, hb)
+        case B.NDecl{+names, +no}:
+          dt_dc(t, hb)
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          dt_dc(t, hb)
+        case B.NBad{+txt, +no}:
+          dt_dc(t, hb)
+        case B.NErr{+msg, +no}:
+          dt_dc(t, hb)
+
+def Laws.markers.datatypes(ns, files, hf, hb):
+  and_intro(B.lines.same(B.nl.split(B.datatypes(ns, files)), Con{Nil{}, B.dts.lines(ns, files)}), B.dts.clear(ns), dt_same(ns, files, hf, hb), dt_dc(ns, hb))
+
+# Every datatype read as where.sh reads it (`bends.items`): its header's
+# line, then the lines after it while deeper or blank, numbered on from it
+# (`trim_ok`, `bg_fst`), clear (`dp_trim`, `dp_bg`) and within a line
+# (`btrim_il`, `bg_il`), made an item by flat.block's first choice
+# (`bi_fb`); no other item maker makes one (the twins of `markers.items`'
+# lemmas).
+
+def bi_rev(xs: List<&2, B.Item>, +acc: List<&2, B.Item>, +hx: {B.items.bend(xs) == True{} : Bool}, +ha: {B.items.bend(acc) == True{} : Bool}) ->
+    {B.items.bend(List.reverse.go(&2, B.Item, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+it, +t}:
+      bi_rev(t, Con{it, acc}, and_r(B.item.bend(it), B.items.bend(t), hx),
+        and_intro(B.item.bend(it), B.items.bend(acc), and_l(B.item.bend(it), B.items.bend(t), hx), ha))
+
+
+def bi_lm(c: Bool, +name: List<&2, U32>, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool}) ->
+    {B.item.bend(lm_k(c, name, txt, body, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def bi_law(p: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool}) ->
+    {B.item.bend(B.law.r(p, txt, body, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      bi_lm(Bool.and(B.name.ok(B.trim(name)), B.blank(B.trim(rest))), B.trim(name), txt, body, no, ind, hb)
+
+def bi_pr(c1: Bool, c2: Bool, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32,
+    +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool}) -> {B.item.bend(pr_k(c1, c2, upd, name, rest, txt, body, no, ind)) == True{} : Bool}:
+  match c1 c2:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case False{} _:
+      {==}
+
+def bi_proofr(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32,
+    +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool}) -> {B.item.bend(B.proof.r(p, upd, txt, body, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      bi_pr(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), B.holds(rest, B.codes(") ->")), upd, name, rest, txt, body, no, ind, hb)
+
+def bi_proof(+txt: List<&2, U32>, upd: Bool, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool}) ->
+    {B.item.bend(B.proof.item(txt, upd, body, no, ind)) == True{} : Bool}:
+  match upd:
+    case True{}:
+      bi_proofr(B.until(B.drop(10n, txt), 40), True{}, txt, body, no, ind, hb)
+    case False{}:
+      bi_proofr(B.until(B.drop(6n, txt), 40), False{}, txt, body, no, ind, hb)
+
+def bi_named(ok: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +xs: List<&2, U32>, +share: U32, +upd: Bool, +body: List<&2, B.Ln>, +no: U32, +ind: U32,
+    +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool}) -> {B.item.bend(B.def.named(ok, name, rest, xs, share, upd, body, no, ind)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def bi_dr(p: List<&2, U32> & List<&2, U32>, +xs: List<&2, U32>, +share: U32, +upd: Bool, +body: List<&2, B.Ln>, +no: U32, +ind: U32,
+    +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool}) -> {B.item.bend(B.def.r(p, xs, share, upd, body, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      bi_named(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), B.trim(name), rest, xs, share, upd, body, no, ind, hb)
+
+def bi_kwd(d: Bool, u: Bool, +xs: List<&2, U32>, +share: U32, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool}) ->
+    {B.item.bend(B.def.kw.d(d, u, xs, share, body, no, ind)) == True{} : Bool}:
+  match d u:
+    case True{} _:
+      bi_dr(B.until(B.drop(4n, xs), 40), B.drop(4n, xs), share, False{}, body, no, ind, hb)
+    case False{} True{}:
+      bi_dr(B.until(B.upd.def(B.drop(4n, xs)), 40), B.upd.def(B.drop(4n, xs)), share, True{}, body, no, ind, hb)
+    case False{} False{}:
+      {==}
+
+def bi_shs(s: Bool, c: Bool, +xs: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool}) ->
+    {B.item.bend(B.def.share.s(s, c, xs, body, no, ind)) == True{} : Bool}:
+  match s c:
+    case True{} _:
+      bi_kwd(B.starts.s(B.drop(7n, xs), "def "), B.starts.s(B.drop(7n, xs), "upd "), B.drop(7n, xs), 1, body, no, ind, hb)
+    case False{} True{}:
+      bi_kwd(B.starts.s(B.drop(7n, xs), "def "), B.starts.s(B.drop(7n, xs), "upd "), B.drop(7n, xs), 2, body, no, ind, hb)
+    case False{} False{}:
+      bi_kwd(B.starts.s(xs, "def "), B.starts.s(xs, "upd "), xs, 0, body, no, ind, hb)
+
+def bi_onamed(ok: Bool, +with: Bool, +ext: Bool, +name: List<&2, U32>, +ps: List<&2, List<&2, U32>>, +xs: List<&2, U32>, +abs: Bool, +no: U32, +ind: U32) ->
+    {B.item.bend(B.obj.named(ok, with, ext, name, ps, xs, abs, no, ind)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def bi_oe(p: List<&2, U32> & List<&2, U32>, +xs: List<&2, U32>, +abs: Bool, +ext: Bool, +no: U32, +ind: U32) -> {B.item.bend(B.obj.ext(p, xs, abs, ext, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      bi_onamed(Bool.and(B.name.ok(name), Bool.or(Bool.or(B.blank(B.rtrim(rest)), B.same(B.rtrim(rest), B.codes("with"))),
+          Bool.and(B.starts.s(B.rtrim(rest), "extends "), B.names.ok(B.obj.parents(B.rtrim(rest)))))),
+        Bool.or(B.same(B.rtrim(rest), B.codes("with")), B.starts.s(List.reverse(&2, U32, B.rtrim(rest)), "htiw ")), ext,
+        name, B.obj.parents(B.rtrim(rest)), xs, abs, no, ind)
+
+def bi_obj(+xs: List<&2, U32>, +line: List<&2, U32>, +abs: Bool, +ext: Bool, +no: U32, +ind: U32) -> {B.item.bend(B.obj.item(xs, line, abs, ext, no, ind)) == True{} : Bool}:
+  bi_oe(B.until(xs, 32), line, abs, ext, no, ind)
+
+def bi_dnamed(ok: Bool, +ns: List<&2, List<&2, U32>>, +line: List<&2, U32>, +no: U32, +ind: U32) -> {B.item.bend(B.decl.named(ok, ns, line, no, ind)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def bi_ditem(+ns: List<&2, List<&2, U32>>, +line: List<&2, U32>, +no: U32, +ind: U32) -> {B.item.bend(B.decl.item(ns, line, no, ind)) == True{} : Bool}:
+  bi_dnamed(Bool.and(B.decl.some(ns), B.names.ok(ns)), ns, line, no, ind)
+
+def bi_dw(c: Bool, +name: List<&2, U32>, +ps: List<&2, U32>, +ret: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    +ho: {B.items.bend(out) == True{} : Bool}) -> {B.items.bend(dwk(c, name, ps, ret, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ho
+    case False{}:
+      ho
+
+def bi_witness(+name: List<&2, U32>, +ps: List<&2, U32>, +ret: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    +ho: {B.items.bend(out) == True{} : Bool}) -> {B.items.bend(B.decl.witness(name, ps, ret, txt, no, ind, out)) == True{} : Bool}:
+  bi_dw(Bool.and(B.name.ok(name), Bool.not(B.blank(ret))), name, ps, ret, txt, no, ind, out, ho)
+
+def bi_dtk(c: Bool, +name: List<&2, U32>, +after: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    +ho: {B.items.bend(out) == True{} : Bool}) -> {B.items.bend(dtk(c, name, after, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      bi_witness(name, B.parens(List.tail(&2, U32, after)),
+        B.type.kind(B.trim(B.drop(Nat.add(List.length(&2, U32, B.parens(List.tail(&2, U32, after))), 2n), after))), txt, no, ind, out, ho)
+    case False{}:
+      bi_witness(name, Nil{}, B.type.kind(B.trim(after)), txt, no, ind, out, ho)
+
+def bi_dtype(p: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(B.decl.type.k(p, txt, no, ind, out)) == True{} : Bool}:
+  match p:
+    case (+name, +after):
+      bi_dtk(B.starts.s(after, "("), name, after, txt, no, ind, out, ho)
+
+def bi_dtl(c: Bool, +r: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(dtl(c, r, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      bi_dtype(B.name.split(r, B.classes(r), Nil{}), txt, no, ind, out, ho)
+    case False{}:
+      and_intro(B.item.bend(B.decl.item(B.commas(r), txt, no, ind)), B.items.bend(out), bi_ditem(B.commas(r), txt, no, ind), ho)
+
+def bi_ddk(c: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(ddk(c, name, rest, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      bi_witness(B.trim(name), B.parens(rest), B.trim(B.drop(Nat.add(List.length(&2, U32, B.parens(rest)), 4n), rest)), txt, no, ind, out, ho)
+    case False{}:
+      ho
+
+def bi_ddef(p: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(B.decl.def.k(p, txt, no, ind, out)) == True{} : Bool}:
+  match p:
+    case (+name, +rest):
+      bi_ddk(B.holds(rest, B.codes(") ->")), name, rest, txt, no, ind, out, ho)
+
+def bi_dl(c1: Bool, c2: Bool, +rest: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(dlk(c1, c2, rest, txt, no, ind, out)) == True{} : Bool}:
+  match c1 c2:
+    case True{} _:
+      bi_dtl(Bool.or(B.holds(B.trim(B.drop(5n, rest)), B.codes(":")), B.holds(B.trim(B.drop(5n, rest)), B.codes("("))), B.trim(B.drop(5n, rest)), txt, no, ind, out, ho)
+    case False{} True{}:
+      bi_ddef(B.until(B.when(List<&2, U32>, B.starts.s(rest, "def "), w => B.drop(4n, rest), w => rest), 40), txt, no, ind, out, ho)
+    case False{} False{}:
+      and_intro(B.item.bend(B.decl.item(B.commas(rest), txt, no, ind)), B.items.bend(out), bi_ditem(B.commas(rest), txt, no, ind), ho)
+
+def bi_decl(+rest: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(B.decl.line(rest, txt, no, ind, out)) == True{} : Bool}:
+  bi_dl(B.starts.s(rest, "type "), B.holds(rest, B.codes("(")), rest, txt, no, ind, out, ho)
+
+def bi_fl(skip: Bool, imp: Bool, abs: Bool, obj: Bool, decl: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(B.flat.line(skip, imp, abs, obj, decl, txt, no, ind, out)) == True{} : Bool}:
+  match skip imp abs obj decl:
+    case True{} _ _ _ _:
+      ho
+    case False{} True{} _ _ _:
+      ho
+    case False{} False{} True{} _ _:
+      and_intro(B.item.bend(B.obj.item(B.drop(16n, txt), txt, True{}, False{}, no, ind)), B.items.bend(out), bi_obj(B.drop(16n, txt), txt, True{}, False{}, no, ind), ho)
+    case False{} False{} False{} True{} _:
+      and_intro(B.item.bend(B.obj.item(B.drop(7n, txt), txt, False{}, False{}, no, ind)), B.items.bend(out), bi_obj(B.drop(7n, txt), txt, False{}, False{}, no, ind), ho)
+    case False{} False{} False{} False{} True{}:
+      bi_decl(B.drop(8n, txt), txt, no, ind, out, ho)
+    case False{} False{} False{} False{} False{}:
+      ho
+
+def bi_ex(c: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32) -> {B.item.bend(exk(c, txt, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      bi_obj(B.drop(16n, txt), txt, True{}, True{}, no, ind)
+    case False{}:
+      bi_obj(B.drop(7n, txt), txt, False{}, True{}, no, ind)
+
+def bi_fik(c: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(fik(c, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(B.item.bend(B.ext.item(txt, no, ind)), B.items.bend(out), bi_ex(B.starts.s(txt, "extend abstract "), txt, no, ind), ho)
+    case False{}:
+      bi_fl(Bool.or(B.blank(txt), B.comment(txt)), B.starts.s(txt, "import "), B.starts.s(txt, "abstract object "), B.starts.s(txt, "object "),
+        B.starts.s(txt, "declare "), txt, no, ind, out, ho)
+
+def bi_tm(c: Bool, +upd: Bool, +name: List<&2, U32>, +ps: List<&2, U32>, +after: List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32) ->
+    {B.item.bend(tmk(c, upd, name, ps, after, ty, xs, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def bi_made(+upd: Bool, +name: List<&2, U32>, +ps: List<&2, U32>, +after: List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32) ->
+    {B.item.bend(B.type.made(upd, name, ps, after, ty, xs, no, ind)) == True{} : Bool}:
+  bi_tm(Bool.and(B.name.ok(name), Bool.not(B.blank(ty))), upd, name, ps, after, ty, xs, no, ind)
+
+def bi_tl(c: Bool, +upd: Bool, +name: List<&2, U32>, +after: List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32) ->
+    {B.item.bend(tlk(c, upd, name, after, ty, xs, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      bi_made(upd, name, B.parens(List.tail(&2, U32, after)), B.drop(Nat.add(List.length(&2, U32, B.parens(List.tail(&2, U32, after))), 2n), after), ty, xs, no, ind)
+    case False{}:
+      bi_made(upd, name, Nil{}, after, ty, xs, no, ind)
+
+def bi_lhs(+upd: Bool, p: List<&2, U32> & List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32) ->
+    {B.item.bend(B.type.lhs(upd, p, ty, xs, no, ind)) == True{} : Bool}:
+  match p:
+    case (+name, +after):
+      bi_tl(B.starts.s(after, "("), upd, name, after, ty, xs, no, ind)
+
+def bi_teq(+upd: Bool, p: List<&2, U32> & List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32) -> {B.item.bend(B.type.eq(upd, p, xs, no, ind)) == True{} : Bool}:
+  match p:
+    case (+lhs, +ty):
+      bi_lhs(upd, B.name.split(B.trim(lhs), B.classes(B.trim(lhs)), Nil{}), B.trim(ty), xs, no, ind)
+
+def bi_ti(c: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32) -> {B.item.bend(tik(c, txt, no, ind)) == True{} : Bool}:
+  match c:
+    case True{}:
+      bi_teq(True{}, B.split.at(B.drop(9n, txt), B.codes(" = "), Nil{}), txt, no, ind)
+    case False{}:
+      bi_teq(False{}, B.split.at(B.drop(5n, txt), B.codes(" = "), Nil{}), txt, no, ind)
+
+def bi_plain(c: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, B.Item>, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(plk(c, txt, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(B.item.bend(B.type.item(txt, no, ind)), B.items.bend(out), bi_ti(B.starts.s(txt, "upd "), txt, no, ind), ho)
+    case False{}:
+      bi_fik(B.starts.s(txt, "extend "), txt, no, ind, out, ho)
+
+def bi_fg(c: Bool, +m: Nat, +txt: List<&2, U32>, +t: List<&2, B.Ln>, +no: U32, +ind: U32, +out: List<&2, B.Item>,
+    ht: {B.items.bend(B.flat.go(m, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out})) == True{} : Bool}, hf: {B.items.bend(B.flat.go(m, t, plk(B.is.member.type(txt), txt, no, ind, out))) == True{} : Bool}) ->
+    {B.items.bend(fgk(c, m, txt, t, no, ind, out)) == True{} : Bool}:
+  match c:
+    case True{}:
+      %Equal.sym(List<&2, B.Item>, B.on.pair(List<&2, B.Ln>, List<&2, B.Ln>, List<&2, B.Item>, B.body.go(t, ind, Nil{}), body => rest => B.flat.go(m, rest, Con{B.flat.block(txt, B.body.trim(body), no, ind), out})), B.flat.go(m, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out}), pair_eta(B.body.go(t, ind, Nil{}), body => rest => B.flat.go(m, rest, Con{B.flat.block(txt, B.body.trim(body), no, ind), out}))) :
+        {B.items.bend(_) == True{} : Bool}
+      ht
+    case False{}:
+      hf
+
+
+# flat.block's decisions: a datatype the first
+def bi_fb(c1: Bool, c2: Bool, c3: Bool, c4: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool},
+    +e1: {B.is.datatype(txt) == c1 : Bool}, +hti: {B.inline(txt) == True{} : Bool}, +hd: {B.ln.deep(body, no, ind, False{}) == True{} : Bool},
+    +hbi: {B.lns.inline(body) == True{} : Bool}) -> {B.item.bend(fbk(c1, c2, c3, c4, txt, body, no, ind)) == True{} : Bool}:
+  match c1 c2 c3 c4:
+    case True{} _ _ _:
+      and_intro(Bool.and(Bool.and(Bool.and(Bool.and(U32.is_eq(no, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(body, U32.add(no, 1))), B.ln.deep(body, no, ind, False{})), B.lns.inline(body),
+        and_intro(Bool.and(Bool.and(Bool.and(U32.is_eq(no, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(body, U32.add(no, 1))), B.ln.deep(body, no, ind, False{}),
+          and_intro(Bool.and(Bool.and(U32.is_eq(no, no), B.is.datatype(txt)), B.inline(txt)), B.ln.from(body, U32.add(no, 1)),
+            and_intro(Bool.and(U32.is_eq(no, no), B.is.datatype(txt)), B.inline(txt),
+              and_intro(U32.is_eq(no, no), B.is.datatype(txt), u32_is_eq_refl(no), e1), hti), hb), hd), hbi)
+    case False{} True{} _ _:
+      bi_law(B.until(B.drop(4n, txt), 58), txt, body, no, ind, hb)
+    case False{} False{} True{} _:
+      {==}
+    case False{} False{} False{} True{}:
+      bi_proof(txt, B.starts.s(txt, "upd "), body, no, ind, hb)
+    case False{} False{} False{} False{}:
+      bi_shs(B.starts.s(txt, "shared "), B.starts.s(txt, "copied "), txt, body, no, ind, hb)
+
+def bi_block(+txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: U32, +ind: U32, +hb: {B.ln.from(body, U32.add(no, 1)) == True{} : Bool},
+    +hti: {B.inline(txt) == True{} : Bool}, +hd: {B.ln.deep(body, no, ind, False{}) == True{} : Bool}, +hbi: {B.lns.inline(body) == True{} : Bool}) ->
+    {B.item.bend(B.flat.block(txt, body, no, ind)) == True{} : Bool}:
+  bi_fb(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), Bool.or(B.starts.s(txt, "proof "), B.starts.s(txt, "upd proof ")), txt, body, no, ind, hb, {==}, hti, hd, hbi)
+
+# the items read from lines numbered one more each, within a line
+def bi_flat(n: Nat, ls: List<&2, B.Ln>, +out: List<&2, B.Item>, +hc: {chain(ls) == True{} : Bool}, +hi: {B.lns.inline(ls) == True{} : Bool}, +ho: {B.items.bend(out) == True{} : Bool}) ->
+    {B.items.bend(B.flat.go(n, ls, out)) == True{} : Bool}:
+  match n:
+    case 0n:
+      bi_rev(out, Nil{}, ho, {==})
+    case 1n+(+m):
+      match ls:
+        case Nil{}:
+          bi_rev(out, Nil{}, ho, {==})
+        case Con{l, +t}:
+          match l:
+            case B.Ln{+no, +ind, +txt}:
+              bi_fg(Bool.and(Bool.not(B.is.member.type(txt)), Bool.or(B.is_def(txt), B.is.datatype(txt))), m, txt, t, no, ind, out,
+                bi_flat(m, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out},
+                  bg_snd(t, ind, Nil{}, U32.add(no, 1), and_r(U32.is_eq(no, no), B.ln.from(t, U32.add(no, 1)), hc)),
+                  lpil_b(B.body.go(t, ind, Nil{}), bg_il(t, ind, Nil{}, and_r(B.inline(txt), B.lns.inline(t), hi), {==})),
+                  and_intro(B.item.bend(B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind)), B.items.bend(out),
+                    bi_block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind,
+                      trim_ok(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), U32.add(no, 1), bg_fst(t, ind, Nil{}, U32.add(no, 1), U32.add(no, 1), and_r(U32.is_eq(no, no), B.ln.from(t, U32.add(no, 1)), hc), u32_is_eq_refl(U32.add(no, 1)))),
+                      and_l(B.inline(txt), B.lns.inline(t), hi),
+                      dp_trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), no, ind, dp_bg(t, ind, Nil{}, no, {==})),
+                      btrim_il(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), lpil_a(B.body.go(t, ind, Nil{}), bg_il(t, ind, Nil{}, and_r(B.inline(txt), B.lns.inline(t), hi), {==})))),
+                    ho)),
+                bi_flat(m, t, plk(B.is.member.type(txt), txt, no, ind, out), chain_of(t, U32.add(no, 1), and_r(U32.is_eq(no, no), B.ln.from(t, U32.add(no, 1)), hc)),
+                  and_r(B.inline(txt), B.lns.inline(t), hi), bi_plain(B.is.member.type(txt), txt, no, ind, out, ho)))
+
+def Laws.bends.items(ls, k, h, hi):
+  bi_flat(List.length(&2, B.Ln, ls), ls, Nil{}, chain_of(ls, k, h), hi, {==})
+
+# The tree keeps each datatype so (`bends.tree`), as `markers.tree` keeps
+# the bodies' numbers: an item's lines its node's.
+def bt_frok(st: List<&2, B.Fr>) -> Bool:
+  match st:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      match f:
+        case B.Fr{+top, +ind, +abs, +with, +ext, name, parents, kids, +no}:
+          Bool.and(B.nodes.bend(kids), bt_frok(t))
+
+def bt_cons(n: B.Node, +ks: List<&2, B.Node>, +hn: {B.nodes.bend(Con{n, Nil{}}) == True{} : Bool}, +hk: {B.nodes.bend(ks) == True{} : Bool}) -> {B.nodes.bend(Con{n, ks}) == True{} : Bool}:
+  match n:
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      and_intro(B.nodes.bend(kids), B.nodes.bend(ks), and_l(B.nodes.bend(kids), True{}, hn), hk)
+    case B.NBend{+lines, +no}:
+      and_intro(B.bend.ok(lines, no), B.nodes.bend(ks), and_l(B.bend.ok(lines, no), True{}, hn), hk)
+    case B.NImport{+txt, +no}:
+      hk
+    case B.NDecl{+names, +no}:
+      hk
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      hk
+    case B.NBad{+txt, +no}:
+      hk
+    case B.NErr{+msg, +no}:
+      hk
+
+def bt_head(n: B.Node, +t: List<&2, B.Node>, +h: {B.nodes.bend(Con{n, t}) == True{} : Bool}) -> {B.nodes.bend(Con{n, Nil{}}) == True{} : Bool}:
+  match n:
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      and_intro(B.nodes.bend(kids), True{}, and_l(B.nodes.bend(kids), B.nodes.bend(t), h), {==})
+    case B.NBend{+lines, +no}:
+      and_intro(B.bend.ok(lines, no), True{}, and_l(B.bend.ok(lines, no), B.nodes.bend(t), h), {==})
+    case B.NImport{+txt, +no}:
+      {==}
+    case B.NDecl{+names, +no}:
+      {==}
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      {==}
+    case B.NBad{+txt, +no}:
+      {==}
+    case B.NErr{+msg, +no}:
+      {==}
+
+def bt_tail(n: B.Node, +t: List<&2, B.Node>, +h: {B.nodes.bend(Con{n, t}) == True{} : Bool}) -> {B.nodes.bend(t) == True{} : Bool}:
+  match n:
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      and_r(B.nodes.bend(kids), B.nodes.bend(t), h)
+    case B.NBend{+lines, +no}:
+      and_r(B.bend.ok(lines, no), B.nodes.bend(t), h)
+    case B.NImport{+txt, +no}:
+      h
+    case B.NDecl{+names, +no}:
+      h
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      h
+    case B.NBad{+txt, +no}:
+      h
+    case B.NErr{+msg, +no}:
+      h
+
+def bt_rev(xs: List<&2, B.Node>, +acc: List<&2, B.Node>, +hx: {B.nodes.bend(xs) == True{} : Bool}, +ha: {B.nodes.bend(acc) == True{} : Bool}) ->
+    {B.nodes.bend(List.reverse.go(&2, B.Node, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+n, +t}:
+      bt_rev(t, Con{n, acc}, bt_tail(n, t, hx), bt_cons(n, acc, bt_head(n, t, hx), ha))
+
+def bt_into(st: List<&2, B.Fr>, +n: B.Node, +hn: {B.nodes.bend(Con{n, Nil{}}) == True{} : Bool}, +hs: {bt_frok(st) == True{} : Bool}) -> {bt_frok(B.close.into(st, n)) == True{} : Bool}:
+  match st:
+    case Nil{}:
+      {==}
+    case Con{f, +rest}:
+      match f:
+        case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+          and_intro(B.nodes.bend(Con{n, kids}), bt_frok(rest), bt_cons(n, kids, hn, and_l(B.nodes.bend(kids), bt_frok(rest), hs)), and_r(B.nodes.bend(kids), bt_frok(rest), hs))
+
+def bt_with(with: Bool, kids: List<&2, B.Node>, +name: List<&2, U32>, +no: U32, +st: List<&2, B.Fr>, +hs: {bt_frok(st) == True{} : Bool}) ->
+    {bt_frok(B.close.with(with, kids, name, no, st)) == True{} : Bool}:
+  match with:
+    case True{}:
+      hs
+    case False{}:
+      match kids:
+        case Nil{}:
+          hs
+        case Con{k, t}:
+          bt_into(st, B.NErr{List.append(&2, U32, B.codes("object "), List.append(&2, U32, name, B.codes(" has members, so its header ends with `with`"))), no}, {==}, hs)
+
+def bt_cgo(c: Bool, +k: Nat, +top: Bool, +ind: U32, +abs: Bool, +with: Bool, +ext: Bool, +name: List<&2, U32>, +parents: List<&2, List<&2, U32>>,
+    +kids: List<&2, B.Node>, +no: U32, +rest: List<&2, B.Fr>, +i: U32,
+    ih: {bt_frok(B.close.go(k, B.close.into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no}), i)) == True{} : Bool},
+    hs: {bt_frok(Con{B.Fr{top, ind, abs, with, ext, name, parents, kids, no}, rest}) == True{} : Bool}) ->
+    {bt_frok(cgo(c, k, top, ind, abs, with, ext, name, parents, kids, no, rest, i)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih
+    case False{}:
+      hs
+
+def bt_close(n: Nat, st: List<&2, B.Fr>, +i: U32, +hs: {bt_frok(st) == True{} : Bool}) -> {bt_frok(B.close.go(n, st, i)) == True{} : Bool}:
+  match n:
+    case 0n:
+      hs
+    case 1n+(+k):
+      match st:
+        case Nil{}:
+          {==}
+        case Con{f, +rest}:
+          match f:
+            case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+              bt_cgo(Bool.and(Bool.not(top), U32.is_ge(ind, i)), k, top, ind, abs, with, ext, name, parents, kids, no, rest, i,
+                bt_close(k, B.close.into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no}), i,
+                  bt_into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no},
+                    and_intro(B.nodes.bend(List.reverse(&2, B.Node, kids)), True{}, bt_rev(kids, Nil{}, and_l(B.nodes.bend(kids), bt_frok(rest), hs), {==}), {==}),
+                    bt_with(with, kids, name, no, rest, and_r(B.nodes.bend(kids), bt_frok(rest), hs)))),
+                hs)
+
+def bt_close_all(+st: List<&2, B.Fr>, +i: U32, +hs: {bt_frok(st) == True{} : Bool}) -> {bt_frok(B.close(st, i)) == True{} : Bool}:
+  bt_close(List.length(&2, B.Fr, st), st, i, hs)
+
+# an item put: its node so
+def bt_put(st: List<&2, B.Fr>, it: B.Item, +hi: {B.item.bend(it) == True{} : Bool}, +hs: {bt_frok(st) == True{} : Bool}) -> {bt_frok(B.tree.put(st, it)) == True{} : Bool}:
+  match it:
+    case B.IObj{+abs, +with, +ext, +name, +parents, +no, +ind}:
+      hs
+    case B.IDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      bt_into(st, B.NDef{share, upd, name, rest, params, B.toks.lines(body), no, ind, what}, {==}, hs)
+    case B.IImport{+txt, +no, +ind}:
+      bt_into(st, B.NImport{txt, no}, {==}, hs)
+    case B.IDecl{+names, +no, +ind}:
+      bt_into(st, B.NDecl{names, no}, {==}, hs)
+    case B.IBad{+txt, +no, +ind}:
+      bt_into(st, B.NBad{txt, no}, {==}, hs)
+    case B.IBend{+lines, +no, +ind}:
+      bt_into(st, B.NBend{lines, no}, and_intro(B.bend.ok(lines, no), True{}, hi, {==}), hs)
+
+def bt_tree_go(its: List<&2, B.Item>, +st: List<&2, B.Fr>, +hi: {B.items.bend(its) == True{} : Bool}, +hs: {bt_frok(st) == True{} : Bool}) ->
+    {bt_frok(B.tree.go(its, st)) == True{} : Bool}:
+  match its:
+    case Nil{}:
+      bt_close_all(st, 0, hs)
+    case Con{it, +t}:
+      match it:
+        case B.IImport{+txt, +no, +ind}:
+          bt_tree_go(t, B.tree.put(B.close(st, ind), B.IImport{txt, no, ind}), and_r(B.item.bend(B.IImport{txt, no, ind}), B.items.bend(t), hi),
+            bt_put(B.close(st, ind), B.IImport{txt, no, ind}, and_l(B.item.bend(B.IImport{txt, no, ind}), B.items.bend(t), hi), bt_close_all(st, ind, hs)))
+        case B.IObj{+abs, +with, +ext, +name, +parents, +no, +ind}:
+          bt_tree_go(t, B.tree.put(B.close(st, ind), B.IObj{abs, with, ext, name, parents, no, ind}), and_r(B.item.bend(B.IObj{abs, with, ext, name, parents, no, ind}), B.items.bend(t), hi),
+            bt_put(B.close(st, ind), B.IObj{abs, with, ext, name, parents, no, ind}, and_l(B.item.bend(B.IObj{abs, with, ext, name, parents, no, ind}), B.items.bend(t), hi), bt_close_all(st, ind, hs)))
+        case B.IDecl{+names, +no, +ind}:
+          bt_tree_go(t, B.tree.put(B.close(st, ind), B.IDecl{names, no, ind}), and_r(B.item.bend(B.IDecl{names, no, ind}), B.items.bend(t), hi),
+            bt_put(B.close(st, ind), B.IDecl{names, no, ind}, and_l(B.item.bend(B.IDecl{names, no, ind}), B.items.bend(t), hi), bt_close_all(st, ind, hs)))
+        case B.IDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          bt_tree_go(t, B.tree.put(B.close(st, ind), B.IDef{share, upd, name, rest, params, body, no, ind, what}), and_r(B.item.bend(B.IDef{share, upd, name, rest, params, body, no, ind, what}), B.items.bend(t), hi),
+            bt_put(B.close(st, ind), B.IDef{share, upd, name, rest, params, body, no, ind, what}, and_l(B.item.bend(B.IDef{share, upd, name, rest, params, body, no, ind, what}), B.items.bend(t), hi), bt_close_all(st, ind, hs)))
+        case B.IBad{+txt, +no, +ind}:
+          bt_tree_go(t, B.tree.put(B.close(st, ind), B.IBad{txt, no, ind}), and_r(B.item.bend(B.IBad{txt, no, ind}), B.items.bend(t), hi),
+            bt_put(B.close(st, ind), B.IBad{txt, no, ind}, and_l(B.item.bend(B.IBad{txt, no, ind}), B.items.bend(t), hi), bt_close_all(st, ind, hs)))
+        case B.IBend{+lines, +no, +ind}:
+          bt_tree_go(t, B.tree.put(B.close(st, ind), B.IBend{lines, no, ind}), and_r(B.item.bend(B.IBend{lines, no, ind}), B.items.bend(t), hi),
+            bt_put(B.close(st, ind), B.IBend{lines, no, ind}, and_l(B.item.bend(B.IBend{lines, no, ind}), B.items.bend(t), hi), bt_close_all(st, ind, hs)))
+
+def bt_fin(st: List<&2, B.Fr>, +hs: {bt_frok(st) == True{} : Bool}) -> {B.nodes.bend(B.tree.fin(st)) == True{} : Bool}:
+  match st:
+    case Nil{}:
+      {==}
+    case Con{f, +rest}:
+      match f:
+        case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+          bt_rev(kids, Nil{}, and_l(B.nodes.bend(kids), bt_frok(rest), hs), {==})
+
+def Laws.bends.tree(its, h):
+  bt_fin(B.tree.go(its, [B.Fr{True{}, 0, False{}, True{}, False{}, Nil{}, Nil{}, Nil{}, 0}]), bt_tree_go(its, [B.Fr{True{}, 0, False{}, True{}, False{}, Nil{}, Nil{}, Nil{}, 0}], h, {==}))
+
+def Laws.bends.read(bs, base):
+  Laws.bends.tree(B.flat(B.lines.at(bs, base)), Laws.bends.items(B.lines.at(bs, base), U32.add(base, 1), Laws.markers.lines(bs, base), Laws.inline.lines(bs, base)))
+
+# Every object's members' datatypes so (`bends.members`), as
+# `inline.members` carries the members' texts: the walk's frames hold
+# nodes so (`bwf`), an object made of a node's kids.
+
+def bwf(st: List<&2, B.Wf>) -> Bool:
+  match st:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      match f:
+        case B.Wf{+host, path, nodes}:
+          Bool.and(B.nodes.bend(nodes), bwf(t))
+
+def bwf_on(+host: U32, +path: List<&2, List<&2, U32>>, +t: List<&2, B.Node>, +rest: List<&2, B.Wf>, +ht: {B.nodes.bend(t) == True{} : Bool}, +hr: {bwf(rest) == True{} : Bool}) ->
+    {bwf(Con{B.Wf{host, path, t}, rest}) == True{} : Bool}:
+  and_intro(B.nodes.bend(t), bwf(rest), ht, hr)
+
+def bwf_n(+host: U32, +path: List<&2, List<&2, U32>>, +ns: List<&2, B.Node>, +rest: List<&2, B.Wf>, +h: {bwf(Con{B.Wf{host, path, ns}, rest}) == True{} : Bool}) -> {B.nodes.bend(ns) == True{} : Bool}:
+  and_l(B.nodes.bend(ns), bwf(rest), h)
+
+def bwf_r(+host: U32, +path: List<&2, List<&2, U32>>, +ns: List<&2, B.Node>, +rest: List<&2, B.Wf>, +h: {bwf(Con{B.Wf{host, path, ns}, rest}) == True{} : Bool}) -> {bwf(rest) == True{} : Bool}:
+  and_r(B.nodes.bend(ns), bwf(rest), h)
+
+def bm_og(n: Nat, st: List<&2, B.Wf>, +next: U32, +out: List<&2, B.Ob>, +hs: {bwf(st) == True{} : Bool}, +ho: {B.obs.mems.bend(out) == True{} : Bool}) ->
+    {B.obs.mems.bend(B.obs.go(n, st, next, out)) == True{} : Bool}:
+  match n:
+    case 0n:
+      ho
+    case 1n+(+k):
+      match st:
+        case Nil{}:
+          ho
+        case Con{f, +rest}:
+          match f:
+            case B.Wf{+host, +path, nodes}:
+              match nodes:
+                case Nil{}:
+                  bm_og(k, rest, next, out, bwf_r(host, path, Nil{}, rest, hs), ho)
+                case Con{nd, +t}:
+                  match nd:
+                    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+                      bm_og(k, Con{B.Wf{next, List.append(&2, List<&2, U32>, path, [name]), kids}, Con{B.Wf{host, path, t}, rest}}, U32.add(next, 1),
+                        Con{B.Ob{next, host, List.append(&2, List<&2, U32>, path, [name]), abs, parents, kids, no, B.ob.kind.of(ext, path), next}, out},
+                        bwf_on(next, List.append(&2, List<&2, U32>, path, [name]), kids, Con{B.Wf{host, path, t}, rest},
+                          and_l(B.nodes.bend(kids), B.nodes.bend(t), bwf_n(host, path, Con{B.NObj{abs, ext, name, parents, kids, no}, t}, rest, hs)),
+                          bwf_on(host, path, t, rest, and_r(B.nodes.bend(kids), B.nodes.bend(t), bwf_n(host, path, Con{B.NObj{abs, ext, name, parents, kids, no}, t}, rest, hs)), bwf_r(host, path, Con{B.NObj{abs, ext, name, parents, kids, no}, t}, rest, hs))),
+                        and_intro(B.nodes.bend(kids), B.obs.mems.bend(out), and_l(B.nodes.bend(kids), B.nodes.bend(t), bwf_n(host, path, Con{B.NObj{abs, ext, name, parents, kids, no}, t}, rest, hs)), ho))
+                    case B.NBend{+lines, +no}:
+                      bm_og(k, Con{B.Wf{host, path, t}, rest}, next, out,
+                        bwf_on(host, path, t, rest, and_r(B.bend.ok(lines, no), B.nodes.bend(t), bwf_n(host, path, Con{B.NBend{lines, no}, t}, rest, hs)),
+                          bwf_r(host, path, Con{B.NBend{lines, no}, t}, rest, hs)), ho)
+                    case B.NDef{+share, +upd, +name, +rest2, +params, +body, +no, +ind, +what}:
+                      bm_og(k, Con{B.Wf{host, path, t}, rest}, next, out, hs, ho)
+                    case B.NImport{+txt, +no}:
+                      bm_og(k, Con{B.Wf{host, path, t}, rest}, next, out, hs, ho)
+                    case B.NDecl{+names, +no}:
+                      bm_og(k, Con{B.Wf{host, path, t}, rest}, next, out, hs, ho)
+                    case B.NBad{+txt, +no}:
+                      bm_og(k, Con{B.Wf{host, path, t}, rest}, next, out, hs, ho)
+                    case B.NErr{+msg, +no}:
+                      bm_og(k, Con{B.Wf{host, path, t}, rest}, next, out, hs, ho)
+
+def bm_rgo(xs: List<&2, B.Ob>, +acc: List<&2, B.Ob>, +hx: {B.obs.mems.bend(xs) == True{} : Bool}, +ha: {B.obs.mems.bend(acc) == True{} : Bool}) ->
+    {B.obs.mems.bend(List.reverse.go(&2, B.Ob, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+o, +t}:
+      bm_rgo(t, Con{o, acc}, and_r(B.ob.mems.bend(o), B.obs.mems.bend(t), hx), and_intro(B.ob.mems.bend(o), B.obs.mems.bend(acc), and_l(B.ob.mems.bend(o), B.obs.mems.bend(t), hx), ha))
+
+def bm_app(xs: List<&2, B.Ob>, +b: List<&2, B.Ob>, +hx: {B.obs.mems.bend(xs) == True{} : Bool}, +hb: {B.obs.mems.bend(b) == True{} : Bool}) ->
+    {B.obs.mems.bend(List.append(&2, B.Ob, xs, b)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      hb
+    case Con{+o, +t}:
+      and_intro(B.ob.mems.bend(o), B.obs.mems.bend(List.append(&2, B.Ob, t, b)), and_l(B.ob.mems.bend(o), B.obs.mems.bend(t), hx), bm_app(t, b, and_r(B.ob.mems.bend(o), B.obs.mems.bend(t), hx), hb))
+
+def bm_mods(ts: List<&2, List<&2, B.Node>>, +k: U32, +out: List<&2, B.Ob>, +ht: {B.trees.bend(ts) == True{} : Bool}, +ho: {B.obs.mems.bend(out) == True{} : Bool}) ->
+    {B.obs.mems.bend(B.obs.mods(ts, k, out)) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      ho
+    case Con{+tr, +t}:
+      bm_mods(t, U32.add(k, 1), B.obs.mod(tr, k, out), and_r(B.nodes.bend(tr), B.trees.bend(t), ht),
+        bm_og(Nat.add(Nat.add(B.count(tr), B.count(tr)), 2n), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
+          Con{B.Ob{U32.from_nat(List.length(&2, B.Ob, out)), U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, False{}, Nil{}, tr, U32.mul(k, 1000000), 0,
+            U32.from_nat(List.length(&2, B.Ob, out))}, out},
+          bwf_on(U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr, Nil{}, and_l(B.nodes.bend(tr), B.trees.bend(t), ht), {==}),
+          and_intro(B.nodes.bend(tr), B.obs.mems.bend(out), and_l(B.nodes.bend(tr), B.trees.bend(t), ht), ho)))
+
+def bm_obs(+trees: List<&2, List<&2, B.Node>>, +h: {B.trees.bend(trees) == True{} : Bool}) -> {B.obs.mems.bend(B.obs(trees)) == True{} : Bool}:
+  bm_rgo(B.obs.mods(trees, 0, Nil{}), Nil{}, bm_mods(trees, 0, Nil{}, h, {==}), {==})
+
+def bm_sx_k(c: Bool, +n: List<&2, U32>, +t: List<&2, List<&2, U32>>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32,
+    ih1: {B.obs.mems.bend(B.syn.x(t, x, obs, made, next)) == True{} : Bool},
+    ih2: {B.obs.mems.bend(B.syn.x(t, x, obs, Con{B.Ob{next, x, List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(obs, x)), [n]), B.ob.abs(B.ob.at(obs, x)), Nil{}, Nil{}, B.ob.no(B.ob.at(obs, x)), 3, next}, made}, U32.add(next, 1))) == True{} : Bool}) ->
+    {B.obs.mems.bend(sxk(c, n, t, x, obs, made, next)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+def bm_sx(ns: List<&2, List<&2, U32>>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32, +hm: {B.obs.mems.bend(made) == True{} : Bool}) ->
+    {B.obs.mems.bend(B.syn.x(ns, x, obs, made, next)) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      hm
+    case Con{+n, +t}:
+      bm_sx_k(Bool.or(B.made.has(obs, x, n), B.made.has(made, x, n)), n, t, x, obs, made, next, bm_sx(t, x, obs, made, next, hm),
+        bm_sx(t, x, obs, Con{B.Ob{next, x, List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(obs, x)), [n]), B.ob.abs(B.ob.at(obs, x)), Nil{}, Nil{}, B.ob.no(B.ob.at(obs, x)), 3, next}, made},
+          U32.add(next, 1), and_intro(True{}, B.obs.mems.bend(made), {==}, hm)))
+
+def bm_sr_k(c: Bool, +id: U32, +t: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>,
+    ih1: {B.obs.mems.bend(B.syn.round(t, obs, ls, B.syn.x(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))))) == True{} : Bool},
+    ih2: {B.obs.mems.bend(B.syn.round(t, obs, ls, made)) == True{} : Bool}) -> {B.obs.mems.bend(srk(c, id, t, obs, ls, made)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+def bm_sr(os: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>, +hm: {B.obs.mems.bend(made) == True{} : Bool}) ->
+    {B.obs.mems.bend(B.syn.round(os, obs, ls, made)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      hm
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+          bm_sr_k(Bool.and(B.is.object(kind), Bool.not(U32.is_eq(id, host))), id, t, obs, ls, made,
+            bm_sr(t, obs, ls, B.syn.x(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))),
+              bm_sx(B.mixin.names(B.lz.ord(B.lz.at(ls, id)), obs, Nil{}), id, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))), hm)),
+            bm_sr(t, obs, ls, made, hm))
+
+def bm_get(os: List<&2, B.Ob>, n: Nat, +h: {B.obs.mems.bend(os) == True{} : Bool}) -> {B.nodes.bend(B.ob.mems(B.ob.or(List.get(&2, B.Ob, os, n)))) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, +path, +abs, +parents, +mems, +no, +kind, +tpl}:
+          match n:
+            case 0n:
+              and_l(B.nodes.bend(mems), B.obs.mems.bend(t), h)
+            case 1n+k:
+              bm_get(t, k, and_r(B.nodes.bend(mems), B.obs.mems.bend(t), h))
+
+def bm_at(+obs: List<&2, B.Ob>, +id: U32, +h: {B.obs.mems.bend(obs) == True{} : Bool}) -> {B.nodes.bend(B.ob.mems(B.ob.at(obs, id))) == True{} : Bool}:
+  bm_get(obs, U32.to_nat(id), h)
+
+def bm_ct_k(c: Bool, +t: U32, +r: List<&2, U32>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32,
+    ih1: {B.obs.mems.bend(B.copies.t(r, x, obs, made, next)) == True{} : Bool},
+    ih2: {B.obs.mems.bend(B.copies.t(r, x, obs, Con{B.Ob{next, x, B.ob.path(B.ob.at(obs, t)), B.ob.abs(B.ob.at(obs, t)), Nil{}, B.ob.mems(B.ob.at(obs, t)), B.ob.no(B.ob.at(obs, t)), B.ob.kind(B.ob.at(obs, t)), t}, made}, U32.add(next, 1))) == True{} : Bool}) ->
+    {B.obs.mems.bend(ctk(c, t, r, x, obs, made, next)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+def bm_ct(ts: List<&2, U32>, +x: U32, +obs: List<&2, B.Ob>, +made: List<&2, B.Ob>, +next: U32, +hobs: {B.obs.mems.bend(obs) == True{} : Bool},
+    +hm: {B.obs.mems.bend(made) == True{} : Bool}) -> {B.obs.mems.bend(B.copies.t(ts, x, obs, made, next)) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      hm
+    case Con{+t, +r}:
+      bm_ct_k(B.copy.has(obs, made, t, x), t, r, x, obs, made, next, bm_ct(r, x, obs, made, next, hobs, hm),
+        bm_ct(r, x, obs, Con{B.Ob{next, x, B.ob.path(B.ob.at(obs, t)), B.ob.abs(B.ob.at(obs, t)), Nil{}, B.ob.mems(B.ob.at(obs, t)), B.ob.no(B.ob.at(obs, t)), B.ob.kind(B.ob.at(obs, t)), t}, made},
+          U32.add(next, 1), hobs, and_intro(B.nodes.bend(B.ob.mems(B.ob.at(obs, t))), B.obs.mems.bend(made), bm_at(obs, t, hobs), hm)))
+
+def bm_sc_k(c: Bool, +host: U32, +path: List<&2, List<&2, U32>>, +t: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>,
+    ih1: {B.obs.mems.bend(B.syn.copies(t, obs, ls, B.copies.t(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))))) == True{} : Bool},
+    ih2: {B.obs.mems.bend(B.syn.copies(t, obs, ls, made)) == True{} : Bool}) -> {B.obs.mems.bend(sck(c, host, path, t, obs, ls, made)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih1
+    case False{}:
+      ih2
+
+def bm_sc(os: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +ls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>, +hobs: {B.obs.mems.bend(obs) == True{} : Bool},
+    +hm: {B.obs.mems.bend(made) == True{} : Bool}) -> {B.obs.mems.bend(B.syn.copies(os, obs, ls, made)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      hm
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, +path, +abs, parents, mems, +no, +kind, +tpl}:
+          bm_sc_k(U32.is_eq(kind, 3), host, path, t, obs, ls, made,
+            bm_sc(t, obs, ls, B.copies.t(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made)))), hobs,
+              bm_ct(B.mixins.of(B.lz.ord(B.lz.at(ls, host)), obs, B.path.last(path)), host, obs, made, U32.add(U32.from_nat(List.length(&2, B.Ob, obs)), U32.from_nat(List.length(&2, B.Ob, made))), hobs, hm)),
+            bm_sc(t, obs, ls, made, hobs, hm))
+
+def bm_sg_k(c: Bool, +k: Nat, +als: List<&2, B.Al>, +obs: List<&2, B.Ob>, +npss: List<&2, List<&2, U32>>, +nls: List<&2, Maybe<&2, B.Lz>>, +made: List<&2, B.Ob>,
+    +h: {B.obs.mems.bend(obs) == True{} : Bool}, ih: {B.obs.mems.bend(B.sy.obs(B.syn.go(k, als, List.append(&2, B.Ob, obs, List.reverse(&2, B.Ob, made)), npss, nls))) == True{} : Bool}) ->
+    {B.obs.mems.bend(B.sy.obs(sgk(c, k, als, obs, npss, nls, made))) == True{} : Bool}:
+  match c:
+    case True{}:
+      h
+    case False{}:
+      ih
+
+def bm_sg(n: Nat, +als: List<&2, B.Al>, +obs: List<&2, B.Ob>, +pss: List<&2, List<&2, U32>>, +ls: List<&2, Maybe<&2, B.Lz>>, +h: {B.obs.mems.bend(obs) == True{} : Bool}) ->
+    {B.obs.mems.bend(B.sy.obs(B.syn.go(n, als, obs, pss, ls))) == True{} : Bool}:
+  match n:
+    case 0n:
+      h
+    case 1n+(+k):
+      bm_sg_k(Bool.and(B.obs.none(B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}))), B.pss.eq(B.pids(obs, als, obs, ls), pss)), k, als, obs, B.pids(obs, als, obs, ls), B.lins(B.pids(obs, als, obs, ls)), B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{})), h,
+        bm_sg(k, als, List.append(&2, B.Ob, obs, List.reverse(&2, B.Ob, B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{})))), B.pids(obs, als, obs, ls), B.lins(B.pids(obs, als, obs, ls)),
+          bm_app(obs, List.reverse(&2, B.Ob, B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}))), h,
+            bm_rgo(B.syn.copies(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{})), Nil{},
+              bm_sc(obs, obs, B.lins(B.pids(obs, als, obs, ls)), B.syn.round(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}), h, bm_sr(obs, obs, B.lins(B.pids(obs, als, obs, ls)), Nil{}, {==})), {==}))))
+
+def bm_ma(os: List<&2, B.Ob>, +obs: List<&2, B.Ob>, +pss: List<&2, List<&2, U32>>, +h: {B.obs.mems.bend(os) == True{} : Bool}) -> {B.obs.mems.bend(B.made.abs(os, obs, pss)) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{o, +t}:
+      match o:
+        case B.Ob{+id, +host, +path, +abs, parents, +mems, +no, +kind, +tpl}:
+          and_intro(B.nodes.bend(mems), B.obs.mems.bend(B.made.abs(t, obs, pss)), and_l(B.nodes.bend(mems), B.obs.mems.bend(t), h),
+            bm_ma(t, obs, pss, and_r(B.nodes.bend(mems), B.obs.mems.bend(t), h)))
+
+def Laws.bends.members(trees, als, h):
+  bm_ma(B.sy.obs(B.syn.of(als, B.obs(trees))), B.sy.obs(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))),
+    bm_sg(Nat.add(2n, Nat.add(List.length(&2, B.Ob, B.obs(trees)), List.length(&2, B.Ob, B.obs(trees)))), als, B.obs(trees), Nil{}, Nil{}, bm_obs(trees, h)))
+
+# The datatypes at emission (`datatypes.emitted`): the root's members, an
+# object's, so (`bends.members`); the writer's law has its hypotheses.
+
+def Laws.datatypes.emitted(files, trees, als, hf, hb):
+  Laws.markers.datatypes(B.ob.mems(B.ob.at(B.obs.made(B.syn.of(als, B.obs(trees))), 0)), files, hf, bm_at(B.obs.made(B.syn.of(als, B.obs(trees))), 0, Laws.bends.members(trees, als, hb)))
