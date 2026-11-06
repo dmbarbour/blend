@@ -30,5 +30,17 @@ cmp -s "$o/native/choice.bend" samples/choice.bend || fail "a native emit differ
 (cd samples && BLEND_NATIVE=0 BEND_HOME=$h "$b" emit --alone choice.blend "$o/bend" > /dev/null) || fail "an emit through bend fails"
 cmp -s "$o/bend/choice.bend" samples/choice.bend || fail "an emit through bend differs from samples/choice.bend"
 BEND_HOME=$root/results/launcher/none "$b" version > /dev/null 2>&1 && fail "runs where it is not installed"
-[ "$status" = 0 ] && echo "launcher: installed, version, --help, update, native and through bend: ok"
+# a file first: the module run as `bend` runs it, its output and status
+# its own; an error on the module's file followed by its .blend line
+r=$root/results/launcher/run
+mkdir -p "$r" || exit 1
+cp samples/choice.blend samples/refused/declare-misfit.blend "$r/" || exit 1
+got=$(cd "$r" && BEND_HOME=$h "$b" choice.blend 2>&1) || fail "a run of choice.blend fails: $got"
+[ "$got" = "$(cat samples/choice.out)" ] || fail "a run of choice.blend prints '$got'"
+if got=$(cd "$r" && BEND_HOME=$h "$b" declare-misfit.blend --check-only 2>&1); then
+  fail "a misfit passes its check"
+else
+  echo "$got" | grep -qx "Source: declare-misfit.blend:8" || fail "a misfit's error names no source line: $got"
+fi
+[ "$status" = 0 ] && echo "launcher: installed, version, --help, update, native and through bend, a run, an error's source: ok"
 exit "$status"
