@@ -1144,3 +1144,19 @@ the first object's host checked alone, the rest passed unseen
       when(List<&2, Er>, Nat.is_le(U32.to_nat(ob.host(o)), i), u => er.hosts(t, 1n+i), u => Con{er.host(o), er.hosts(t, 1n+i)})
 +++
       when(List<&2, Er>, Nat.is_le(U32.to_nat(ob.host(o)), i), u => Nil{}, u => Con{er.host(o), er.hosts(t, 1n+i)})
+
+=== objects_hosts_dropped objects.checked
+the hosts' check left out of the objects stage's errors, an object's
+host after it then unreported and its hosts cut short
+--- blend.bend
+  List.append(&2, Er, er.hosts(obs, 0n), List.append(&2, Er, er.endless(pss, obs), List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss),
++++
+  List.append(&2, Er, Nil{}, List.append(&2, Er, er.endless(pss, obs), List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss),
+
+=== objects_defs_dropped objects.checked
+the definitions' check, the last, left out of the objects stage's
+errors
+--- blend.bend
+    List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs))))))))
++++
+    List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), Nil{}))))))))
