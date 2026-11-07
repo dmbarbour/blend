@@ -1,5 +1,5 @@
 # Written by Blend from laws.blend; do not edit.
-# blend stamp: 1 b16100bbcbf9a3a5
+# blend stamp: daafbb8ba9f9 a099d9efab683877
 import Base
 
 # blend: laws.blend:28

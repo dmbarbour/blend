@@ -1,6 +1,6 @@
 # A stamp in each written file says whether it is current
 
-`blend-stamps` · maintainer · rev 1633393
+`blend-stamps` · maintainer · rev 732938e
 
 **Context.** Knowing whether a written `.bend` is current cost its
 emission again, in memory, compared byte for byte: `deps` did so for
@@ -9,10 +9,14 @@ plan asked for a stamp in each emitted header, a hash of its sources
 and of Blend, read in its place (`blend-cli.stamps`).
 
 **Decision.** The maintainer (2026-11-07): the stamp records of Blend a
-format version, bumped when what Blend writes changes, not a hash of
-Blend itself, which would restamp every file, and so regenerate and
-recheck it, on every change to Blend. `blend version` reports the
-format.
+format, and the format is blend.bend's hash, written into
+`blend_stamp.bend` by `blend_stamp.sh`, which the pre-commit hook runs
+on blend.bend as staged.
+Every change to blend.bend moves it, erring toward too many updates: a
+format bumped by hand was missed when a fix changed what Blend writes
+for inputs no sample showed (`blend-scale.copies-fuel`), and the files
+the Blend before wrote stayed current. A stamp resting on more than
+the tool's source may come later. `blend version` reports the format.
 
 The rest is the agent's:
 - The stamp is a written file's second line, `# blend stamp: FORMAT
@@ -32,16 +36,21 @@ The rest is the agent's:
   law in it is still found and mapped. `deps --make`'s recipe forces
   the write, so that make finds the target's time moved; the gate's
   "regenerate it" too, a file edited under its stamp being current.
-- The gate (`check_generated.sh`) runs `deps --bytes` over the samples,
-  and fails a generated file that changed while its stamp stayed as
-  HEAD has it: Blend's output changed under one format. `blend
+- The gate (`check_generated.sh`) checks `blend_stamp.bend` against
+  blend.bend and runs `deps --bytes` over the samples, so that every
+  change to blend.bend writes them again in the same commit. `blend
   --format` prints the tool's format.
 
 **Consequences.**
-- Updating Blend leaves a tree current unless the format moved.
-- A change in what Blend writes that no sample shows could slip past
-  the gate under an unchanged format: the samples are the specification.
+- Updating Blend leaves every file it wrote stale: each is written again
+  once (`emit` writes it, `deps` lists it stale), a comment's change to
+  blend.bend too.
+- A commit changing blend.bend carries every sample written again, their
+  stamps moved; a change in what they hold beyond the stamp shows in
+  their diff.
+- glam-in-bend's modules are written again with each new Blend its
+  pointer records.
 - Packages can be told stale by their stamps (`blend-packages`).
 
-**Rule lives in:** `blend.bend`, Stamps (`blend.format`);
+**Rule lives in:** `blend.bend`, Stamps (`blend.format`); `blend_stamp.sh`;
 `GUIDE.md`, What Blend writes.

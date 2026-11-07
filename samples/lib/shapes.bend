@@ -1,5 +1,5 @@
 # Written by Blend from shapes.blend; do not edit.
-# blend stamp: 1 dda017f901672aa5
+# blend stamp: daafbb8ba9f9 0b80883dd8ff13ef
 import Base
 
 # blend: shapes.blend:3

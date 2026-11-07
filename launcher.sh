@@ -46,7 +46,7 @@ case ${1:-} in
       { [ -z "$(git -C "$src" status --porcelain -- blend.bend 2>/dev/null)" ] || at="$at, blend.bend changed"; }
     how="natively"; [ "$native" = 1 ] || how="through bend (no native build)"
     # the format, read from the source rather than the tool, which may want a build
-    fmt=$(awk '/^def blend\.format\(\)/ { getline; if (match($0, /"[^"]*"/)) print substr($0, RSTART + 1, RLENGTH - 2); exit }' "$src/blend.bend")
+    fmt=$(awk '/^def hash\(\)/ { getline; if (match($0, /"[^"]*"/)) print substr($0, RSTART + 1, RLENGTH - 2); exit }' "$src/blend_stamp.bend")
     echo "blend from the checkout $src${at:+ ($at)}, blend.bend $(hash "$src/blend.bend"), format ${fmt:-unknown}; $("$bend" version), $how"
     exit 0 ;;
   rebuild)
