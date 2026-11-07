@@ -4151,6 +4151,51 @@ def rds.has(rs: List<&2, Rd>, +i: In) -> Bool:
         case Rd{inst, node, hd, ls}:
           in.eq(inst, i) || rds.has(t, i)
 
+# whether each object of cs has a definition named n among its members
+# (law folds.chained)
+def chain.defines(cs: List<&2, U32>, +obs: List<&2, Ob>, +n: List<&2, U32>) -> Bool:
+  match cs:
+    case Nil{}:
+      True{}
+    case Con{+c, t}:
+      Maybe.is_some(&2, Node, mem.find(ob.mems(ob.at(obs, c)), n)) && chain.defines(t, obs, n)
+
+# whether a chain names some object, each with a definition named n
+def chain.ok(cs: List<&2, U32>, +obs: List<&2, Ob>, +n: List<&2, U32>) -> Bool:
+  match cs:
+    case Nil{}:
+      False{}
+    case Con{+c, t}:
+      chain.defines(Con{c, t}, obs, n)
+
+def en.chained(e: En, +obs: List<&2, Ob>) -> Bool:
+  match e:
+    case En{+name, chain, +no, +what}:
+      chain.ok(chain, obs, name)
+
+def ens.chained(es: List<&2, En>, +obs: List<&2, Ob>) -> Bool:
+  match es:
+    case Nil{}:
+      True{}
+    case Con{e, t}:
+      en.chained(e, obs) && ens.chained(t, obs)
+
+def fd.chained(m: Maybe<&2, Fd>, +obs: List<&2, Ob>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{d}:
+      match d:
+        case Fd{map, fes, ix}:
+          ens.chained(map, obs)
+
+def fds.chained(fs: List<&2, Maybe<&2, Fd>>, +obs: List<&2, Ob>) -> Bool:
+  match fs:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      fd.chained(f, obs) && fds.chained(t, obs)
+
 def cp.rds(c: Cp) -> List<&2, Rd>:
   match c:
     case Cp{rds, ers, done}:

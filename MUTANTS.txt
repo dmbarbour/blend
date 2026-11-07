@@ -975,3 +975,31 @@ a member table's lookup takes its first step by another bit than a put
   mem.find(ht.leaf(Node, t, (h .&. 1 : U32), h), n)
 +++
   mem.find(ht.leaf(Node, t, ((h >> 1n : U32) .&. 1 : U32), h), n)
+
+=== upd_other_object folds.chained
+an update puts another object at its entry's chain's head than its own
+--- blend.bend
+          v => Fd{en.set(map, En{name, Con{q, chain}, no, was}, name), fes, ix.put(ix, En{name, Con{q, chain}, no, was})}))
++++
+          v => Fd{en.set(map, En{name, Con{(q + 1 : U32), chain}, no, was}, name), fes, ix.put(ix, En{name, Con{(q + 1 : U32), chain}, no, was})}))
+
+=== def_chain_empty folds.chained
+an introduction's entry in the map has an empty chain
+--- blend.bend
+          v => Fd{Con{En{name, [q], no, what}, map}, fes, ix.put(ix, En{name, [q], no, what})}),
++++
+          v => Fd{Con{En{name, Nil{}, no, what}, map}, fes, ix.put(ix, En{name, [q], no, what})}),
+
+=== mems_other_object folds.chained
+an object's members are folded as another object's
+--- blend.bend
+          fd.mems(t, q, fd.def(q, upd, name, no, what, d))
++++
+          fd.mems(t, q, fd.def((q + 1 : U32), upd, name, no, what, d))
+
+=== upd_other_name folds.chained
+an update finds its chain under another name than its own
+--- blend.bend
+      on.maybe(En, Fd, ix.find(ix, name),
++++
+      on.maybe(En, Fd, ix.find(ix, List.reverse(&2, U32, name)),

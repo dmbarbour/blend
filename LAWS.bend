@@ -547,6 +547,18 @@ law members.indexed:
   for +n: List<&2, U32>
   {B.md.find(B.md.table(ns), n) == B.mem.find(ns, n) : Maybe<&2, B.Node>}
 
+# LAW: every object an entry of a fold names in its chain has a
+# definition of the entry's name among its members, and no chain is
+# empty: an entry is made by a member's definition and updated by one,
+# so that an instance a chain gives, its final or a prior, has its
+# member.
+# Record: blend-adds-no-bend-logic
+law folds.chained:
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +obs: List<&2, B.Ob>
+  for +bad: List<&2, U32>
+  {B.fds.chained(B.folds(ls, obs, bad), obs) == True{} : Bool}
+
 # LAW: every object's members, the made objects' included, are
 # definitions the modules' trees hold: an object's members its node's in
 # the tree, a made object's none or a mixin's.
