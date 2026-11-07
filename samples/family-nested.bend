@@ -1,5 +1,5 @@
 # Written by Blend from family-nested.blend; do not edit.
-# blend stamp: daafbb8ba9f9 d6084ea6654b064a
+# blend stamp: 3efd9b0ef5dd 94a93a1c65cd6acc
 import Base
 
 # blend: family-nested.blend:9

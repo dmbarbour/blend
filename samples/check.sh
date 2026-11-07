@@ -138,7 +138,7 @@ got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps --make imports.blend 2>&1) || { 
 # stamps (blend-stamps): an import its stamp finds current is left as
 # it is, listed after the files written; `deps` reads the stamp, and
 # `--bytes` compares the bytes too, finding a file stamped current but
-# other, Blend's output changed under one format or the file edited
+# other, the file edited since
 echo "# edited" >> "$v/lib/shapes.bend" || exit 1
 want="./imports.bend
 lib/shapes.bend"
@@ -160,7 +160,7 @@ got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps imports.blend 2>&1) || { echo "b
 if got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps --bytes imports.blend 2>&1); then
   echo "blend: deps --bytes passes a file other than its stamp says"
   status=1
-elif ! echo "$got" | grep -q "^stale lib/shapes.blend$" || ! echo "$got" | grep -q "bump blend.format"; then
+elif ! echo "$got" | grep -q "^stale lib/shapes.blend$" || ! echo "$got" | grep -q "edited since"; then
   echo "blend: deps --bytes of a file other than its stamp says '$got'"
   status=1
 fi
