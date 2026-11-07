@@ -1,1 +1,5 @@
-proof-no-law.blend:8: proof bounded proves no law: its object states none of that name
+Error: proof bounded proves no law: its object states none of that name
+Location: proof-no-law.blend:8
+7 |     1n+n
+8>|   proof bounded(n):
+9 |     {==}

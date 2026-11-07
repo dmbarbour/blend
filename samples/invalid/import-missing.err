@@ -1,1 +1,5 @@
-import-missing.blend:2: cannot read nowhere.blend
+Error: cannot read nowhere.blend
+Location: import-missing.blend:2
+1 | # An import of a file there is none of.
+2>| import ./nowhere.blend as N
+3 | 

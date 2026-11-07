@@ -1,1 +1,5 @@
-import-cycle.blend:2: the import of Me closes a cycle of imports
+Error: the import of Me closes a cycle of imports
+Location: import-cycle.blend:2
+1 | # An import that reaches the module importing it: imports form a DAG.
+2>| import ./import-cycle.blend as Me
+3 | 

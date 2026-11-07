@@ -1,1 +1,5 @@
-shadow.blend:8: the parameter greet of Greeter.show shadows the definition greet
+Error: the parameter greet of Greeter.show shadows the definition greet
+Location: shadow.blend:8
+7 |     "hello"
+8>|   def show(greet: String) -> String:
+9 |     greet ++ "!"

@@ -1,1 +1,5 @@
-names-twice.blend:9: A.f would name two emitted definitions, those of lines 5 and 9: rename one
+Error: A.f would name two emitted definitions, those of lines 5 and 9: rename one
+Location: names-twice.blend:9
+ 8 | object A with
+ 9>|   def f(+n: U32) -> U32:
+10 |     (n + 1 : U32)

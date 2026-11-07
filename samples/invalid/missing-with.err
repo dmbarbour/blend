@@ -1,1 +1,5 @@
-missing-with.blend:5: object Greeter has members, so its header ends with `with`
+Error: object Greeter has members, so its header ends with `with`
+Location: missing-with.blend:5
+4 | 
+5>| object Greeter
+6 |   def greet() -> String:

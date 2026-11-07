@@ -1,1 +1,5 @@
-lemma-named.blend:11: proof sz belongs to the proofs, not the code: only a proof may name it
+Error: proof sz belongs to the proofs, not the code: only a proof may name it
+Location: lemma-named.blend:11
+10 |   def twice(+n: Nat) -> Nat:
+11>|     sz(n)
+12 | 

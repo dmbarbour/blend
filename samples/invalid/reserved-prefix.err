@@ -1,1 +1,5 @@
-reserved-prefix.blend:7: Blend_1.x: names beginning Blend_ are Blend's own
+Error: Blend_1.x: names beginning Blend_ are Blend's own
+Location: reserved-prefix.blend:7
+6 | def main() -> U32:
+7>|   Blend_1.x()
+8 | 

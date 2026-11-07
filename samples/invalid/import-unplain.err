@@ -1,1 +1,5 @@
-import-unplain.blend:5: import ../lib/../lib/shapes.blend: an import path is local, plain names (letters, digits, _ and -) led by ./ at most, never ../ or /, or a package's on Bend's hub
+Error: import ../lib/../lib/shapes.blend: an import path is local, plain names (letters, digits, _ and -) led by ./ at most, never ../ or /, or a package's on Bend's hub
+Location: import-unplain.blend:5
+4 | import Base
+5>| import ../lib/../lib/shapes.blend as S
+6 | 

@@ -1,1 +1,5 @@
-cycle.blend:6: Ping.ping and Ping.pong call each other, which Bend cannot express
+Error: Ping.ping and Ping.pong call each other, which Bend cannot express
+Location: cycle.blend:6
+5 | object Ping with
+6>|   def ping(k: Nat) -> Nat:
+7 |     match k:

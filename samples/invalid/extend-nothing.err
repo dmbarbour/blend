@@ -1,1 +1,5 @@
-extend-nothing.blend:6: extend Inner: no Inner is inherited here to extend (introduce one with `object Inner`)
+Error: extend Inner: no Inner is inherited here to extend (introduce one with `object Inner`)
+Location: extend-nothing.blend:6
+5 | object Outer with
+6>|   extend Inner with
+7 |     def name() -> String:

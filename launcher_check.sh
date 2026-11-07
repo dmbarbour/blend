@@ -42,5 +42,14 @@ if got=$(cd "$r" && BEND_HOME=$h "$b" declare-misfit.blend --check-only 2>&1); t
 else
   echo "$got" | grep -qx "Source: declare-misfit.blend:8" || fail "a misfit's error names no source line: $got"
 fi
-[ "$status" = 0 ] && echo "launcher: installed, version, --help, update, native and through bend, a run, an error's source: ok"
+# an error in an imported module's file, named from where blend runs
+mkdir -p "$r/imp/lib" || exit 1
+printf 'import Base\n\nobject Bad with\n  def f(+n: U32) -> U32:\n    Nat.add(n, 1n)\n' > "$r/imp/lib/bad.blend" || exit 1
+printf 'import Base\nimport ./lib/bad.blend as B\n\ndef main() -> IO(Unit):\n  IO.print(U32.show(B.Bad.f(1)))\n' > "$r/imp/root.blend" || exit 1
+if got=$(cd "$r" && BEND_HOME=$h "$b" imp/root.blend 2>&1); then
+  fail "an imported module's error passes"
+else
+  echo "$got" | grep -qx "Source: imp/lib/bad.blend:5" || fail "an imported module's error names no source line: $got"
+fi
+[ "$status" = 0 ] && echo "launcher: installed, version, --help, update, native and through bend, a run, an error's source, an import's: ok"
 exit "$status"
