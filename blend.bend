@@ -7461,7 +7461,7 @@ def basename(path: String) -> String:
   base.k(until(List.reverse(&2, U32, codes(path)), 47))
 
 def usage() -> String:
-  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] [--no-check|--verdict] FILE.blend...  write each module's .bend and its imports' beside them, then check with bend those holding laws; --alone those named alone, --no-check none, --verdict by the kernel too\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [--read|--objects|--resolve] [NAME]  a stage, the objects by default; what NAME resolves to, or with --objects that object\n  blend guide|version|rebuild|update        the launcher's own: the guide, where blend runs from, a build again, a later Blend\n  blend --help                              this"
+  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] [--no-check|--verdict] FILE.blend...  write each module's .bend and its imports' beside them, then check with bend those holding laws; --alone those named alone, --no-check none, --verdict by the kernel too\n  blend deps [--make] [--bytes] FILE.blend...  each module emit would write, current by its stamp, stale, missing or refused; --make its rules; --bytes each emitted and compared too\n  blend show FILE.blend [--read|--objects|--resolve] [NAME]  a stage, the objects by default; what NAME resolves to, or with --objects that object\n  blend guide|version|rebuild|update        the launcher's own: the guide, where blend runs from, a build again, a later Blend\n  blend --help                              this"
 
 # 1 read, 2 objects (with a name, what it resolves to), 3 resolve, 4
 # emit, 5 an object alone
@@ -7848,13 +7848,116 @@ def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
         +ms => verify.deps(dt, List.append(&2, Ck, acc, dep.checks(run.mods(4, ms), d)), fs))
 
-# Checks (`blend-cli.checks`): the laws, proofs and witnesses written,
+# Stamps (`blend-cli.stamps`, `blend-stamps`): each file Blend writes
+# holds, as its second line, `# blend stamp: FORMAT HASH`: the format of
+# what Blend writes, and a hash of the module's tree as read, each
+# module's path from the module's own directory and its bytes. A file
+# whose stamp is what its sources give now is current, known without
+# emitting it again; `emit` leaves an import so stamped as it is, and
+# `deps` reads the line.
+
+# what Blend writes, by version: bumped whenever its output changes, as
+# the gate requires (check_generated.sh), so that a Blend newer in all
+# else leaves current what it would write the same
+def blend.format() -> List<&2, U32>:
+  codes("1")
+
+# FNV-1a, its multiplier given, a value at a time
+def hash.lane(xs: List<&2, U32>, +h: U32, +m: U32) -> U32:
+  match xs:
+    case Nil{}:
+      h
+    case Con{+x, t}:
+      hash.lane(t, (U32.xor(h, x) * m : U32), m)
+
+def hex.digit(+d: U32) -> U32:
+  when(U32, U32.is_lt(d, 10), u => (d + 48 : U32), u => (d + 87 : U32))
+
+# x's k lowest hex digits, the highest first
+def hex.go(k: Nat, +x: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match k:
+    case 0n:
+      acc
+    case 1n+p:
+      hex.go(p, (x >> 4n : U32), Con{hex.digit((x .&. 15 : U32)), acc})
+
+# 64 bits of hash, two lanes of 32 whose multipliers differ, in hex
+def hash.hex(+xs: List<&2, U32>) -> List<&2, U32>:
+  List.append(&2, U32, hex.go(8n, hash.lane(xs, 2166136261, 16777619), Nil{}),
+    hex.go(8n, hash.lane(xs, 2654435769, 1540483477), Nil{}))
+
+# a path from a directory, where it lies within it
+def rel.of(+dir: List<&2, U32>, +p: List<&2, U32>) -> List<&2, U32>:
+  when(List<&2, U32>, starts(p, List.append(&2, U32, dir, [47])), u => List.drop(&2, U32, p, 1n+List.length(&2, U32, dir)), u => p)
+
+# the tree as read, for its stamp: each module's path, then its bytes,
+# each part ended by a value no byte takes
+def stamp.in(ms: List<&2, Md>, +dir: List<&2, U32>) -> List<&2, U32>:
+  match ms:
+    case Nil{}:
+      Nil{}
+    case Con{m, t}:
+      match m:
+        case Md{path, bs, +ok, +from}:
+          List.append(&2, U32, rel.of(dir, path.plain(path)), Con{256, List.append(&2, U32, bs, Con{257, stamp.in(t, dir)})})
+
+# the stamp of the module at p, its tree as read
+def stamp.of(+p: List<&2, U32>, ms: List<&2, Md>) -> List<&2, U32>:
+  List.append(&2, U32, codes("# blend stamp: "), List.append(&2, U32, blend.format(), Con{32,
+    hash.hex(List.append(&2, U32, blend.format(), Con{256, stamp.in(ms, dir.of(path.plain(p)))}))}))
+
+def stamp.put.k(r: List<&2, U32> & List<&2, U32>, +line: List<&2, U32>) -> List<&2, U32>:
+  (h, rest) = r
+  List.append(&2, U32, h, Con{10, List.append(&2, U32, line, Con{10, rest})})
+
+# a written file's bytes, its stamp after its first line, the header
+def stamp.put(bs: List<&2, U32>, +line: List<&2, U32>) -> List<&2, U32>:
+  stamp.put.k(until(bs, 10), line)
+
+def fos.stamp(fs: List<&2, Fo>, +line: List<&2, U32>) -> List<&2, Fo>:
+  match fs:
+    case Nil{}:
+      Nil{}
+    case Con{f, t}:
+      match f:
+        case Fo{+name, bs}:
+          Con{Fo{name, stamp.put(bs, line)}, fos.stamp(t, line)}
+
+def out.stamp(o: Out, +line: List<&2, U32>) -> Out:
+  match o:
+    case Outs{fs}:
+      Outs{fos.stamp(fs, line)}
+    case Out{+ok, text}:
+      Out{ok, text}
+
+def stamp.second(r: List<&2, U32> & List<&2, U32>) -> List<&2, U32>:
+  (h, rest) = r
+  first.of(until(rest, 10))
+
+# a file's stamp, its second line, where it has one
+def stamp.read(m: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
+  match m:
+    case None{}:
+      Nil{}
+    case Some{bs}:
+      stamp.second(until(bs, 10))
+
+# whether a file read is current: its stamp what the sources give now
+def stamp.current(m: Maybe<&2, List<&2, U32>>, +line: List<&2, U32>) -> Bool:
+  same(stamp.read(m), line)
+
+# the .bend a module writes beside it
+def bend.of(+p: List<&2, U32>) -> List<&2, U32>:
+  path.join(dir.of(p), root.file(p, codes(".bend")))
+
+# Checks (`blend-cli.checks`): the laws, proofs and witnesses of the
+# tree `emit` wrote, or found current by their stamps (`blend-stamps`),
 # checked by Bend once written (its IO runs a process), each file
 # holding them with `--check-only`, or `--verdict` the kernel's recheck,
 # unless another so checked reaches it, Bend checking every definition
 # of each file a file imports (tried 2026-11-07); its failures relayed,
-# each excerpt's line of a written file followed by the `.blend` line it
-# comes from, the status 1. `--no-check` leaves them to the run that
+# each excerpt's line of a file of the tree followed by the `.blend`
+# line it comes from, the status 1. `--no-check` leaves them to the run that
 # loads them (`blend-command-mirrors-bend`).
 
 # a module written: its file, the module it is written from, and the
@@ -8185,26 +8288,64 @@ def checks(+fs: List<&2, Fo>, +mode: U32, ws: List<&2, Wm>) -> IO(Unit):
 
 # the imports none names, each read with its own and emitted in turn,
 # into the directory given, else beside it (`blend-emit-verifies-imports`)
-def emit.deps(ds: List<&2, List<&2, U32>>, acc: Out, ws: List<&2, Wm>) -> IO(Out & List<&2, Wm>):
+# what emitting a tree gathers: the files to write; the modules of the
+# tree, for the checks, written or not; and the imports left as they
+# are, current by their stamps, with their bytes as read, for the checks
+# to read and map as those written
+type Em is Type:
+  Em{o: Out, ws: List<&2, Wm>, cur: List<&2, Fo>}
+
+def em.cur(st: Em, +d: List<&2, U32>, +ms: List<&2, Md>, m: Maybe<&2, List<&2, U32>>) -> Em:
+  match st:
+    case Em{o, ws, cur}:
+      Em{o, Con{wm.of(d, List.tail(&2, List<&2, U32>, mds.paths(ms))), ws},
+        Con{Fo{bend.of(d), on.maybe(List<&2, U32>, List<&2, U32>, m, u => Nil{}, bs => bs)}, cur}}
+
+def em.add(st: Em, +d: List<&2, U32>, +ms: List<&2, Md>) -> Em:
+  match st:
+    case Em{o, ws, cur}:
+      Em{out.join(o, out.stamp(out.at(run.mods(4, ms), dir.of(d)), stamp.of(d, ms))),
+        Con{wm.of(d, List.tail(&2, List<&2, U32>, mds.paths(ms))), ws}, cur}
+
+def em.dep(+fresh: Bool, st: Em, +d: List<&2, U32>, +ms: List<&2, Md>, m: Maybe<&2, List<&2, U32>>) -> Em:
+  match fresh:
+    case True{}:
+      em.cur(st, d, ms, m)
+    case False{}:
+      em.add(st, d, ms)
+
+def emit.deps(ds: List<&2, List<&2, U32>>, st: Em) -> IO(Em):
   match ds:
     case Nil{}:
-      IO.pure(Out & List<&2, Wm>, (acc, ws))
+      IO.pure(Em, st)
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Out & List<&2, Wm>, load.go(4096n, [Td{d, 0}], Nil{}),
-        +ms => emit.deps(dt, out.join(acc, out.at(run.mods(4, ms), dir.of(d))),
-          Con{wm.of(d, List.tail(&2, List<&2, U32>, mds.paths(ms))), ws}))
+      IO.bind(List<&2, Md>, Em, load.go(4096n, [Td{d, 0}], Nil{}),
+        +ms => IO.bind(Maybe<&2, List<&2, U32>>, Em, read.file(bend.of(d)),
+          +m => emit.deps(dt, em.dep(stamp.current(m, stamp.of(d, ms)), st, d, ms, m))))
 
-# the files written, then checked
-def emit.write(o: Out, +mode: U32, ws: List<&2, Wm>) -> IO(Unit):
+def fos.say(fs: List<&2, Fo>) -> IO(Unit):
+  match fs:
+    case Nil{}:
+      IO.pure(Unit, Unit{})
+    case Con{f, t}:
+      match f:
+        case Fo{p, bs}:
+          IO.bind(Unit, Unit, IO.print(text(p)), u => fos.say(t))
+
+# the files written, each path printed, then the tree's current ones,
+# left as they are; then the tree checked, current files and written
+def emit.write(o: Out, +mode: U32, ws: List<&2, Wm>, +cur: List<&2, Fo>) -> IO(Unit):
   match o:
     case Outs{+fs}:
-      IO.bind(Unit, Unit, write.all(fs), u => checks(fs, mode, ws))
+      IO.bind(Unit, Unit, write.all(fs), u => IO.bind(Unit, Unit, fos.say(List.reverse(&2, Fo, cur)),
+        v => checks(List.append(&2, Fo, fs, cur), mode, ws)))
     case Out{+ok, text}:
       main.out(Out{ok, text})
 
-def emit.dws(r: Out & List<&2, Wm>, fs: List<&2, Fo>, +mode: U32) -> IO(Unit):
-  (d, ws) = r
-  emit.write(out.once(out.join(d, Outs{fs})), mode, ws)
+def emit.dws(st: Em, fs: List<&2, Fo>, +mode: U32) -> IO(Unit):
+  match st:
+    case Em{d, ws, cur}:
+      emit.write(out.once(out.join(d, Outs{fs})), mode, ws, cur)
 
 # the modules named alone, or with the imports they reach, written
 # first, then checked; where the modules named have errors, those
@@ -8216,9 +8357,9 @@ def emit.end(o: Out, +alone: Bool, +mode: U32, ds: List<&2, List<&2, U32>>, ws: 
     case Outs{+fs}:
       match alone:
         case True{}:
-          emit.write(out.once(Outs{fs}), mode, ws)
+          emit.write(out.once(Outs{fs}), mode, ws, Nil{})
         case False{}:
-          IO.bind(Out & List<&2, Wm>, Unit, emit.deps(ds, Outs{Nil{}}, ws), r => emit.dws(r, fs, mode))
+          IO.bind(Em, Unit, emit.deps(ds, Em{Outs{Nil{}}, ws, Nil{}}), r => emit.dws(r, fs, mode))
 
 # each module emitted in turn, each read with its imports, into the
 # directory given, else its own; then, unless alone, the imports none
@@ -8232,7 +8373,7 @@ def main.emit.go(ps: List<&2, String>, +alone: Bool, +mode: U32, +named: List<&2
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{codes(p), 0}], Nil{}),
         +ms => main.emit.go(t, alone, mode, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
           Con{wm.of(codes(p), List.tail(&2, List<&2, U32>, mds.paths(ms))), ws},
-          out.join(acc, out.at(run.mods(4, ms), dir.of(codes(p))))))
+          out.join(acc, out.stamp(out.at(run.mods(4, ms), dir.of(codes(p))), stamp.of(codes(p), ms)))))
 
 def args.data(xs: List<String>) -> List<&2, String>:
   match xs:
@@ -8293,7 +8434,11 @@ def main.emit(+xs: List<&2, String>) -> IO(Unit):
 # Deps (`blend deps`, blend-command-mirrors-bend): the modules `emit`
 # would write, imports first, each current, stale, missing or refused, or
 # with `--make` each a makefile's rule; the status 1 where any is not
-# current, as `make -q`'s, or with `--make` where any has errors
+# current, as `make -q`'s, or with `--make` where any has errors. A file
+# is current by its stamp (`blend-stamps`), emitted in memory only where
+# it is not, to tell stale from refused; `--bytes` emits each and
+# compares its bytes too, so that a file stamped current but not what
+# Blend writes, its output changed under one format, is found (4)
 
 # a file's state against what emission would write: 0 current, 1 stale
 # (other, or written no longer), 2 missing
@@ -8332,6 +8477,8 @@ def dep.word(+st: U32) -> List<&2, U32>:
       codes("stale")
     case 2:
       codes("missing")
+    case 4:
+      codes("stale")
     case _:
       codes("refused")
 
@@ -8359,38 +8506,65 @@ def dep.bad(+make: Bool, +st: U32) -> Bool:
     case False{}:
       U32.is_gt(st, 0)
 
-def dep.say(+make: Bool, +st: U32, +d: List<&2, U32>, ms: List<&2, Md>) -> IO(Unit):
+def dep.say.k(+make: Bool, +st: U32, +d: List<&2, U32>, ms: List<&2, Md>) -> IO(Unit):
   when(IO(Unit), make && U32.is_eq(st, 3), u => IO.pure(Unit, Unit{}), u => IO.print(text(dep.line(make, st, d, ms))))
 
-# each module in turn, read with its imports and emitted in memory, its
+def dep.say(+make: Bool, +st: U32, +d: List<&2, U32>, +ms: List<&2, Md>) -> IO(Unit):
+  when(IO(Unit), U32.is_eq(st, 4),
+    u => IO.bind(Unit, Unit, IO.print_err("blend: " ++ text(bend.of(d)) ++ " has the stamp its sources give, but not the bytes Blend writes: its output changed under format " ++ text(blend.format()) ++ " (bump blend.format), or the file was edited"),
+      v => dep.say.k(make, st, d, ms)),
+    u => dep.say.k(make, st, d, ms))
+
+# a module's state: current by its stamp, else as its emission in memory
+# finds it; with bytes, its emission compared always, a file stamped
+# current but other found (4)
+def deps.state.k(+cur: Bool, +bytes: Bool, +d: List<&2, U32>, +ms: List<&2, Md>) -> IO(U32):
+  when(IO(U32), cur && Bool.not(bytes), u => IO.pure(U32, 0),
+    u => IO.bind(U32, U32, dep.state(dep.checks(out.stamp(run.mods(4, ms), stamp.of(d, ms)), d), 0),
+      +st => IO.pure(U32, when(U32, cur && U32.is_eq(st, 1), v => 4, v => st))))
+
+def deps.state(m: Maybe<&2, List<&2, U32>>, +bytes: Bool, +d: List<&2, U32>, +ms: List<&2, Md>) -> IO(U32):
+  deps.state.k(stamp.current(m, stamp.of(d, ms)), bytes, d, ms)
+
+# each module in turn, read with its imports, its file's stamp read, its
 # state or its rule printed; the status 1 where any was bad
-def deps.go(ds: List<&2, List<&2, U32>>, +make: Bool, +bad: Bool) -> IO(Unit):
+def deps.go(ds: List<&2, List<&2, U32>>, +make: Bool, +bytes: Bool, +bad: Bool) -> IO(Unit):
   match ds:
     case Nil{}:
       when(IO(Unit), bad, u => IO.exit(1), u => IO.pure(Unit, Unit{}))
     case Con{+d, dt}:
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
-        +ms => IO.bind(U32, Unit, dep.state(dep.checks(run.mods(4, ms), d), 0),
-          +st => IO.bind(Unit, Unit, dep.say(make, st, d, ms), u => deps.go(dt, make, bad || dep.bad(make, st)))))
+        +ms => IO.bind(Maybe<&2, List<&2, U32>>, Unit, read.file(bend.of(d)),
+          m => IO.bind(U32, Unit, deps.state(m, bytes, d, ms),
+            +st => IO.bind(Unit, Unit, dep.say(make, st, d, ms), u => deps.go(dt, make, bytes, bad || dep.bad(make, st))))))
 
 # the imports the modules named reach, gathered by reading each; then
 # every module, the imports first, as `emit` writes them
-def deps.gather(ps: List<&2, List<&2, U32>>, +make: Bool, +named: List<&2, List<&2, U32>>, ds: List<&2, List<&2, U32>>) -> IO(Unit):
+def deps.gather(ps: List<&2, List<&2, U32>>, +make: Bool, +bytes: Bool, +named: List<&2, List<&2, U32>>, ds: List<&2, List<&2, U32>>) -> IO(Unit):
   match ps:
     case Nil{}:
-      deps.go(List.append(&2, List<&2, U32>, deps.missed(ds, named, Nil{}), named), make, False{})
+      deps.go(List.append(&2, List<&2, U32>, deps.missed(ds, named, Nil{}), named), make, bytes, False{})
     case Con{+p, t}:
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{p, 0}], Nil{}),
-        +ms => deps.gather(t, make, named, List.append(&2, List<&2, U32>, ds, List.tail(&2, List<&2, U32>, mds.paths(ms)))))
+        +ms => deps.gather(t, make, bytes, named, List.append(&2, List<&2, U32>, ds, List.tail(&2, List<&2, U32>, mds.paths(ms)))))
 
-def main.deps.k(+make: Bool, +xs: List<&2, String>) -> IO(Unit):
+def main.deps.k(+make: Bool, +bytes: Bool, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), List.is_empty(&2, String, xs) || args.dashed(xs), u => main.out(Out{False{}, usage()}),
-    u => deps.gather(args.plain(xs), make, args.plain(xs), Nil{}))
+    u => deps.gather(args.plain(xs), make, bytes, args.plain(xs), Nil{}))
 
-# `deps [--make] FILE.blend...`
+# the flags taken wherever they are
+def main.deps.f(xs: List<&2, String>, +make: Bool, +bytes: Bool, +rest: List<&2, String>) -> IO(Unit):
+  match xs:
+    case Nil{}:
+      main.deps.k(make, bytes, List.reverse(&2, String, rest))
+    case Con{+x, +t}:
+      when(IO(Unit), String.eq(x, "--make"), u => main.deps.f(t, True{}, bytes, rest),
+        u => when(IO(Unit), String.eq(x, "--bytes"), v => main.deps.f(t, make, True{}, rest),
+          v => main.deps.f(t, make, bytes, Con{x, rest})))
+
+# `deps [--make] [--bytes] FILE.blend...`
 def main.deps(+xs: List<&2, String>) -> IO(Unit):
-  on.maybe(String, IO(Unit), List.head(&2, String, xs), u => main.out(Out{False{}, usage()}),
-    +h => when(IO(Unit), String.eq(h, "--make"), v => main.deps.k(True{}, List.tail(&2, String, xs)), v => main.deps.k(False{}, xs)))
+  main.deps.f(xs, False{}, False{}, Nil{})
 
 def main.cmd(+cmd: U32, +xs: List<&2, String>) -> IO(Unit):
   match cmd:
@@ -8429,7 +8603,8 @@ def main.args.r(+flag: String, +xs: List<&2, String>) -> IO(Unit):
 
 def main.args.k(+flag: String, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), String.eq(flag, "--help") || String.eq(flag, "-h"), u => main.out(Out{True{}, usage()}),
-    u => main.args.r(flag, xs))
+    u => when(IO(Unit), String.eq(flag, "--format"), v => main.out(Out{True{}, text(blend.format())}),
+      v => main.args.r(flag, xs)))
 
 def main.args(xs: List<String>) -> IO(Unit):
   match xs:

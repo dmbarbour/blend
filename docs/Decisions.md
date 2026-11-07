@@ -54,6 +54,9 @@ Blend is a command of its own, shaped as Bend's and installed beside it.
   `blend` a launcher in `$BEND_HOME/bin` running the tool built natively,
   else through Bend; installed from a checkout or a release, which it
   reports but never takes unasked.
+- [`blend-stamps`](decisions/blend-stamps.md): each written file's
+  stamp, a format version and a hash of its tree, says whether it is
+  current; `deps` reads it, `emit` leaves a current import as it is.
 - [`blend-guide`](decisions/blend-guide.md): the guide, `GUIDE.md`,
   which `blend guide` prints, describes the language, what Blend writes
   and the command; the README motivates and gets a user started; their

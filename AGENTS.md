@@ -64,6 +64,9 @@ Contingent:
 - Commits that advance a plan step end with `Plan-Step: <name>` trailers,
   before attribution lines.
 - When removing a check, tell redundant work from a deliberate boundary.
+- When what Blend writes changes, bump `blend.format` and regenerate the
+  samples: a file's stamp names the format, and the gate fails a
+  generated file changed under the stamp it had (`blend-stamps`).
 
 ## Laws
 

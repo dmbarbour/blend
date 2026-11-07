@@ -6,8 +6,8 @@ Context:
 - st : List<&2, U32>
 - x  : U32
 Location: Wrong.LAW.push.as_declared
-18 | # blend: declare-misfit.blend:8
-19>| def Wrong.LAW.push.as_declared(st: Wrong.S(), +x: U32) -> Wrong.S(): Wrong.push(st, x)
+19 | # blend: declare-misfit.blend:8
+20>| def Wrong.LAW.push.as_declared(st: Wrong.S(), +x: U32) -> Wrong.S(): Wrong.push(st, x)
    |                                                                      ^^^^^^^^^^^^^^^^^
-20 | 
+21 | 
 Source: declare-misfit.blend:8

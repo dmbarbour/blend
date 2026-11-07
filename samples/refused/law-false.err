@@ -5,8 +5,8 @@ Error:
 Context:
 - x : Nat
 Location: Sum.LAW.same
-33 | def Sum.LAW.same(x):
-34>|   {==}
+34 | def Sum.LAW.same(x):
+35>|   {==}
    |   ^^^^
-35 | 
+36 | 
 Source: law-false.blend:14

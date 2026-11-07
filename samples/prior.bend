@@ -1,4 +1,5 @@
 # Written by Blend from prior.blend; do not edit.
+# blend stamp: 1 92566b151277aac5
 import Base
 
 # blend: prior.blend:4

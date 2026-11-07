@@ -135,6 +135,27 @@ imports.bend: imports.blend lib/shapes.blend
 	blend emit --alone imports.blend"
 got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps --make imports.blend 2>&1) || { echo "blend: deps --make fails"; status=1; }
 [ "$got" = "$want" ] || { echo "blend: deps --make says '$got', not '$want'"; status=1; }
+# stamps (blend-stamps): an import its stamp finds current is left as
+# it is, listed after the files written; `deps` reads the stamp, and
+# `--bytes` compares the bytes too, finding a file stamped current but
+# other, Blend's output changed under one format or the file edited
+echo "# edited" >> "$v/lib/shapes.bend" || exit 1
+want="./imports.bend
+lib/shapes.bend"
+got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" emit --no-check imports.blend 2>&1) || { echo "blend: emit of a current tree fails: $got"; status=1; }
+[ "$got" = "$want" ] || { echo "blend: emit of a current tree says '$got', not '$want'"; status=1; }
+[ "$(tail -n 1 "$v/lib/shapes.bend")" = "# edited" ] || { echo "blend: emit wrote an import its stamp finds current"; status=1; }
+want="current lib/shapes.blend
+current imports.blend"
+got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps imports.blend 2>&1) || { echo "blend: deps of a stamped tree fails: $got"; status=1; }
+[ "$got" = "$want" ] || { echo "blend: deps of a stamped tree says '$got', not '$want'"; status=1; }
+if got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps --bytes imports.blend 2>&1); then
+  echo "blend: deps --bytes passes a file other than its stamp says"
+  status=1
+elif ! echo "$got" | grep -q "^stale lib/shapes.blend$" || ! echo "$got" | grep -q "bump blend.format"; then
+  echo "blend: deps --bytes of a file other than its stamp says '$got'"
+  status=1
+fi
 echo "# stale" > "$v/lib/shapes.bend" || exit 1
 (cd "$v" && "$CAPPED" 500 30 "$BLEND" emit --alone imports.blend >/dev/null) || { echo "blend: emit --alone fails"; status=1; }
 [ "$(cat "$v/lib/shapes.bend")" = "# stale" ] || { echo "blend: emit --alone writes an import"; status=1; }

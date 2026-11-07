@@ -22,6 +22,12 @@ case $(BEND_HOME=$h "$b" version 2>&1) in
   "blend from the checkout $root"*) ;;
   *) fail "version says '$(BEND_HOME=$h "$b" version 2>&1)'" ;;
 esac
+# the format version reports, as the tool has it
+fmt=$(BEND_HOME=$h "$b" --format) || fail "--format fails"
+case $(BEND_HOME=$h "$b" version 2>&1) in
+  *", format $fmt; "*) ;;
+  *) fail "version names a format other than the tool's, $fmt: $(BEND_HOME=$h "$b" version 2>&1)" ;;
+esac
 got=$(BEND_HOME=$h "$b" --help 2>&1) || fail "--help fails"
 [ "$(echo "$got" | head -n 1)" = "usage:" ] || fail "--help says '$got'"
 BEND_HOME=$h "$b" update | grep -q "runs the checkout at $root" || fail "update names no checkout"
@@ -67,5 +73,5 @@ if got=$(cd "$r" && BEND_HOME=$h "$b" imp/root.blend 2>&1); then
 else
   echo "$got" | grep -qx "Source: imp/lib/bad.blend:5" || fail "an imported module's error names no source line: $got"
 fi
-[ "$status" = 0 ] && echo "launcher: installed, version, --help, update, guide, native and through bend, a run, an error's source, emit's check natively and through bend, an import's: ok"
+[ "$status" = 0 ] && echo "launcher: installed, version, its format, --help, update, guide, native and through bend, a run, an error's source, emit's check natively and through bend, an import's: ok"
 exit "$status"
