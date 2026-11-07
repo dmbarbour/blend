@@ -1,8 +1,3 @@
-# Families as objects: an abstract object declares the hook its
-# definitions call, and each family introduces it. Where a template took
-# the hook as a `~` argument through every signature, a family overrides
-# one definition, and gets its own copy of every definition that calls
-# it. A definition may call itself; Bend checks that it terminates.
 import Base
 
 abstract object Machine with

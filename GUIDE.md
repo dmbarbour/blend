@@ -2,16 +2,12 @@
 
 Blend adds static objects to Bend. A `.blend` file is a Bend module that
 may also hold objects; `blend` writes it out as a `.bend` file in which
-the objects are gone, each object's definitions copied out under its
-name. Everything inside a body is Bend: read `bend guide` first. Each
-example here is one of Blend's samples, in `samples/`, beside what Blend
-writes for it.
+the objects are gone. Everything inside a body is Bend, so read `bend
+guide` first. Each example is one of Blend's samples, run as shown.
 
 ## A first module
 
 ```blend samples/override.blend
-# Introductions, overrides and late binding: a bare name binds to the
-# final object's definition, so Loud's show calls Loud's greet.
 import Base
 
 object Greeter with
@@ -28,55 +24,38 @@ def main() -> IO(Unit):
   IO.print(Greeter.show() ++ " / " ++ Loud.show())
 ```
 
-`blend override.blend` writes `override.bend` beside it, then runs it:
-
     $ blend override.blend
     hello, world / HELLO, world
 
-What it writes, its header and `main` aside:
+`blend override.blend` writes `override.bend` beside it, then runs it.
+For the objects, it writes:
 
-    # blend: override.blend:6
+    # blend: override.blend:4
     def Greeter.greet() -> String:
       "hello"
 
-    # blend: override.blend:8
+    # blend: override.blend:6
     def Greeter.show() -> String:
       Greeter.greet() ++ ", world"
 
-    # blend: override.blend:12
+    # blend: override.blend:10
     def Loud.greet() -> String:
       "HELLO"
 
-    # blend: override.blend:8
+    # blend: override.blend:6
     def Loud.show() -> String:
       Loud.greet() ++ ", world"
 
-Each object gets its own copy of every definition it has, its calls
-bound to its own. No copy is shared between objects, so a definition
-called once stays called once, and Bend folds each object's chain into
-one compiled segment: a family of variants, each compiled as if written
-by hand.
+Each concrete object gets its own copy of every definition it has, its
+calls bound to its own final definitions: `Loud.show` calls
+`Loud.greet`. Nothing is shared between objects, so a definition with
+one caller keeps one, and Bend folds each object's chain into one
+compiled segment, as it does only while each function has a single
+caller.
 
 ## Objects
 
-- `object Name extends A, B with`, its members indented; an object with
-  no members leaves out `with`.
-- `def f` introduces `f`; `upd def f`, or `upd f`, replaces the `f` it
-  inherits. Introducing a name already inherited, or updating one that
-  isn't, is an error.
-- A bare name in a body binds to the final object's definition; `Obj.f`
-  names that object's.
-- `_f` is the definition an update replaces: the next object's in the C3
-  linearization (`blend-c3`). A parent named twice is one parent.
-- A bare name no object in reach defines is the module's, or Bend's. A
-  local never shares a name with a definition in reach
-  (`blend-no-shadowing`).
-
 ```blend samples/prior.blend
-# Priors and multiple inheritance: `_tag` is the definition an update
-# replaces (`upd def`, or `upd` alone, its sugar), the next in the C3
-# linearization. BoldLoud linearizes as BoldLoud, Bold, Loud, Plain, so
-# its tag is Bold's, whose prior is Loud's, whose prior is Plain's.
 import Base
 
 object Plain with
@@ -100,18 +79,24 @@ def main() -> IO(Unit):
     $ blend prior.blend
     plain *plain* plain! *plain!*
 
+- `object Name extends A, B with`, its members indented; no members, no
+  `with`.
+- `def f` introduces `f`; `upd def f`, or `upd f`, replaces the `f` it
+  inherits. Introducing an inherited name, or updating a missing one, is
+  an error.
+- A bare name binds late, to the final definition of the concrete
+  object written, so that an update reaches every definition calling
+  it; a name the object lacks, to its hosts' (Nested objects), then the
+  module's, then Bend's. `Obj.f` names `Obj`'s.
+- `_f`, the prior, is the definition an update replaces: the next along
+  the C3 linearization (`blend-c3`). `BoldLoud`'s is BoldLoud, Bold,
+  Loud, Plain, so `Bold`'s `_tag` there is `Loud`'s: `*plain!*`.
+- A local never shares a name with a definition a bare name could reach
+  (`blend-no-shadowing`).
+
 ## Families
 
-An abstract object is written only through its children. It declares
-the hooks its definitions call; each concrete child gives them, or is an
-error unless marked `abstract` too.
-
 ```blend samples/family.blend
-# Families as objects: an abstract object declares the hook its
-# definitions call, and each family introduces it. Where a template took
-# the hook as a `~` argument through every signature, a family overrides
-# one definition, and gets its own copy of every definition that calls
-# it. A definition may call itself; Bend checks that it terminates.
 import Base
 
 abstract object Machine with
@@ -140,22 +125,17 @@ def main() -> IO(Unit):
     $ blend family.blend
     8 15
 
+A concrete object extending an abstract one is a family: it gets every
+definition above it, bound to its own. Blend writes nothing for the
+abstract object itself. It declares the hooks its definitions call,
+`declare after`, and each family defines them; one that doesn't is an
+error, unless it is abstract too. Each family defines one hook and gets
+its own copy of every definition that calls it, where a template would
+thread the hook through every signature.
+
 ## Sharing
 
-- affine, the default: one use at most, so that Bend folds it into its
-  caller; a second use is an error, naming the uses.
-- `shared def`: one copy, however many use it.
-- `copied def`: a copy for each use, `Obj.f.c1`, `Obj.f.c2`, besides
-  `Obj.f` for plain Bend to call (`blend-copies-keep-their-name`); an
-  affine definition only a copy reaches is copied with it.
-
 ```blend samples/sharing.blend
-# Sharing, stated per definition: affine by default, one use in the
-# emitted program, so that Bend folds it into its caller; `shared`, one
-# copy however many use it; `copied`, a copy for each use, each folding
-# into its own caller, besides the copy by its own name, for a plain
-# `.bend` file to call. Here inc is copied for its two uses in twice, and
-# show is shared by its two uses in report.
 import Base
 
 object Arith with
@@ -175,25 +155,19 @@ def main() -> IO(Unit):
     $ blend sharing.blend
     5 -> 7
 
-The module's own definitions are Bend's, shared.
+- A definition is affine by default: used in one place, so that Bend
+  folds it into its caller; a second use is an error. A call to itself
+  does not count.
+- `shared`: one definition, which every use reaches.
+- `copied`: a copy for each use, `Arith.inc.c1` and `Arith.inc.c2`,
+  besides `Arith.inc` for plain Bend to call
+  (`blend-copies-keep-their-name`); each copy brings copies of the
+  affine definitions only it reaches.
+- The module's own definitions are plain Bend, shared.
 
 ## Types and declarations
 
-A type is a member, and a name of one a call, `S()`, bound like any
-other, so no family threads type parameters; datatypes stay the
-module's, plain Bend (the sample `types`). A typed declaration says what
-a family's definition must be, bound to the family's own types; Blend
-writes a witness for each concrete object, which Bend checks
-(`blend-declares-witnessed`).
-
 ```blend samples/declares.blend
-# Typed declarations: an abstract object says what a definition its
-# families give must be, `declare def push(st: S(), +x: U32) -> S()`, or
-# `declare empty() -> S()` for short, and of what kind a type must be,
-# `declare type S: Data`. Each family's definitions are checked against
-# the declaration bound to the family's own types, by witnesses Blend
-# writes into declares.bend with the laws, which Bend checks and the
-# program never calls. `declare size` stays untyped, each family's its own.
 import Base
 
 abstract object Stack with
@@ -229,13 +203,20 @@ def main() -> IO(Unit):
     $ blend declares.blend
     1 5
 
+- A type is a member: `type S: Data = T`, or `type S = T` of kind Type.
+  A name of one is a call, `S()`, bound like any definition, so no
+  family threads type parameters. Datatypes stay the module's, plain
+  Bend (the sample `types`).
+- `declare type S: Data` asks each family for a type of that kind;
+  `declare def push(...) -> S()`, or `declare empty() -> S()` dropping
+  `def`, for a definition of that type, bound to the family's own `S`;
+  Blend has Bend check each family's definition against its declaration
+  (`blend-declares-witnessed`). `declare size` alone leaves the type to
+  each family.
+
 ## Nested objects
 
 ```blend samples/nested.blend
-# The module is no object: its definitions are Bend's, emitted as they
-# are. Objects nest, each emitted with its path as a prefix. `^name`
-# steps out of the innermost object to its host's scope, as in glam,
-# `^^name` two steps; a top-level object's host is the module.
 import Base
 
 def unit() -> String:
@@ -257,20 +238,18 @@ def main() -> IO(Unit):
     $ blend nested.blend
     outer.inner.m
 
-A nested object is a member: a child of `Outer` has its own `Inner`,
-made again for it, its `^` the child (`blend-frozen-host`). `extend Inner
-with` updates an inherited one, `extend abstract Inner` keeps it
-abstract; `extend` stays out of the top level. The samples
-`family-nested` and `nested-reach` show the rest.
+Objects nest, written under their path, `Outer.Inner.path`. `^name`
+steps out to the object a nested one sits in, its host; `^^name` two; a
+top-level object's host is the module. A nested object is a member: a
+child of `Outer` gets its own `Inner`, made again for it, whose `^` is
+the child (`blend-frozen-host`). `extend Inner with` is `upd` for a
+nested object, `extend abstract Inner` keeps it abstract; neither is
+allowed at the top level. The samples `family-nested` and `nested-reach`
+show them.
 
 ## Laws and proofs
 
 ```blend samples/monoid.blend
-# Laws: an abstract object states a law over what its families give, and
-# each concrete family gets its own instance, bound to its own
-# definitions, and proves it, here by cases. Blend writes the laws and
-# their proofs after the code, `AnyOf.LAW.right_id`, where Bend checks
-# them; the program carries none.
 import Base
 
 abstract object Monoid with
@@ -293,67 +272,43 @@ object AnyOf extends Monoid with
       case False{}:
         {==}
 
-object AllOf extends Monoid with
-  type T: Data = Bool
-  def zero() -> T():
-    True{}
-  def op(+a: T(), +b: T()) -> T():
-    a && b
-  proof right_id(x):
-    match x:
-      case True{}:
-        {==}
-      case False{}:
-        {==}
-
 def main() -> IO(Unit):
-  IO.print(Bool.show(AnyOf.op(True{}, AnyOf.zero())) ++ " " ++ Bool.show(AllOf.op(True{}, AllOf.zero())))
+  IO.print(Bool.show(AnyOf.op(True{}, AnyOf.zero())))
 ```
 
     $ blend monoid.blend
-    True True
+    True
+
+A law is stated once; each concrete family gets its own instance,
+`AnyOf.LAW.right_id`, bound to its own definitions, and Blend writes
+it after the code, where Bend checks it. A program built carries none.
 
 - `proof name(...)` proves a law where it is stated or in any object
   below; `upd proof` proves it again where a family needs its own. A
-  concrete object proves every law it has; a law not yet proven belongs
-  in an abstract object.
-- A typed proof, `proof add_succ(a: Nat, -b: Nat) -> {...}:`, is a
-  lemma. Inside a proof, its own law names the proof itself, for
-  induction; another law names that law's proof.
-- A law is stated once, never updated, and code names no law, proof or
-  lemma. Names with a part `LAW` are Blend's.
+  concrete object must have a proof of every law it has; a law not yet
+  proven lives only in an abstract object.
+- Inside a proof, the law's own name is the proof itself, for induction;
+  another law's name is that law's proof. A typed proof, `proof
+  name(a: Nat, -b: Nat) -> {...}:`, is a lemma, with no law.
+- A law is never updated, and code names no law or proof.
 - The module's own laws, at its top level, are written `LAW.name`
   (`blend-laws-in-module`).
 
-The samples `laws` and `laws-imported` show induction, lemmas, priors
-and laws across modules.
+The samples `laws` and `laws-imported` show induction, lemmas, prior
+proofs and laws across modules.
 
 ## Templates
 
 Bend's templates pass through: a `~` argument is a reference like any,
 bound to the final object's definition, or a closed lambda. A template
-is affine like any definition: mark it `shared`, Bend making a copy for
-each distinct set of `~` arguments, or `copied`, a copy for each use
+is affine like any definition: `shared`, Bend makes a copy for each
+distinct set of `~` arguments; `copied`, a copy for each use
 (`blend-templates-affine`; the sample `templates`).
 
 ## Imports
 
-A path is local, plain names led by `./` at most, never `../` or `/`,
-so that a directory holds all it imports; or a package's on Bend's hub,
-its `.bend` files only for now (`blend-imports-local`). Each module
-writes its own `.bend`, and imports form no cycle.
-
 ```blend samples/lib/shapes.blend
-# A library the sample `imports` imports: a module emits its own `.bend`
-# (`lib/shapes.bend`), and a module extending its objects copies what it
-# inherits, its names kept: its datatypes and its imports, named in the
-# copy through the importer's own alias for the file, else one Blend
-# reserves (`Blend_1`).
 import Base
-import ./units.bend as U
-
-type Dim is Data:
-  Dim{+w: U32, +h: U32}
 
 def twice(+n: U32) -> U32:
   (n * 2 : U32)
@@ -362,67 +317,61 @@ abstract object Shape with
   declare side
   def perimeter() -> U32:
     twice(twice(side()))
-  def dims.of(+s: U32) -> Dim:
-    Dim{s, s}
-  def area.of(d: Dim) -> U32:
-    match d:
-      case Dim{+w, +h}:
-        U.cm2((w * h : U32))
-  def area() -> U32:
-    area.of(dims.of(side()))
 
 object Square extends Shape with
-  shared def side() -> U32:
+  def side() -> U32:
     3
 ```
 
 ```blend samples/imports.blend
-# Imports: `import ./lib/shapes.blend as S` names the library's objects
-# `S.Square`, to extend and to call. Each module emits its own `.bend`,
-# this one importing the library's; an object extending one of its
-# objects copies what it inherits, the library's own definitions named
-# through the alias, and an object means the same however an import
-# reaches it.
 import Base
 import ./lib/shapes.blend as S
 
 object Big extends S.Square with
-  shared upd side() -> U32:
+  upd side() -> U32:
     (_side() * 10 : U32)
 
 def main() -> IO(Unit):
-  IO.print(U32.show(S.Square.perimeter()) ++ " " ++ U32.show(Big.perimeter()) ++ " " ++ U32.show(Big.area()))
+  IO.print(U32.show(S.Square.perimeter()) ++ " " ++ U32.show(Big.perimeter()))
 ```
 
     $ blend imports.blend
-    12 120 90000
+    12 120
+
+`import ./lib/shapes.blend as S` names the library's objects, `S.Square`,
+to extend and to call; each module writes its own `.bend`, and imports
+form no cycle. `Big`'s copies reach the library's definitions, datatypes
+and imports through the alias, `S.twice`, or through one Blend reserves,
+`Blend_1` (the sample `namespaces`; `blend-namespaces-as-bends`). An
+import path is local, plain names led by `./` at most, never `../` or
+`/`, so that a directory holds all it imports; or a package on Bend's
+hub, its `.bend` files only for now (`blend-imports-local`).
 
 ## What Blend writes
 
-- For each concrete object, every definition it has, its own copy: the
-  final `Obj.f`; a replaced one reached by `_f`, `Obj.f.Origin`; a
-  copied one's copies, `Obj.f.c1`. An abstract object writes nothing of
-  its own.
-- Every definition, whether or not anything calls it, so a module is
-  written once however many import it, and plain Bend may call
-  `Loud.show` by name.
+- For each concrete object, every definition it has: the final `Obj.f`;
+  a prior reached through `_f`, named for the object that wrote it,
+  `BoldLoud.tag.Loud`; a copied one's copies, `Obj.f.c1`. Nothing for an
+  abstract object.
+- Every definition, called or not, so that a module is written once
+  however many import it, and plain Bend can call `Loud.show`.
 - The module's definitions, datatypes and imports as written
   (`blend-module-is-bend`).
-- Callees first, as Bend requires. Two definitions calling each other
-  are an error, as Bend has no mutual recursion
-  (`blend-adds-no-bend-logic`).
-- Before each definition a marker, `# blend: FILE:LINE`; the lines
-  after it are the source's lines after LINE.
+- Callees first, as Bend requires.
+- Before each definition, a marker naming its source, `# blend:
+  FILE:LINE`; the lines below it follow the source from LINE.
 - The laws, proofs and witnesses after the code.
 
 ## The command
 
-    blend FILE.blend [args]   emit the module's tree, then run it with bend;
-                              -o OUT, --check-only and --verdict as bend's
+    blend FILE.blend [args]   write the module and its imports, then run it
+                              with bend; -o OUT, --check-only and --verdict
+                              as bend's
     blend emit [--alone] [--no-check|--verdict] FILE.blend...
                               write each module's .bend and its imports'
-                              beside them; then check with bend those
-                              holding laws (--verdict: the kernel's too)
+                              beside them (--alone: only those named);
+                              then check with bend those holding laws
+                              (--verdict: the kernel's too)
     blend deps [--make] FILE.blend...
                               each module emit would write: current, stale,
                               missing or refused; --make as makefile rules
@@ -436,7 +385,8 @@ followed by the line it comes from, `Source: FILE.blend:LINE`.
 
 ## Limits
 
-- No mutual recursion: Bend has none.
+- A definition may call itself; no two may call each other, as Bend has
+  no mutual recursion (`blend-adds-no-bend-logic`).
 - A module is known by its path made plain; reached through a symlink,
   it is two modules to Blend.
 - Names beginning `Blend_`, and names with a part `LAW`, are Blend's.
