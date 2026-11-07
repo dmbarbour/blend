@@ -1,5 +1,5 @@
 # Written by Blend from wide.blend; do not edit.
-# blend stamp: 56317789dea1 7a481a33a6468557
+# blend stamp: eec4e8aaf12a 3297e798776b6ac8
 import Base
 import ./lib/wide.bend as L
 

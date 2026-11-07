@@ -7707,10 +7707,31 @@ def trees.plain.ers(ts: List<&2, List<&2, Node>>) -> List<&2, Er>:
     case Con{+x, t}:
       List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), List.append(&2, Er, ims.fresh(ims.of(x), Nil{}, x), trees.plain.ers(t))))
 
-# the modules' errors as read: an import none could read, one whose path
-# Bend would refuse
+# whether bytes hold a million lines or more, a newline ending each and
+# the last ended by none (`lines.at`): module k's lines are numbered from
+# k * 1000000, so that its millionth would read as the next module's
+def nl.many(bs: List<&2, U32>, +k: U32) -> Bool:
+  match bs:
+    case Nil{}:
+      U32.is_ge(k, 999999)
+    case Con{+b, t}:
+      nl.many(t, (k + when(U32, U32.is_eq(b, 10), u => 1, u => 0) : U32))
+
+def mds.long(ms: List<&2, Md>, +root: List<&2, U32>) -> List<&2, Er>:
+  match ms:
+    case Nil{}:
+      Nil{}
+    case Con{m, +t}:
+      match m:
+        case Md{path, bs, +ok, +from}:
+          when(List<&2, Er>, ok && nl.many(bs, 0),
+            u => Con{Er{from, text(md.name(root, path)) ++ " holds a million lines or more, past those Blend numbers"}, mds.long(t, root)},
+            u => mds.long(t, root))
+
+# the modules' errors as read: an import none could read, a module too
+# long to number, one whose path Bend would refuse
 def load.ers(+r: Md, +t: List<&2, Md>) -> List<&2, Er>:
-  List.append(&2, Er, mds.ers(t, md.path(r)), trees.plain.ers(mds.trees(Con{r, t}, 0)))
+  List.append(&2, Er, mds.ers(t, md.path(r)), List.append(&2, Er, mds.long(Con{r, t}, md.path(r)), trees.plain.ers(mds.trees(Con{r, t}, 0))))
 
 # a command over the modules read, the root first; the modules' errors as
 # read first
