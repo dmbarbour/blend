@@ -2190,6 +2190,17 @@ def c3.er.k(+obs: List<&2, Ob>, +id: U32, +ps: List<&2, U32>, m: Maybe<&2, Maybe
 
 # the linearization errors: an object its parents lead back to, and one
 # whose sound parents have no merge
+# the rounds out of fuel with objects made that no round linearized
+# (`syn.go`): a family of nested objects without end, each copy of a
+# nested object holding another, as where it inherits from an object
+# holding it; reported, never cut short silently, at the line of the
+# object whose family it is (`blend-no-silent-failures`)
+def er.endless(+pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>) -> List<&2, Er>:
+  +id = U32.from_nat(List.length(&2, List<&2, U32>, pss))
+  when(List<&2, Er>, U32.is_lt(id, U32.from_nat(List.length(&2, Ob, obs))),
+    u => [Er{ob.no(ob.at(obs, id)), ob.name(obs, id) ++ ": its nested objects never end: a nested object inherits from an object holding it, so that each copy holds another"}],
+    u => Nil{})
+
 def er.lins(ps: List<&2, List<&2, U32>>, ls: List<&2, Maybe<&2, Lz>>, +id: U32, +obs: List<&2, Ob>, +all: List<&2, Maybe<&2, Lz>>) -> List<&2, Er>:
   match ps ls:
     case Con{+p, +pt} Con{l, +lt}:
@@ -7442,9 +7453,9 @@ def objects(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2,
   +obs = cx.obs(cx)
   +fs = cx.fs(cx)
   objects.out(cmd, files, srcs, q, cx,
-    List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss), 
+    List.append(&2, Er, er.endless(pss, obs), List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss), 
       List.append(&2, Er, er.obs(obs, als, obs), List.append(&2, Er, er.made.parents(obs, als, obs, ls),
-      List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs)))))))
+      List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs))))))))
 
 # Nested objects
 # --------------
