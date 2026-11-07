@@ -136,9 +136,9 @@ a unit not handing its uses on
 the names check not keeping a name it passes, so that a second is not
 seen
 --- blend.bend
-          on.maybe(U32, List<&2, Er>, nm.seen(seen, name), v => er.names(t, nm.put(seen, m)),
+          on.maybe(Loc, List<&2, Er>, nm.seen(seen, name), v => er.names(t, nm.put(seen, m)),
 +++
-          on.maybe(U32, List<&2, Er>, nm.seen(seen, name), v => er.names(t, seen),
+          on.maybe(Loc, List<&2, Er>, nm.seen(seen, name), v => er.names(t, seen),
 
 === leaf_other emit.unique
 a hash's leaf found down the other child from the one put to
@@ -263,7 +263,7 @@ copies then numbered by its own counter rather than its user's
 === newline_same markers.lines
 a newline not counted, so that the line after it has its number
 --- blend.bend
-      Ls{Nil{}, (no + 1 : U32), Con{lines.line(cur, no), out}}
+      Ls{Nil{}, loc.next(no), Con{lines.line(cur, no), out}}
 +++
       Ls{Nil{}, no, Con{lines.line(cur, no), out}}
 
@@ -460,7 +460,7 @@ a file's units given one more, named a newline
 --- blend.bend
       when(List<&2, Un>, Bool.not(Bool.xor(laws, U32.is_gt(node.what(un.node(u)), 0))), v => Con{u, units.of(t, laws)}, v => units.of(t, laws))
 +++
-      when(List<&2, Un>, Bool.not(Bool.xor(laws, U32.is_gt(node.what(un.node(u)), 0))), v => Con{Un{0, In{[10], 0, False{}}, NBad{Nil{}, 0}, Nil{}, Nil{}}, Con{u, units.of(t, laws)}}, v => units.of(t, laws))
+      when(List<&2, Un>, Bool.not(Bool.xor(laws, U32.is_gt(node.what(un.node(u)), 0))), v => Con{Un{0, In{[10], 0, False{}}, NBad{Nil{}, loc.top(0)}, Nil{}, Nil{}}, Con{u, units.of(t, laws)}}, v => units.of(t, laws))
 
 === file_name_nl inline.files
 a module named in markers after a newline
@@ -502,9 +502,9 @@ two symbol tokens the same whatever their bytes
 === same_indent nodes.same_eq
 two body lines the same whatever their indentation
 --- blend.bend
-      U32.is_eq(n1, n2) && U32.is_eq(i1, i2) && toks.same(t1, t2)
+      loc.eq(n1, n2) && U32.is_eq(i1, i2) && toks.same(t1, t2)
 +++
-      U32.is_eq(n1, n2) && toks.same(t1, t2)
+      loc.eq(n1, n2) && toks.same(t1, t2)
 
 === final_invented resolve.names
 a reference resolved to a name its token does not hold
@@ -565,9 +565,9 @@ a copy of a member that is no definition given a line
 === missing_lines markers.emitted
 a copy of a definition not found given a line
 --- blend.bend
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
+        u => (Rd{i, NBad{Nil{}, loc.top(0)}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
 +++
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, [Rl{7, 0, Nil{}}]}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
+        u => (Rd{i, NBad{Nil{}, loc.top(0)}, Nil{}, [Rl{7, 0, Nil{}}]}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
 
 === refs_unnumbered sharing.emitted
 each unit's references taken as the first's: mults reads uses the writer does not
@@ -893,9 +893,9 @@ an instance is marked done, its copy not added
 a member not found is copied as another instance, its prior flag
 flipped
 --- blend.bend
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
+        u => (Rd{i, NBad{Nil{}, loc.top(0)}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
 +++
-        u => (Rd{In{n, q, Bool.not(prior)}, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
+        u => (Rd{In{n, q, Bool.not(prior)}, NBad{Nil{}, loc.top(0)}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
 
 === copies_node_other copies.embodied
 a definition's copy names another instance, the final for a prior
@@ -921,16 +921,16 @@ the copies read lose the first made
 === copies_missing_silent copies.defined
 a member not found is copied as a placeholder silently, as it was
 --- blend.bend
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
+        u => (Rd{i, NBad{Nil{}, loc.top(0)}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
 +++
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
+        u => (Rd{i, NBad{Nil{}, loc.top(0)}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
 
 === copies_k_bad copies.defined
 a definition found is copied as a placeholder
 --- blend.bend
       (Rd{i, nd, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
 +++
-      (Rd{i, NBad{Nil{}, 0}, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
+      (Rd{i, NBad{Nil{}, loc.top(0)}, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
 
 === members_any_name copies.defined
 a member table's lookup takes the first definition, whatever its name
