@@ -9,7 +9,13 @@
 # as `blend/bench/measure.sh`), its shape and N its parameters; each size a
 # row of `counts` (build `blend`, the shape its workload, the size its k,
 # no interactions) and its seconds a metric (`<shape> <size> s`). The
-# modules and what Blend writes go to results/bench (out of git).
+# modules and what Blend writes go to results/bench (out of git). Each
+# size is emitted once uncounted first, so that what Blend writes is
+# there to read when the counted run starts, as in use: `emit` reads a
+# written file even where `--force` writes it again, and a first run in
+# a fresh directory, nothing to read, counted 4% fewer instructions on
+# the copies family (2026-11-07), a difference of the directory, not of
+# Blend.
 #
 #   bench/measure.sh chain|fan|dense|down|copies N [MB SECONDS]
 set -u
@@ -30,6 +36,8 @@ run=$(python3 -I "$TOOLS/results.py" run bench/measure.sh "{\"shape\": \"$shape\
 for k in "$n" $((2 * n)) $((4 * n)); do
   mod=$out/$shape$k.blend
   "$gen" "$shape" "$k" > "$mod" || exit 1
+  "$TOOLS/capped.sh" "$mb" "$secs" "$blend" emit --alone --force --no-check "$mod" > /dev/null 2>&1 ||
+    { echo "$shape $k: the warm-up run failed"; exit 1; }
   start=$(date +%s.%N)
   "$TOOLS/capped.sh" "$mb" "$secs" "$TOOLS/count.sh" "$blend" emit --alone --force --no-check "$mod" > /dev/null 2> "$out/run.err"
   ok=$?
