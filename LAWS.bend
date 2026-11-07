@@ -1084,9 +1084,11 @@ law laws.proven:
   for +h: {B.er.laws(xs, ut, ux) == Nil{} : List<&2, B.Er>}
   {B.laws.proven(xs, ux) == True{} : Bool}
 
-# LAW: so where emission reports no error, a module with laws has a
-# proof for every law it writes, its units' table its own (`laws.proven`,
-# the laws' check one part of emission's). The walk's errors, the
+# LAW: so where emission reports no error, every module has a proof for
+# every law it writes, its units' table its own (`laws.proven`, the
+# laws' check one part of emission's): one with none of laws, proofs or
+# lemmas, whose check emission skips (`units.lawful`,
+# `blend-perf.laws`), has none to prove. The walk's errors, the
 # dispositions', the names' and the parts' are any.
 # Record: blend-laws-in-module
 law laws.emitted:
@@ -1097,7 +1099,6 @@ law laws.emitted:
   for +e: B.Ec
   for +lwe: List<&2, B.Er>
   for +pfe: List<&2, B.Er>
-  for +hl: {B.units.lawful(all) == True{} : Bool}
   for +h: {B.emit.ers(dse, mse, all, order, e, lwe, pfe) == Nil{} : List<&2, B.Er>}
   {B.laws.proven(all, B.ux.of(all)) == True{} : Bool}
 

@@ -16300,16 +16300,40 @@ def ers_laws(+a: List<&2, B.Er>, +b: List<&2, B.Er>, +c: List<&2, B.Er>, +r: Lis
     h: {List.append(&2, B.Er, a, List.append(&2, B.Er, b, List.append(&2, B.Er, c, r))) == Nil{} : List<&2, B.Er>}) -> {c == Nil{} : List<&2, B.Er>}:
   app_nil_l(c, r, app_nil_r(b, List.append(&2, B.Er, c, r), app_nil_r(a, List.append(&2, B.Er, b, List.append(&2, B.Er, c, r)), h)))
 
-def le_if(c: Bool, +all: List<&2, B.Un>, hl: {c == True{} : Bool}, h: {B.er.laws.if(c, all) == Nil{} : List<&2, B.Er>}) ->
-    {B.er.laws(all, B.pt.of(B.Un, all), B.ux.of(all)) == Nil{} : List<&2, B.Er>}:
+# a unit that is no law, proof or lemma: proven, having no law to prove
+def nf_true(b: Bool, h: {Bool.not(b) == False{} : Bool}) -> {b == True{} : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({False{} == True{} : Bool}, MB.false_ne_true()(Equal.sym(Bool, True{}, False{}, h)))
+
+def def_proven(+x: B.Un, +ux: B.Ht<B.Xe>, +h: {Bool.not(U32.is_eq(B.node.what(B.un.node(x)), 0)) == False{} : Bool}) -> {B.un.proven(x, ux) == True{} : Bool}:
+  %Equal.sym(U32, B.node.what(B.un.node(x)), 0, u32_eq_of_is_eq(B.node.what(B.un.node(x)), 0, nf_true(U32.is_eq(B.node.what(B.un.node(x)), 0), h))) :
+    {Bool.or(Bool.not(U32.is_eq(_, 1)), Maybe.is_some(&2, U32, B.ux.find(ux, B.rf.proof(B.un.ref(x))))) == True{} : Bool}
+  {==}
+
+# a module none of whose units is a law, proof or lemma: every law (none)
+# proven, the check emission skips for it (`units.lawful`) needed by none
+def lawless_proven(xs: List<&2, B.Un>, +ux: B.Ht<B.Xe>, +h: {B.units.lawful(xs) == False{} : Bool}) -> {B.laws.proven(xs, ux) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(B.un.proven(x, ux), B.laws.proven(t, ux),
+        def_proven(x, ux, or_false_l(Bool.not(U32.is_eq(B.node.what(B.un.node(x)), 0)), B.units.lawful(t), h)),
+        lawless_proven(t, ux, or_false_r(Bool.not(U32.is_eq(B.node.what(B.un.node(x)), 0)), B.units.lawful(t), h)))
+
+# the laws' check, run or skipped: every law proven either way
+def le_any(c: Bool, +all: List<&2, B.Un>, +h: {B.er.laws.if(c, all) == Nil{} : List<&2, B.Er>}, +hc: {c == B.units.lawful(all) : Bool}) ->
+    {B.laws.proven(all, B.ux.of(all)) == True{} : Bool}:
   match c:
     case True{}:
-      h
+      Laws.laws.proven(all, B.pt.of(B.Un, all), B.ux.of(all), h)
     case False{}:
-      Empty.absurd({B.er.laws(all, B.pt.of(B.Un, all), B.ux.of(all)) == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(hl))
+      lawless_proven(all, B.ux.of(all), Equal.sym(Bool, False{}, B.units.lawful(all), hc))
 
-def Laws.laws.emitted(dse, mse, all, order, e, lwe, pfe, hl, h):
-  Laws.laws.proven(all, B.pt.of(B.Un, all), B.ux.of(all),
-    le_if(B.units.lawful(all), all, hl,
-      ers_laws(dse, mse, B.er.laws.if(B.units.lawful(all), all),
-        List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, lwe, pfe)), h)))
+def Laws.laws.emitted(dse, mse, all, order, e, lwe, pfe, h):
+  le_any(B.units.lawful(all), all,
+    ers_laws(dse, mse, B.er.laws.if(B.units.lawful(all), all),
+      List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, lwe, pfe)), h), {==})

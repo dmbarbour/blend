@@ -6978,7 +6978,7 @@ def units.lawful(us: List<&2, Un>) -> Bool:
     case Nil{}:
       False{}
     case Con{u, t}:
-      U32.is_gt(node.what(un.node(u)), 0) || units.lawful(t)
+      Bool.not(U32.is_eq(node.what(un.node(u)), 0)) || units.lawful(t)
 
 def er.laws.if(+c: Bool, +all: List<&2, Un>) -> List<&2, Er>:
   match c:

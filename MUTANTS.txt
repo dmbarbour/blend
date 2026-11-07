@@ -1038,3 +1038,11 @@ the copies look a member up in the next object's table
       md.find(md.or(List.get(&2, Ht<Node>, mds, U32.to_nat(q))), n)
 +++
       md.find(md.or(List.get(&2, Ht<Node>, mds, U32.to_nat((q + 1 : U32)))), n)
+
+=== lawful_proofs_only laws.emitted
+a module whose only units of laws are laws, no proofs or lemmas, is
+taken for one without laws, and its laws go unchecked
+--- blend.bend
+      Bool.not(U32.is_eq(node.what(un.node(u)), 0)) || units.lawful(t)
++++
+      U32.is_gt(node.what(un.node(u)), 1) || units.lawful(t)

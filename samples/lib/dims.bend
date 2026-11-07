@@ -1,5 +1,5 @@
 # Written by Blend from dims.blend; do not edit.
-# blend stamp: fb5bee1f6ddd 8122917758acc0c1
+# blend stamp: 87c9d66c380a b07a84bff0890053
 import Base
 import ./units.bend as U
 
