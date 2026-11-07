@@ -195,35 +195,84 @@ def commas(xs: List<&2, U32>) -> List<&2, List<&2, U32>>:
 # Lines
 # =====
 
+# A place in the source (`blend-locations`): a module, its place among the
+# modules read (the root 0th), and a line in it, from 1 (0 the module
+# itself). Read only through this API, so that its shape may change
+# behind it.
+type Loc is Data:
+  Loc{+mod: U32, +line: U32}
+
+def loc.at(+m: U32, +l: U32) -> Loc:
+  Loc{m, l}
+
+# module k itself, before its first line
+def loc.top(+k: U32) -> Loc:
+  Loc{k, 0}
+
+def loc.mod(l: Loc) -> U32:
+  match l:
+    case Loc{+m, +n}:
+      m
+
+def loc.line(l: Loc) -> U32:
+  match l:
+    case Loc{+m, +n}:
+      n
+
+# the next line of the same module
+def loc.next(l: Loc) -> Loc:
+  match l:
+    case Loc{+m, +n}:
+      Loc{m, (n + 1 : U32)}
+
+# module first, then line: the order errors are reported in
+def loc.le(a: Loc, b: Loc) -> Bool:
+  match a b:
+    case Loc{+m, +n} Loc{+p, +q}:
+      U32.is_lt(m, p) || (U32.is_eq(m, p) && U32.is_le(n, q))
+
+def loc.eq(a: Loc, b: Loc) -> Bool:
+  match a b:
+    case Loc{+m, +n} Loc{+p, +q}:
+      U32.is_eq(m, p) && U32.is_eq(n, q)
+
+# whether a location is among xs
+def locs.has(xs: List<&2, Loc>, +x: Loc) -> Bool:
+  match xs:
+    case Nil{}:
+      False{}
+    case Con{+h, t}:
+      loc.eq(h, x) || locs.has(t, x)
+
 # a line of the source: its number, its indentation, its text after it;
 # a carriage return dropped wherever it is
 type Ln is Data:
-  Ln{+no: U32, +ind: U32, txt: List<&2, U32>}
+  Ln{+no: Loc, +ind: U32, txt: List<&2, U32>}
 
 # a line read: its indentation's spaces counted in n, a Nat, exact
 # however many, then its text
-def line.of(xs: List<&2, U32>, +n: Nat, +no: U32) -> Ln:
+def line.of(xs: List<&2, U32>, +n: Nat, +no: Loc) -> Ln:
   match xs:
     case Nil{}:
       Ln{no, U32.from_nat(n), Nil{}}
     case Con{+h, +t}:
       when(Ln, U32.is_eq(h, 32), u => line.of(t, 1n+n, no), u => Ln{no, U32.from_nat(n), Con{h, t}})
 
-def lines.line(cur: List<&2, U32>, +no: U32) -> Ln:
+def lines.line(cur: List<&2, U32>, +no: Loc) -> Ln:
   line.of(List.reverse(&2, U32, cur), 0n, no)
 
 # the lines read so far: the current one's bytes, kept reversed, its
 # number, and the lines done, kept reversed
 type Ls is Data:
-  Ls{cur: List<&2, U32>, +no: U32, out: List<&2, Ln>}
+  Ls{cur: List<&2, U32>, +no: Loc, out: List<&2, Ln>}
 
 # a byte read: a newline ends the line, a carriage return is dropped,
 # another kept; the tests passed as `Bool`s, so that the loop recurses
 # once, without a closure for each choice (`blend-perf.lines`)
-def lines.step(+nl: Bool, +cr: Bool, +b: U32, cur: List<&2, U32>, +no: U32, out: List<&2, Ln>) -> Ls:
+def lines.step(+nl: Bool, +cr: Bool, +b: U32, cur: List<&2, U32>, +no: Loc, out: List<&2, Ln>) -> Ls:
   match nl:
     case True{}:
-      Ls{Nil{}, (no + 1 : U32), Con{lines.line(cur, no), out}}
+      Ls{Nil{}, loc.next(no), Con{lines.line(cur, no), out}}
     case False{}:
       match cr:
         case True{}:
@@ -241,21 +290,21 @@ def lines.go(bs: List<&2, U32>, st: Ls) -> List<&2, Ln>:
     case Con{+b, t} Ls{cur, +no, out}:
       lines.go(t, lines.step(U32.is_eq(b, 10), U32.is_eq(b, 13), b, cur, no, out))
 
-def lines.at(bs: List<&2, U32>, +base: U32) -> List<&2, Ln>:
-  lines.go(bs, Ls{Nil{}, (base + 1 : U32), Nil{}})
+def lines.at(bs: List<&2, U32>, +base: Loc) -> List<&2, Ln>:
+  lines.go(bs, Ls{Nil{}, loc.next(base), Nil{}})
 
 def lines(bs: List<&2, U32>) -> List<&2, Ln>:
-  lines.at(bs, 0)
+  lines.at(bs, loc.top(0))
 
 # lines numbered from k, one more each (LAWS.bend, `markers.lines`)
-def ln.from(ls: List<&2, Ln>, +k: U32) -> Bool:
+def ln.from(ls: List<&2, Ln>, +k: Loc) -> Bool:
   match ls:
     case Nil{}:
       True{}
     case Con{l, +t}:
       match l:
         case Ln{+no, +ind, txt}:
-          U32.is_eq(no, k) && ln.from(t, (k + 1 : U32))
+          loc.eq(no, k) && ln.from(t, loc.next(k))
 
 # a line as written: its indentation's spaces, then its text
 # (LAWS.bend, `lines.join`)
@@ -314,7 +363,7 @@ type Tok is Data:
 
 # a body's line: its number, its indentation, its tokens
 type Bl is Data:
-  Bl{+no: U32, +ind: U32, toks: List<&2, Tok>}
+  Bl{+no: Loc, +ind: U32, toks: List<&2, Tok>}
 
 # a byte's class, as the tokens go by it: a space or a tab, a letter or
 # `_`, a digit, `.`, `"`, `#`, `^`, `~`, a backslash, `'`, any other. A
@@ -591,12 +640,12 @@ def toks.lines(ls: List<&2, Ln>) -> List<&2, Bl>:
 
 # sharing: 0 affine, the default; 1 shared; 2 copied
 type Item is Data:
-  IImport{txt: List<&2, U32>, +no: U32, +ind: U32}
-  IObj{+abs: Bool, +with: Bool, +ext: Bool, name: List<&2, U32>, parents: List<&2, List<&2, U32>>, +no: U32, +ind: U32}
-  IDecl{names: List<&2, List<&2, U32>>, +no: U32, +ind: U32}
-  IDef{+share: U32, +upd: Bool, name: List<&2, U32>, rest: List<&2, U32>, params: List<&2, List<&2, U32>>, body: List<&2, Ln>, +no: U32, +ind: U32, +what: U32}
-  IBad{txt: List<&2, U32>, +no: U32, +ind: U32}
-  IBend{lines: List<&2, Ln>, +no: U32, +ind: U32}
+  IImport{txt: List<&2, U32>, +no: Loc, +ind: U32}
+  IObj{+abs: Bool, +with: Bool, +ext: Bool, name: List<&2, U32>, parents: List<&2, List<&2, U32>>, +no: Loc, +ind: U32}
+  IDecl{names: List<&2, List<&2, U32>>, +no: Loc, +ind: U32}
+  IDef{+share: U32, +upd: Bool, name: List<&2, U32>, rest: List<&2, U32>, params: List<&2, List<&2, U32>>, body: List<&2, Ln>, +no: Loc, +ind: U32, +what: U32}
+  IBad{txt: List<&2, U32>, +no: Loc, +ind: U32}
+  IBend{lines: List<&2, Ln>, +no: Loc, +ind: U32}
 
 # a parameter's name: its marks (+ - ~ @) dropped, up to its colon; a
 # template's (~) or an erased one's (-) mark kept, for a witness to pass
@@ -647,7 +696,7 @@ def parens.go(xs: List<&2, U32>, +prev: U32, +depth: U32, +acc: List<&2, U32>) -
 def parens(xs: List<&2, U32>) -> List<&2, U32>:
   parens.go(xs, 0, 0, Nil{})
 
-def def.named(+ok: Bool, name: List<&2, U32>, +rest: List<&2, U32>, xs: List<&2, U32>, +share: U32, +upd: Bool, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def def.named(+ok: Bool, name: List<&2, U32>, +rest: List<&2, U32>, xs: List<&2, U32>, +share: U32, +upd: Bool, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   match ok:
     case True{}:
       IDef{share, upd, name, Con{40, rest}, params.go(commas(parens(rest))), body, no, ind, 0}
@@ -655,12 +704,12 @@ def def.named(+ok: Bool, name: List<&2, U32>, +rest: List<&2, U32>, xs: List<&2,
       IBad{xs, no, ind}
 
 # a name, then its parameters: the parenthesis found
-def def.r(r: List<&2, U32> & List<&2, U32>, xs: List<&2, U32>, +share: U32, +upd: Bool, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def def.r(r: List<&2, U32> & List<&2, U32>, xs: List<&2, U32>, +share: U32, +upd: Bool, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   (+name, +rest) = r
   def.named(name.ok(trim(name)) && Bool.not(blank(rest)), trim(name), rest, xs, share, upd, body, no, ind)
 
 # after `def ` or `upd `: the name up to its parenthesis, the rest kept
-def def.item(+xs: List<&2, U32>, +share: U32, +upd: Bool, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def def.item(+xs: List<&2, U32>, +share: U32, +upd: Bool, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   def.r(until(xs, 40), xs, share, upd, body, no, ind)
 
 # after `upd `, a definition's update: `upd def f(...)`, or `upd f(...)`,
@@ -668,7 +717,7 @@ def def.item(+xs: List<&2, U32>, +share: U32, +upd: Bool, body: List<&2, Ln>, +n
 def upd.def(+xs: List<&2, U32>) -> List<&2, U32>:
   when(List<&2, U32>, starts.s(xs, "def "), u => drop(4n, xs), u => xs)
 
-def def.kw.d(+d: Bool, +u: Bool, xs: List<&2, U32>, +share: U32, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def def.kw.d(+d: Bool, +u: Bool, xs: List<&2, U32>, +share: U32, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   match d u:
     case True{} _:
       def.item(drop(4n, xs), share, False{}, body, no, ind)
@@ -677,10 +726,10 @@ def def.kw.d(+d: Bool, +u: Bool, xs: List<&2, U32>, +share: U32, body: List<&2, 
     case False{} False{}:
       IBad{xs, no, ind}
 
-def def.kw(+xs: List<&2, U32>, +share: U32, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def def.kw(+xs: List<&2, U32>, +share: U32, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   def.kw.d(starts.s(xs, "def "), starts.s(xs, "upd "), xs, share, body, no, ind)
 
-def def.share.s(+s: Bool, +c: Bool, xs: List<&2, U32>, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def def.share.s(+s: Bool, +c: Bool, xs: List<&2, U32>, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   match s c:
     case True{} _:
       def.kw(drop(7n, xs), 1, body, no, ind)
@@ -690,7 +739,7 @@ def def.share.s(+s: Bool, +c: Bool, xs: List<&2, U32>, body: List<&2, Ln>, +no: 
       def.kw(xs, 0, body, no, ind)
 
 # a definition's header, its sharing first if stated
-def def.share(+xs: List<&2, U32>, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def def.share(+xs: List<&2, U32>, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   def.share.s(starts.s(xs, "shared "), starts.s(xs, "copied "), xs, body, no, ind)
 
 def is_def(+xs: List<&2, U32>) -> Bool:
@@ -721,7 +770,7 @@ def obj.parents.e(+e: Bool, rest: List<&2, U32>) -> List<&2, List<&2, U32>>:
 def obj.parents(+rest: List<&2, U32>) -> List<&2, List<&2, U32>>:
   obj.parents.e(starts.s(rest, "extends "), rest)
 
-def obj.named(+ok: Bool, +with: Bool, +ext: Bool, name: List<&2, U32>, ps: List<&2, List<&2, U32>>, xs: List<&2, U32>, +abs: Bool, +no: U32, +ind: U32) -> Item:
+def obj.named(+ok: Bool, +with: Bool, +ext: Bool, name: List<&2, U32>, ps: List<&2, List<&2, U32>>, xs: List<&2, U32>, +abs: Bool, +no: Loc, +ind: U32) -> Item:
   match ok:
     case True{}:
       IObj{abs, with, ext, name, ps, no, ind}
@@ -730,21 +779,21 @@ def obj.named(+ok: Bool, +with: Bool, +ext: Bool, name: List<&2, U32>, ps: List<
 
 # after the name: `extends A, B`, each parent a name, or nothing, then
 # `with` before members; an object with none may leave it out
-def obj.rest(+rest: List<&2, U32>, +name: List<&2, U32>, xs: List<&2, U32>, +abs: Bool, +ext: Bool, +no: U32, +ind: U32) -> Item:
+def obj.rest(+rest: List<&2, U32>, +name: List<&2, U32>, xs: List<&2, U32>, +abs: Bool, +ext: Bool, +no: Loc, +ind: U32) -> Item:
   obj.named(name.ok(name) && (blank(rest) || same(rest, codes("with")) ||
       (starts.s(rest, "extends ") && names.ok(obj.parents(rest)))),
     same(rest, codes("with")) || starts.s(List.reverse(&2, U32, rest), "htiw "), ext,
     name, obj.parents(rest), xs, abs, no, ind)
 
-def obj.ext(r: List<&2, U32> & List<&2, U32>, xs: List<&2, U32>, +abs: Bool, +ext: Bool, +no: U32, +ind: U32) -> Item:
+def obj.ext(r: List<&2, U32> & List<&2, U32>, xs: List<&2, U32>, +abs: Bool, +ext: Bool, +no: Loc, +ind: U32) -> Item:
   (name, rest) = r
   obj.rest(rtrim(rest), name, xs, abs, ext, no, ind)
 
 # `object Name [extends A, B] [with]`, `abstract` before it or not
-def obj.item(xs: List<&2, U32>, line: List<&2, U32>, +abs: Bool, +ext: Bool, +no: U32, +ind: U32) -> Item:
+def obj.item(xs: List<&2, U32>, line: List<&2, U32>, +abs: Bool, +ext: Bool, +no: Loc, +ind: U32) -> Item:
   obj.ext(until(xs, 32), line, abs, ext, no, ind)
 
-def decl.named(+ok: Bool, ns: List<&2, List<&2, U32>>, line: List<&2, U32>, +no: U32, +ind: U32) -> Item:
+def decl.named(+ok: Bool, ns: List<&2, List<&2, U32>>, line: List<&2, U32>, +no: Loc, +ind: U32) -> Item:
   match ok:
     case True{}:
       IDecl{ns, no, ind}
@@ -759,7 +808,7 @@ def decl.some(ns: List<&2, List<&2, U32>>) -> Bool:
       True{}
 
 # `declare a, b`, each a name
-def decl.item(+ns: List<&2, List<&2, U32>>, line: List<&2, U32>, +no: U32, +ind: U32) -> Item:
+def decl.item(+ns: List<&2, List<&2, U32>>, line: List<&2, U32>, +no: Loc, +ind: U32) -> Item:
   decl.named(decl.some(ns) && names.ok(ns), ns, line, no, ind)
 
 # a line's body lines: those after it, blank or indented deeper than ind,
@@ -802,7 +851,7 @@ def body.trim(ls: List<&2, Ln>) -> List<&2, Ln>:
 # (`blend-declares-witnessed`). `declare a, b` and `declare type S` are
 # untyped, as before.
 
-def decl.witness(+name: List<&2, U32>, +ps: List<&2, U32>, +ret: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
+def decl.witness(+name: List<&2, U32>, +ps: List<&2, U32>, +ret: List<&2, U32>, +txt: List<&2, U32>, +no: Loc, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
   when(List<&2, Item>, name.ok(name) && Bool.not(blank(ret)),
     u => Con{IDef{0, False{}, List.append(&2, U32, name, [33]), List.append(&2, U32, Con{40, ps}, List.append(&2, U32, codes(") -> "), List.append(&2, U32, ret, codes(":")))),
       params.go(commas(ps)), Nil{}, no, ind, 4}, Con{IDecl{[name], no, ind}, out}},
@@ -834,7 +883,7 @@ def holds(+xs: List<&2, U32>, p: List<&2, U32>) -> Bool:
       holds.c(xs, ph, pt)
 
 # `f(params) -> T`
-def decl.def.k(r: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
+def decl.def.k(r: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +no: Loc, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
   (+name, +rest) = r
   when(List<&2, Item>, holds(rest, codes(") ->")),
     u => decl.witness(trim(name), parens(rest), trim(drop(Nat.add(List.length(&2, U32, parens(rest)), 4n), rest)), txt, no, ind, out),
@@ -845,7 +894,7 @@ def type.kind(+r: List<&2, U32>) -> List<&2, U32>:
   when(List<&2, U32>, starts.s(r, ":"), u => trim(drop(1n, r)), u => codes("Type"))
 
 # `S: K`, or `P(params): K`
-def decl.type.k(r: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
+def decl.type.k(r: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, +no: Loc, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
   (+name, +after) = r
   when(List<&2, Item>, starts.s(after, "("),
     u => decl.witness(name, parens(List.tail(&2, U32, after)),
@@ -861,12 +910,12 @@ def name.split(xs: List<&2, U32>, cs: List<&2, Cl>, +acc: List<&2, U32>) -> List
     case _ _:
       (List.reverse(&2, U32, acc), Nil{})
 
-def decl.type.line(+r: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
+def decl.type.line(+r: List<&2, U32>, +txt: List<&2, U32>, +no: Loc, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
   when(List<&2, Item>, holds(r, codes(":")) || holds(r, codes("(")), u => decl.type.k(name.split(r, classes(r), Nil{}), txt, no, ind, out),
     u => Con{decl.item(commas(r), txt, no, ind), out})
 
 # what follows `declare `
-def decl.line(+rest: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
+def decl.line(+rest: List<&2, U32>, +txt: List<&2, U32>, +no: Loc, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
   when(List<&2, Item>, starts.s(rest, "type "), u => decl.type.line(trim(drop(5n, rest)), txt, no, ind, out),
     u => when(List<&2, Item>, holds(rest, codes("(")),
       v => decl.def.k(until(when(List<&2, U32>, starts.s(rest, "def "), w => drop(4n, rest), w => rest), 40), txt, no, ind, out),
@@ -874,7 +923,7 @@ def decl.line(+rest: List<&2, U32>, +txt: List<&2, U32>, +no: U32, +ind: U32, +o
 
 # a line that is no definition's header: an item, or nothing for a blank
 # line or a comment
-def flat.line(+skip: Bool, +imp: Bool, +abs: Bool, +obj: Bool, +decl: Bool, +txt: List<&2, U32>, +no: U32, +ind: U32, out: List<&2, Item>) -> List<&2, Item>:
+def flat.line(+skip: Bool, +imp: Bool, +abs: Bool, +obj: Bool, +decl: Bool, +txt: List<&2, U32>, +no: Loc, +ind: U32, out: List<&2, Item>) -> List<&2, Item>:
   match skip imp abs obj decl:
     case True{} _ _ _ _:
       out
@@ -930,40 +979,40 @@ def split.at(xs: List<&2, U32>, +p: List<&2, U32>, +acc: List<&2, U32>) -> List<
         u => split.at(t, p, Con{h, acc}))
 
 def type.made(+upd: Bool, +name: List<&2, U32>, +ps: List<&2, U32>, +after: List<&2, U32>, +ty: List<&2, U32>, xs: List<&2, U32>,
-    +no: U32, +ind: U32) -> Item:
+    +no: Loc, +ind: U32) -> Item:
   when(Item, name.ok(name) && Bool.not(blank(ty)),
     u => IDef{1, upd, name, List.append(&2, U32, Con{40, ps}, List.append(&2, U32, codes(") -> "), List.append(&2, U32, type.kind(trim(after)), codes(":")))),
       params.go(commas(ps)), [Ln{no, (ind + 2 : U32), ty}], no, ind, 0},
     u => IBad{xs, no, ind})
 
 # the name, then its parameters if any, then what follows them
-def type.lhs(+upd: Bool, r: List<&2, U32> & List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: U32, +ind: U32) -> Item:
+def type.lhs(+upd: Bool, r: List<&2, U32> & List<&2, U32>, +ty: List<&2, U32>, +xs: List<&2, U32>, +no: Loc, +ind: U32) -> Item:
   (+name, +after) = r
   when(Item, starts.s(after, "("),
     u => type.made(upd, name, parens(List.tail(&2, U32, after)), drop(Nat.add(List.length(&2, U32, parens(List.tail(&2, U32, after))), 2n), after),
       ty, xs, no, ind),
     u => type.made(upd, name, Nil{}, after, ty, xs, no, ind))
 
-def type.eq(+upd: Bool, r: List<&2, U32> & List<&2, U32>, xs: List<&2, U32>, +no: U32, +ind: U32) -> Item:
+def type.eq(+upd: Bool, r: List<&2, U32> & List<&2, U32>, xs: List<&2, U32>, +no: Loc, +ind: U32) -> Item:
   (+lhs, +ty) = r
   type.lhs(upd, name.split(trim(lhs), classes(trim(lhs)), Nil{}), trim(ty), xs, no, ind)
 
 # a type member, `type ...` or `upd type ...`
-def type.item(+txt: List<&2, U32>, +no: U32, +ind: U32) -> Item:
+def type.item(+txt: List<&2, U32>, +no: Loc, +ind: U32) -> Item:
   when(Item, starts.s(txt, "upd "), v => type.eq(True{}, split.at(drop(9n, txt), codes(" = "), Nil{}), txt, no, ind),
     v => type.eq(False{}, split.at(drop(5n, txt), codes(" = "), Nil{}), txt, no, ind))
 
 # `extend N with` and `extend abstract N with`: a mixin on the nested
 # object N its host has (Nested objects, below)
-def ext.item(+txt: List<&2, U32>, +no: U32, +ind: U32) -> Item:
+def ext.item(+txt: List<&2, U32>, +no: Loc, +ind: U32) -> Item:
   when(Item, starts.s(txt, "extend abstract "), u => obj.item(drop(16n, txt), txt, True{}, True{}, no, ind),
     u => obj.item(drop(7n, txt), txt, False{}, True{}, no, ind))
 
-def flat.item.l(+txt: List<&2, U32>, +no: U32, +ind: U32, out: List<&2, Item>) -> List<&2, Item>:
+def flat.item.l(+txt: List<&2, U32>, +no: Loc, +ind: U32, out: List<&2, Item>) -> List<&2, Item>:
   flat.line(blank(txt) || comment(txt), starts.s(txt, "import "), starts.s(txt, "abstract object "),
     starts.s(txt, "object "), starts.s(txt, "declare "), txt, no, ind, out)
 
-def flat.item.k(+txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
+def flat.item.k(+txt: List<&2, U32>, +no: Loc, +ind: U32, +out: List<&2, Item>) -> List<&2, Item>:
   when(List<&2, Item>, starts.s(txt, "extend "), u => Con{ext.item(txt, no, ind), out}, u => flat.item.l(txt, no, ind, out))
 
 # a header with its body: a definition, or a datatype of Bend's
@@ -976,18 +1025,18 @@ def flat.item.k(+txt: List<&2, U32>, +no: U32, +ind: U32, +out: List<&2, Item>) 
 # its law's name and a `#`, a byte no name holds, so that the two pair
 # without meeting.
 
-def law.made(+name: List<&2, U32>, +rest: List<&2, U32>, +txt: List<&2, U32>, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def law.made(+name: List<&2, U32>, +rest: List<&2, U32>, +txt: List<&2, U32>, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   when(Item, name.ok(name) && blank(trim(rest)), u => IDef{0, False{}, name, codes(":"), Nil{}, body, no, ind, 1}, u => IBad{txt, no, ind})
 
-def law.r(r: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def law.r(r: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   (+name, +rest) = r
   law.made(trim(name), rest, txt, body, no, ind)
 
 # `law NAME:`, nothing after its colon
-def law.item(+txt: List<&2, U32>, body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def law.item(+txt: List<&2, U32>, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   law.r(until(drop(4n, txt), 58), txt, body, no, ind)
 
-def proof.r(r: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def proof.r(r: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   (+name, +rest) = r
   when(Item, name.ok(trim(name)) && Bool.not(blank(rest)),
     u => when(Item, holds(rest, codes(") ->")),
@@ -997,11 +1046,11 @@ def proof.r(r: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +
 
 # `proof NAME(params):`, a law's proof, or `upd proof`; typed,
 # `proof NAME(params) -> T:`, a lemma, stating what it proves
-def proof.item(+txt: List<&2, U32>, +upd: Bool, +body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def proof.item(+txt: List<&2, U32>, +upd: Bool, +body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   when(Item, upd, u => proof.r(until(drop(10n, txt), 40), True{}, txt, body, no, ind),
     u => proof.r(until(drop(6n, txt), 40), False{}, txt, body, no, ind))
 
-def flat.block(+txt: List<&2, U32>, +body: List<&2, Ln>, +no: U32, +ind: U32) -> Item:
+def flat.block(+txt: List<&2, U32>, +body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   when(Item, is.datatype(txt), u => IBend{Con{Ln{no, ind, txt}, body}, no, ind},
     u => when(Item, starts.s(txt, "law "), v => law.item(txt, body, no, ind),
      v => when(Item, starts.s(txt, "upd law "), x => IBad{txt, no, ind},
@@ -1031,8 +1080,8 @@ def flat(+ls: List<&2, Ln>) -> List<&2, Item>:
 
 # a body's lines numbered from its header's line on, as a type member's
 # is, or from the line after (LAWS.bend, `markers.items`)
-def body.from(+body: List<&2, Ln>, +no: U32) -> Bool:
-  ln.from(body, no) || ln.from(body, (no + 1 : U32))
+def body.from(+body: List<&2, Ln>, +no: Loc) -> Bool:
+  ln.from(body, no) || ln.from(body, loc.next(no))
 
 def item.ok(it: Item) -> Bool:
   match it:
@@ -1053,14 +1102,14 @@ def items.ok(its: List<&2, Item>) -> Bool:
 # a body's lines clear of a marker's place: each blank or deeper than its
 # header, but a first numbered as the header, which the writer keeps on
 # the header's line (LAWS.bend, `deep.items`)
-def ln.deep(ls: List<&2, Ln>, +no: U32, +ind: U32, +first: Bool) -> Bool:
+def ln.deep(ls: List<&2, Ln>, +no: Loc, +ind: U32, +first: Bool) -> Bool:
   match ls:
     case Nil{}:
       True{}
     case Con{l, t}:
       match l:
         case Ln{+n, +i, txt}:
-          ((first && U32.is_eq(n, no)) || blank(txt) || U32.is_gt(i, ind)) && ln.deep(t, no, ind, False{})
+          ((first && loc.eq(n, no)) || blank(txt) || U32.is_gt(i, ind)) && ln.deep(t, no, ind, False{})
 
 def item.deep(it: Item) -> Bool:
   match it:
@@ -1080,18 +1129,18 @@ def items.deep(its: List<&2, Item>) -> Bool:
 # --------
 
 type Node is Data:
-  NImport{txt: List<&2, U32>, +no: U32}
-  NDecl{names: List<&2, List<&2, U32>>, +no: U32}
-  NDef{+share: U32, +upd: Bool, name: List<&2, U32>, rest: List<&2, U32>, params: List<&2, List<&2, U32>>, body: List<&2, Bl>, +no: U32, +ind: U32, +what: U32}
-  NObj{+abs: Bool, +ext: Bool, name: List<&2, U32>, parents: List<&2, List<&2, U32>>, kids: List<&2, Node>, +no: U32}
-  NBad{txt: List<&2, U32>, +no: U32}
-  NErr{msg: List<&2, U32>, +no: U32}
-  NBend{lines: List<&2, Ln>, +no: U32}
+  NImport{txt: List<&2, U32>, +no: Loc}
+  NDecl{names: List<&2, List<&2, U32>>, +no: Loc}
+  NDef{+share: U32, +upd: Bool, name: List<&2, U32>, rest: List<&2, U32>, params: List<&2, List<&2, U32>>, body: List<&2, Bl>, +no: Loc, +ind: U32, +what: U32}
+  NObj{+abs: Bool, +ext: Bool, name: List<&2, U32>, parents: List<&2, List<&2, U32>>, kids: List<&2, Node>, +no: Loc}
+  NBad{txt: List<&2, U32>, +no: Loc}
+  NErr{msg: List<&2, U32>, +no: Loc}
+  NBend{lines: List<&2, Ln>, +no: Loc}
 
 # an object being read: its header and its members so far, reversed; the
 # module is the frame at the stack's bottom, never closed
 type Fr is Data:
-  Fr{+top: Bool, +ind: U32, +abs: Bool, +with: Bool, +ext: Bool, name: List<&2, U32>, parents: List<&2, List<&2, U32>>, kids: List<&2, Node>, +no: U32}
+  Fr{+top: Bool, +ind: U32, +abs: Bool, +with: Bool, +ext: Bool, name: List<&2, U32>, parents: List<&2, List<&2, U32>>, kids: List<&2, Node>, +no: Loc}
 
 def fr.add(f: Fr, n: Node) -> Fr:
   match f:
@@ -1106,7 +1155,7 @@ def close.into(st: List<&2, Fr>, n: Node) -> List<&2, Fr>:
       Con{fr.add(f, n), rest}
 
 # an object with members whose header leaves out `with`: an error there
-def close.with(+with: Bool, kids: List<&2, Node>, +name: List<&2, U32>, +no: U32, st: List<&2, Fr>) -> List<&2, Fr>:
+def close.with(+with: Bool, kids: List<&2, Node>, +name: List<&2, U32>, +no: Loc, st: List<&2, Fr>) -> List<&2, Fr>:
   match with kids:
     case False{} Con{k, t}:
       close.into(st, NErr{List.append(&2, U32, codes("object "), List.append(&2, U32, name,
@@ -1186,13 +1235,13 @@ def tree.fin(st: List<&2, Fr>) -> List<&2, Node>:
 
 # the module's members, its objects nested
 def tree(its: List<&2, Item>) -> List<&2, Node>:
-  tree.fin(tree.go(its, [Fr{True{}, 0, False{}, True{}, False{}, Nil{}, Nil{}, Nil{}, 0}]))
+  tree.fin(tree.go(its, [Fr{True{}, 0, False{}, True{}, False{}, Nil{}, Nil{}, Nil{}, loc.top(0)}]))
 
-def read.at(bs: List<&2, U32>, +base: U32) -> List<&2, Node>:
+def read.at(bs: List<&2, U32>, +base: Loc) -> List<&2, Node>:
   tree(flat(lines.at(bs, base)))
 
 def read(bs: List<&2, U32>) -> List<&2, Node>:
-  read.at(bs, 0)
+  read.at(bs, loc.top(0))
 
 # The structure, printed
 # ======================
@@ -1275,8 +1324,8 @@ def show.first(ls: List<&2, Ln>) -> String:
         case Ln{+no, +ind, txt}:
           text(txt)
 
-def show.line(+no: U32) -> String:
-  "  (line " ++ U32.show(no) ++ ")"
+def show.line(+no: Loc) -> String:
+  "  (line " ++ U32.show(loc.line(no)) ++ ")"
 
 # the tree, an item a line, members indented under their object; fuel,
 # the items' count, as the walk enters a member list from its object
@@ -1377,7 +1426,7 @@ def parts(xs: List<&2, U32>) -> List<&2, List<&2, U32>>:
 # an object: its number, its host's, its path from the module, its
 # parents as written, its members (the module, number 0: the whole file)
 type Ob is Data:
-  Ob{+id: U32, +host: U32, path: List<&2, List<&2, U32>>, +abs: Bool, parents: List<&2, List<&2, U32>>, mems: List<&2, Node>, +no: U32, +kind: U32, +tpl: U32}
+  Ob{+id: U32, +host: U32, path: List<&2, List<&2, U32>>, +abs: Bool, parents: List<&2, List<&2, U32>>, mems: List<&2, Node>, +no: Loc, +kind: U32, +tpl: U32}
 
 # an object's kind: 0 a top-level object (or a module's root), 1 a nested
 # object as written, 2 an extension, `extend N with` (both mixins, never
@@ -1432,7 +1481,7 @@ def obs.go(n: Nat, st: List<&2, Wf>, +next: U32, out: List<&2, Ob>) -> List<&2, 
 def obs.mod(+tree: List<&2, Node>, +k: U32, +out: List<&2, Ob>) -> List<&2, Ob>:
   obs.go(Nat.add(Nat.add(count(tree), count(tree)), 2n), [Wf{U32.from_nat(List.length(&2, Ob, out)), Nil{}, tree}],
     (U32.from_nat(List.length(&2, Ob, out)) + 1 : U32),
-    Con{Ob{U32.from_nat(List.length(&2, Ob, out)), U32.from_nat(List.length(&2, Ob, out)), Nil{}, False{}, Nil{}, tree, (k * 1000000 : U32), 0,
+    Con{Ob{U32.from_nat(List.length(&2, Ob, out)), U32.from_nat(List.length(&2, Ob, out)), Nil{}, False{}, Nil{}, tree, loc.top(k), 0,
       U32.from_nat(List.length(&2, Ob, out))}, out})
 
 def obs.mods(ts: List<&2, List<&2, Node>>, +k: U32, +out: List<&2, Ob>) -> List<&2, Ob>:
@@ -1449,7 +1498,7 @@ def obs(+trees: List<&2, List<&2, Node>>) -> List<&2, Ob>:
 def ob.or(m: Maybe<&2, Ob>) -> Ob:
   match m:
     case None{}:
-      Ob{0, 0, Nil{}, False{}, Nil{}, Nil{}, 0, 0, 0}
+      Ob{0, 0, Nil{}, False{}, Nil{}, Nil{}, loc.top(0), 0, 0}
     case Some{o}:
       o
 
@@ -1471,7 +1520,7 @@ def ob.abs(o: Ob) -> Bool:
     case Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
       abs
 
-def ob.no(o: Ob) -> U32:
+def ob.no(o: Ob) -> Loc:
   match o:
     case Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
       no
@@ -1531,8 +1580,6 @@ def ob.say(+obs: List<&2, Ob>, +id: U32) -> String:
     u => ob.name.of(List.append(&2, List<&2, U32>, ob.path(ob.at(obs, ob.host(ob.at(obs, id)))), [path.last(ob.path(ob.at(obs, id)))])),
     u => ob.name(obs, id))
 
-def loc.mod(+no: U32) -> U32:
-  (no / 1000000 : U32)
 
 # the first object at path p
 # the first object of module m at path p
@@ -1552,7 +1599,7 @@ def is.root(+obs: List<&2, Ob>, +id: U32) -> Bool:
 # an import's alias, `M` of `import ./m.blend as M`: the importing
 # module's root, and the imported's
 type Al is Data:
-  Al{name: List<&2, U32>, +from: U32, +to: U32, +no: U32}
+  Al{name: List<&2, U32>, +from: U32, +to: U32, +no: Loc}
 
 def al.find(als: List<&2, Al>, +from: U32, +n: List<&2, U32>) -> Maybe<&2, U32>:
   match als:
@@ -1704,14 +1751,14 @@ def pids(os: List<&2, Ob>, +als: List<&2, Al>, +obs: List<&2, Ob>, +ls: List<&2,
 
 # an error: its line and its message
 type Er is Data:
-  Er{+no: U32, msg: String}
+  Er{+no: Loc, msg: String}
 
 def er.le(a: Er, b: Er) -> Bool:
   match a b:
     case Er{+x, m} Er{+y, n}:
-      U32.is_le(x, y)
+      loc.le(x, y)
 
-def er.parents(ps: List<&2, List<&2, U32>>, +als: List<&2, Al>, +obs: List<&2, Ob>, +id: U32, +host: U32, +no: U32) -> List<&2, Er>:
+def er.parents(ps: List<&2, List<&2, U32>>, +als: List<&2, Al>, +obs: List<&2, Ob>, +id: U32, +host: U32, +no: Loc) -> List<&2, Er>:
   match ps:
     case Nil{}:
       Nil{}
@@ -1731,19 +1778,17 @@ def mixin.other(os: List<&2, Ob>, +id: U32, +host: U32, +n: List<&2, U32>, +k: U
           when(Maybe<&2, U32>, U32.is_eq(h, host) && U32.is_eq(kind, k) && Bool.not(U32.is_eq(x, id)) && U32.is_eq(tpl, x) && same(path.last(path), n),
             u => Some{x}, u => mixin.other(t, id, host, n, k))
 
-def loc.line(+no: U32) -> U32:
-  (no % 1000000 : U32)
 
-def er.twice.k(+obs: List<&2, Ob>, +id: U32, +x: U32, +no: U32) -> List<&2, Er>:
+def er.twice.k(+obs: List<&2, Ob>, +id: U32, +x: U32, +no: Loc) -> List<&2, Er>:
   when(List<&2, Er>, U32.is_lt(x, id), v => [Er{no, "object " ++ ob.name(obs, id) ++ " is defined at line " ++ U32.show(loc.line(ob.no(ob.at(obs, x)))) ++ " already"}],
     v => Nil{})
 
-def er.twice.top(+obs: List<&2, Ob>, +id: U32, +path: List<&2, List<&2, U32>>, +no: U32) -> List<&2, Er>:
+def er.twice.top(+obs: List<&2, Ob>, +id: U32, +path: List<&2, List<&2, U32>>, +no: Loc) -> List<&2, Er>:
   on.maybe(U32, List<&2, Er>, find.path(obs, loc.mod(no), path), u => Nil{},
     +x => when(List<&2, Er>, U32.is_eq(x, id), v => Nil{},
-      v => [Er{no, "object " ++ ob.name(obs, id) ++ " is defined at line " ++ U32.show(ob.no(ob.at(obs, x))) ++ " already"}]))
+      v => [Er{no, "object " ++ ob.name(obs, id) ++ " is defined at line " ++ U32.show(loc.line(ob.no(ob.at(obs, x)))) ++ " already"}]))
 
-def er.twice(+obs: List<&2, Ob>, +id: U32, +path: List<&2, List<&2, U32>>, +no: U32, +kind: U32, +host: U32) -> List<&2, Er>:
+def er.twice(+obs: List<&2, Ob>, +id: U32, +path: List<&2, List<&2, U32>>, +no: Loc, +kind: U32, +host: U32) -> List<&2, Er>:
   match kind:
     case 0:
       er.twice.top(obs, id, path, no)
@@ -1848,7 +1893,7 @@ def path.pkg(+p: List<&2, U32>) -> Bool:
 
 # an import: its path as written, its alias, whether it is Blend's
 type Im is Data:
-  Im{path: List<&2, U32>, alias: List<&2, U32>, +blend: Bool, +no: U32}
+  Im{path: List<&2, U32>, alias: List<&2, U32>, +blend: Bool, +no: Loc}
 
 def ext.of(+blend: Bool) -> List<&2, U32>:
   match blend:
@@ -1859,7 +1904,7 @@ def ext.of(+blend: Bool) -> List<&2, U32>:
 
 # a package's import passed to Bend, but of its Blend files, not
 # supported yet (`blend-packages`); a local one plain
-def im.path.ers(+pkg: Bool, +blend: Bool, +path: List<&2, U32>, +no: U32) -> List<&2, Er>:
+def im.path.ers(+pkg: Bool, +blend: Bool, +path: List<&2, U32>, +no: Loc) -> List<&2, Er>:
   match pkg:
     case True{}:
       when(List<&2, Er>, blend, u => [Er{no, "import " ++ text(path) ++ ": importing a package's Blend files is not supported yet"}],
@@ -1874,14 +1919,14 @@ def im.plain.ers(i: Im) -> List<&2, Er>:
     case Im{+path, alias, +blend, +no}:
       im.path.ers(path.pkg(path), blend, path, no)
 
-def im.made(r: List<&2, U32> & List<&2, U32>, +no: U32) -> Maybe<&2, Im>:
+def im.made(r: List<&2, U32> & List<&2, U32>, +no: Loc) -> Maybe<&2, Im>:
   (+path, +rest) = r
   when(Maybe<&2, Im>, starts.s(rest, "as ") && name.ok(trim(drop(3n, rest))),
     u => Some{Im{path, trim(drop(3n, rest)), ends(path, codes(".blend")), no}}, u => None{})
 
 # `import PATH as ALIAS`; Bend's other forms (by a package's hash or name)
 # are Bend's alone
-def im.of(+txt: List<&2, U32>, +no: U32) -> Maybe<&2, Im>:
+def im.of(+txt: List<&2, U32>, +no: Loc) -> Maybe<&2, Im>:
   im.made(until(drop(7n, txt), 32), no)
 
 # a member list's lines Blend cannot read, and imports inside an object
@@ -1919,7 +1964,7 @@ def er.mems(ns: List<&2, Node>, +top: Bool) -> List<&2, Er>:
 
 # an extension at the top level, or one naming parents: a mixin on the
 # nested object its host has (blend-namespaces-as-bends)
-def er.ext(+obs: List<&2, Ob>, +id: U32, +host: U32, +path: List<&2, List<&2, U32>>, ps: List<&2, List<&2, U32>>, +no: U32, +kind: U32) -> List<&2, Er>:
+def er.ext(+obs: List<&2, Ob>, +id: U32, +host: U32, +path: List<&2, List<&2, U32>>, ps: List<&2, List<&2, U32>>, +no: Loc, +kind: U32) -> List<&2, Er>:
   when(List<&2, Er>, Bool.not(U32.is_eq(kind, 2)), u => Nil{},
     u => when(List<&2, Er>, is.root(obs, host),
       v => [Er{no, "extend " ++ text(path.last(path)) ++ ": an extension is a mixin on a nested object, and stays out of the top level"}],
@@ -2356,7 +2401,7 @@ def pt.at(-A: Data, +t: Ht<Pk<A>>, +i: U32) -> Maybe<&2, A>:
 # is: a definition (0), a law (1), a law's proof (2), a lemma (3).
 
 type En is Data:
-  En{name: List<&2, U32>, chain: List<&2, U32>, +no: U32, +what: U32}
+  En{name: List<&2, U32>, chain: List<&2, U32>, +no: Loc, +what: U32}
 
 # a member's error: its object and line, its kind (0 an introduction of a
 # name another object has, 1 a name its object gives twice, 2 an update of
@@ -2364,7 +2409,7 @@ type En is Data:
 # and upd or def, the object and line it met, what the member is and what
 # it met
 type Fe is Data:
-  Fe{+q: U32, +mno: U32, +kind: U32, name: List<&2, U32>, +upd: Bool, +origin: U32, +ono: U32, +what: U32, +was: U32}
+  Fe{+q: U32, +mno: Loc, +kind: U32, name: List<&2, U32>, +upd: Bool, +origin: U32, +ono: Loc, +what: U32, +was: U32}
 
 # while an object's definitions are folded, its map newest first, an
 # entry put first in its leaf of ix as it comes (`blend-scale.folds`);
@@ -2408,7 +2453,7 @@ def en.head(xs: List<&2, U32>) -> U32:
       h
 
 # an introduction met an entry: twice in one object, or from another
-def fd.def.at(+q: U32, +no: U32, +name: List<&2, U32>, +what: U32, e: En, map: List<&2, En>, fes: List<&2, Fe>, ix: Ht<En>) -> Fd:
+def fd.def.at(+q: U32, +no: Loc, +name: List<&2, U32>, +what: U32, e: En, map: List<&2, En>, fes: List<&2, Fe>, ix: Ht<En>) -> Fd:
   match e:
     case En{n, +chain, +eno, +was}:
       Fd{en.set(map, En{name, [q], no, what}, name),
@@ -2420,7 +2465,7 @@ def fd.def.at(+q: U32, +no: U32, +name: List<&2, U32>, +what: U32, e: En, map: L
 def upd.fits(+what: U32, +was: U32) -> Bool:
   Bool.not(U32.is_eq(was, 1)) && Bool.not(Bool.xor(U32.is_eq(what, 0), U32.is_eq(was, 0)))
 
-def fd.upd.at(+q: U32, +no: U32, +name: List<&2, U32>, +what: U32, e: En, +map: List<&2, En>, +fes: List<&2, Fe>, +ix: Ht<En>) -> Fd:
+def fd.upd.at(+q: U32, +no: Loc, +name: List<&2, U32>, +what: U32, e: En, +map: List<&2, En>, +fes: List<&2, Fe>, +ix: Ht<En>) -> Fd:
   match e:
     case En{n, +chain, +eno, +was}:
       when(Fd, Bool.not(upd.fits(what, was)), u => Fd{map, Con{Fe{q, no, 3, name, True{}, en.head(chain), eno, what, was}, fes}, ix},
@@ -2428,7 +2473,7 @@ def fd.upd.at(+q: U32, +no: U32, +name: List<&2, U32>, +what: U32, e: En, +map: 
           v => Fd{en.set(map, En{name, chain, no, was}, name), Con{Fe{q, no, 1, name, True{}, q, eno, what, was}, fes}, ix.put(ix, En{name, chain, no, was})},
           v => Fd{en.set(map, En{name, Con{q, chain}, no, was}, name), fes, ix.put(ix, En{name, Con{q, chain}, no, was})}))
 
-def fd.def(+q: U32, +upd: Bool, +name: List<&2, U32>, +no: U32, +what: U32, d: Fd) -> Fd:
+def fd.def(+q: U32, +upd: Bool, +name: List<&2, U32>, +no: Loc, +what: U32, d: Fd) -> Fd:
   match d:
     case Fd{+map, +fes, +ix}:
       on.maybe(En, Fd, ix.find(ix, name),
@@ -2504,7 +2549,7 @@ def fd.or(m: Maybe<&2, Maybe<&2, Fd>>) -> Maybe<&2, Fd>:
 def fd.at(+fds: List<&2, Maybe<&2, Fd>>, +id: U32) -> Maybe<&2, Fd>:
   fd.or(List.get(&2, Maybe<&2, Fd>, fds, U32.to_nat(id)))
 
-def fe.lines(fes: List<&2, Fe>) -> List<&2, U32>:
+def fe.lines(fes: List<&2, Fe>) -> List<&2, Loc>:
   match fes:
     case Nil{}:
       Nil{}
@@ -2513,7 +2558,7 @@ def fe.lines(fes: List<&2, Fe>) -> List<&2, U32>:
         case Fe{+q, +mno, +kind, name, +upd, +origin, +ono, +what, +was}:
           Con{mno, fe.lines(t)}
 
-def fd.lines(m: Maybe<&2, Fd>) -> List<&2, U32>:
+def fd.lines(m: Maybe<&2, Fd>) -> List<&2, Loc>:
   match m:
     case None{}:
       Nil{}
@@ -2523,12 +2568,12 @@ def fd.lines(m: Maybe<&2, Fd>) -> List<&2, U32>:
           fe.lines(fes)
 
 # the members' error lines of an object's parents: their own reports
-def seen(ps: List<&2, U32>, +fds: List<&2, Maybe<&2, Fd>>) -> List<&2, U32>:
+def seen(ps: List<&2, U32>, +fds: List<&2, Maybe<&2, Fd>>) -> List<&2, Loc>:
   match ps:
     case Nil{}:
       Nil{}
     case Con{+p, t}:
-      List.append(&2, U32, fd.lines(fd.at(fds, p)), seen(t, fds))
+      List.append(&2, Loc, fd.lines(fd.at(fds, p)), seen(t, fds))
 
 def kw(+upd: Bool) -> String:
   match upd:
@@ -2624,7 +2669,7 @@ def mem.kw(+upd: Bool, +name: List<&2, U32>, +what: U32) -> String:
 
 # an introduction meeting a name its object has: an update the cure,
 # unless a law is either
-def fe.met(+obs: List<&2, Ob>, +q: U32, +mno: U32, +name: List<&2, U32>, +upd: Bool, +origin: U32, +what: U32, +was: U32) -> Er:
+def fe.met(+obs: List<&2, Ob>, +q: U32, +mno: Loc, +name: List<&2, U32>, +upd: Bool, +origin: U32, +what: U32, +was: U32) -> Er:
   when(Er, U32.is_eq(what, 4), v => Er{mno, mem.kw(upd, name, what) ++ ": " ++ ob.name(obs, q) ++ " has " ++ mem.say(name, was) ++ " already, from " ++
       ob.name(obs, origin) ++ ": a declaration is fixed where it is first made, the families varying by their types"},
    v => when(Er, U32.is_eq(what, 1) || U32.is_eq(was, 1),
@@ -2638,7 +2683,7 @@ def fe.msg(+obs: List<&2, Ob>, +id: U32, f: Fe) -> Er:
     case Fe{+q, +mno, +kind, +name, +upd, +origin, +ono, +what, +was}:
       match kind:
         case 1:
-          Er{mno, mem.say(name, what) ++ " is given twice in " ++ ob.name(obs, q) ++ ", at lines " ++ U32.show(ono) ++ " and " ++ U32.show(mno)}
+          Er{mno, mem.say(name, what) ++ " is given twice in " ++ ob.name(obs, q) ++ ", at lines " ++ U32.show(loc.line(ono)) ++ " and " ++ U32.show(loc.line(mno))}
         case 2:
           when(Er, is.root(obs, q),
             u => Er{mno, mem.kw(upd, name, what) ++ ": the module is no object, so it has nothing to update (introduce it with " ++ intro.kw(what) ++ ")"},
@@ -2654,14 +2699,14 @@ def fe.msg(+obs: List<&2, Ob>, +id: U32, f: Fe) -> Er:
             u => Er{ob.no(ob.at(obs, id)), ob.name(obs, id) ++ " has " ++ text(name) ++ " from both " ++ ob.say(obs, origin) ++
               " and " ++ ob.say(obs, q) ++ ", each introducing it with " ++ intro.kw(was)})
 
-def er.fes(fes: List<&2, Fe>, +skip: List<&2, U32>, +obs: List<&2, Ob>, +id: U32) -> List<&2, Er>:
+def er.fes(fes: List<&2, Fe>, +skip: List<&2, Loc>, +obs: List<&2, Ob>, +id: U32) -> List<&2, Er>:
   match fes:
     case Nil{}:
       Nil{}
     case Con{+f, +t}:
       match f:
         case Fe{+q, +mno, +kind, +name, +upd, +origin, +ono, +what, +was}:
-          when(List<&2, Er>, has(skip, mno), u => er.fes(t, skip, obs, id),
+          when(List<&2, Er>, locs.has(skip, mno), u => er.fes(t, skip, obs, id),
             u => Con{fe.msg(obs, id, Fe{q, mno, kind, name, upd, origin, ono, what, was}), er.fes(t, skip, obs, id)})
 
 # Declarations
@@ -2669,9 +2714,9 @@ def er.fes(fes: List<&2, Fe>, +skip: List<&2, U32>, +obs: List<&2, Ob>, +id: U32
 
 # a declared name, the object declaring it, and the line
 type Dn is Data:
-  Dn{name: List<&2, U32>, +q: U32, +no: U32}
+  Dn{name: List<&2, U32>, +q: U32, +no: Loc}
 
-def decl.tag(ns: List<&2, List<&2, U32>>, +q: U32, +no: U32) -> List<&2, Dn>:
+def decl.tag(ns: List<&2, List<&2, U32>>, +q: U32, +no: Loc) -> List<&2, Dn>:
   match ns:
     case Nil{}:
       Nil{}
@@ -2696,11 +2741,11 @@ def decl.obs(qs: List<&2, U32>, +obs: List<&2, Ob>) -> List<&2, Dn>:
     case Con{+q, t}:
       List.append(&2, Dn, decl.names(ob.mems(ob.at(obs, q)), q), decl.obs(t, obs))
 
-def decl.missing(+obs: List<&2, Ob>, +id: U32, +n: List<&2, U32>, +q: U32, +no: U32) -> Er:
+def decl.missing(+obs: List<&2, Ob>, +id: U32, +n: List<&2, U32>, +q: U32, +no: Loc) -> Er:
   Er{ob.no(ob.at(obs, id)), ob.name(obs, id) ++ " defines no " ++ text(n) ++ ", which " ++ ob.name(obs, q) ++
     " declares (or mark " ++ ob.name(obs, id) ++ " abstract)"}
 
-def decl.check.k(+obs: List<&2, Ob>, +id: U32, +map: List<&2, En>, +done: List<&2, List<&2, U32>>, +n: List<&2, U32>, +q: U32, +no: U32) -> List<&2, Er>:
+def decl.check.k(+obs: List<&2, Ob>, +id: U32, +map: List<&2, En>, +done: List<&2, List<&2, U32>>, +n: List<&2, U32>, +q: U32, +no: Loc) -> List<&2, Er>:
   when(List<&2, Er>, names.has(done, n) || Maybe.is_some(&2, En, en.find(map, n)), u => Nil{},
     u => [decl.missing(obs, id, n, q, no)])
 
@@ -2862,14 +2907,14 @@ def show.ers.more(es: List<&2, Er>) -> String:
 
 # Locations
 #
-# Each module's lines are numbered from k * 1000000, k its place among
-# the modules read (the root 0th), so that a line's number names its file
-# too: errors and markers decode it.
+# Each place in the source is a location (`Loc`): its module, k its
+# place among the modules read (the root 0th), and its line, so that
+# errors and markers name its file and line.
 
-def loc.file(+files: List<&2, List<&2, U32>>, +no: U32) -> List<&2, U32>:
+def loc.file(+files: List<&2, List<&2, U32>>, +no: Loc) -> List<&2, U32>:
   on.maybe(List<&2, U32>, List<&2, U32>, List.get(&2, List<&2, U32>, files, U32.to_nat(loc.mod(no))), u => codes("blend"), x => x)
 
-def er.at(+no: U32) -> String:
+def er.at(+no: Loc) -> String:
   when(String, U32.is_eq(loc.line(no), 0), u => "", u => ":" ++ U32.show(loc.line(no)))
 
 # a source's text from its line k on (k from 1)
@@ -2971,14 +3016,14 @@ def lns.text(ls: List<&2, Ln>, +hind: U32) -> String:
 def para(+a: String, +b: String) -> String:
   when(String, String.eq(a, ""), u => b, u => when(String, String.eq(b, ""), v => a, v => a ++ "\n\n" ++ b))
 
-def lns.from(ls: List<&2, Ln>, +k: U32) -> List<&2, Ln>:
+def lns.from(ls: List<&2, Ln>, +k: Loc) -> List<&2, Ln>:
   match ls:
     case Nil{}:
       Nil{}
     case Con{l, +t}:
       match l:
         case Ln{+no, +ind, +txt}:
-          when(List<&2, Ln>, U32.is_eq(no, k), u => Con{Ln{no, ind, txt}, t}, u => lns.from(t, k))
+          when(List<&2, Ln>, loc.eq(no, k), u => Con{Ln{no, ind, txt}, t}, u => lns.from(t, k))
 
 def def.text.k(ls: List<&2, Ln>) -> String:
   match ls:
@@ -2991,7 +3036,7 @@ def def.text.k(ls: List<&2, Ln>) -> String:
 
 # a definition's lines in its source, from its header's line l
 def def.text(+bs: List<&2, U32>, +l: U32) -> String:
-  def.text.k(lns.from(lines(bs), l))
+  def.text.k(lns.from(lines(bs), loc.at(0, l)))
 
 def show.en(+obs: List<&2, Ob>, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, e: En) -> String:
   match e:
@@ -3371,7 +3416,7 @@ type Rt is Data:
   RX{+mark: U32, path: List<&2, U32>, rest: List<&2, U32>}
 
 type Rl is Data:
-  Rl{+no: U32, +ind: U32, ts: List<&2, Rt>}
+  Rl{+no: Loc, +ind: U32, ts: List<&2, Rt>}
 
 # a definition in a concrete object's copy: its name, the object whose
 # member it is, whether it is a prior
@@ -3393,7 +3438,7 @@ def tok.txt(t: Tok) -> List<&2, U32>:
 def rr.tok(t: Tok) -> Rr:
   Rr{RT{t}, Nil{}, Nil{}}
 
-def rr.er(t: Tok, +no: U32, msg: String) -> Rr:
+def rr.er(t: Tok, +no: Loc, msg: String) -> Rr:
   Rr{RT{t}, [Er{no, msg}], Nil{}}
 
 def carets(xs: List<&2, U32>) -> Nat:
@@ -3411,7 +3456,7 @@ def nth(+xs: List<&2, U32>, n: Nat) -> Maybe<&2, U32>:
   List.get(&2, U32, xs, n)
 
 # a reference to obj's final n, an error where obj is abstract
-def rr.final(+cx: Cx, +obj: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.final(+cx: Cx, +obj: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   when(Rr, ob.abs(ob.at(cx.obs(cx), obj)),
     u => rr.er(t, no, text(tok.txt(t)) ++ " names a definition of " ++ ob.name(cx.obs(cx), obj) ++ ", which is abstract and emits nothing"),
     u => Rr{RR{mark, Rf{obj, n, False{}, obj}}, Nil{}, Nil{}})
@@ -3437,7 +3482,7 @@ def look.obj(k: Nat, +cx: Cx, +q: U32, +ps: List<&2, List<&2, U32>>) -> Maybe<&2
           v => Some{Rf{x, dots(List.drop(&2, List<&2, U32>, ps, k)), False{}, x}},
           v => look.obj(j, cx, q, ps)))
 
-def rr.rf(+cx: Cx, +mark: U32, +t: Tok, +no: U32, f: Rf) -> Rr:
+def rr.rf(+cx: Cx, +mark: U32, +t: Tok, +no: Loc, f: Rf) -> Rr:
   match f:
     case Rf{+obj, +name, +prior, +origin}:
       rr.final(cx, obj, mark, name, t, no)
@@ -3513,7 +3558,7 @@ def mod.tree(+cx: Cx, +m: U32) -> List<&2, Node>:
 # an import carried: its alias, its file as a path from where the root
 # was read, and the line that gives it
 type Ci is Data:
-  Ci{alias: List<&2, U32>, path: List<&2, U32>, +no: U32}
+  Ci{alias: List<&2, U32>, path: List<&2, U32>, +no: Loc}
 
 def bendify(+p: List<&2, U32>, +blend: Bool) -> List<&2, U32>:
   when(List<&2, U32>, blend, u => List.append(&2, U32, List.take(&2, U32, p, Nat.sub(List.length(&2, U32, p), 5n)), codes("bend")), u => p)
@@ -3607,12 +3652,12 @@ def rr.foreign(+cx: Cx, +m: U32, +mark: U32, +n: List<&2, U32>, +t: Tok) -> Rr:
 # a name no definition of Blend's has: Bend's, in the root's own bodies,
 # but for the prefix Blend reserves; another module's names in a body
 # copied from it
-def rr.bend(+cx: Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.bend(+cx: Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   when(Rr, U32.is_eq(loc.mod(ob.no(ob.at(cx.obs(cx), q))), 0),
     u => when(Rr, starts.s(n, "Blend_"), v => rr.er(t, no, text(n) ++ ": names beginning Blend_ are Blend's own"), v => rr.tok(t)),
     u => rr.foreign(cx, loc.mod(ob.no(ob.at(cx.obs(cx), q))), mark, n, t))
 
-def rr.dotted(+cx: Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.dotted(+cx: Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   on.maybe(Rf, Rr, look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, parts(n))), cx, q, parts(n)),
     u => rr.bend(cx, q, mark, n, t, no),
     f => rr.rf(cx, mark, t, no, f))
@@ -3620,7 +3665,7 @@ def rr.dotted(+cx: Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: U32
 # a name with no mark, or after `~`: a local, as written (local), else an
 # object's definition, a definition of the module (Bend's, its text
 # kept), or Bend's
-def rr.plain.k(+local: Bool, +cx: Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.plain.k(+local: Bool, +cx: Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   match local:
     case True{}:
       rr.tok(t)
@@ -3629,7 +3674,7 @@ def rr.plain.k(+local: Bool, +cx: Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2,
         v => rr.dotted(cx, q, mark, n, t, no),
         +h => rr.final(cx, h, mark, n, t, no))
 
-def rr.plain(+cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.plain(+cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   rr.plain.k(names.has(locals, n), cx, o, q, mark, n, t, no)
 
 # the first of the definers, latest first, that comes after q in o's
@@ -3657,7 +3702,7 @@ def en.chain(m: Maybe<&2, En>) -> List<&2, U32>:
         case En{name, chain, +no, +what}:
           chain
 
-def rr.prior.of(+cx: Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.prior.of(+cx: Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   on.maybe(U32, Rr, prior.find(en.chain(cx.find(cx, o, n)), after(cx.ord(cx, o), q)),
     u => rr.er(t, no, "_" ++ text(name.plain(n)) ++ ": " ++ ob.name(cx.obs(cx), o) ++ " has no " ++
       when(String, ends(n, [35]), v => "proof of ", v => "definition of ") ++ text(name.plain(n)) ++ " before " ++ ob.name(cx.obs(cx), q) ++ "'s"),
@@ -3665,13 +3710,13 @@ def rr.prior.of(+cx: Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: Tok, +no: U32)
 
 # `_n`: the definition of n that q's replaced in o's copy; a law has no
 # prior, so `_n` of a law n is its proof's, `n#`
-def rr.prior(+cx: Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.prior(+cx: Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   when(Rr, cx.has(cx, o, List.append(&2, U32, n, [35])), u => rr.prior.of(cx, o, q, List.append(&2, U32, n, [35]), t, no),
     u => rr.prior.of(cx, o, q, n, t, no))
 
 # `^n`, k carets: the k-th host's final n, the module's definition at
 # the top
-def rr.host(+cx: Cx, +o: U32, +q: U32, k: Nat, +n: List<&2, U32>, +t: Tok, +whole: List<&2, U32>, +no: U32) -> Rr:
+def rr.host(+cx: Cx, +o: U32, +q: U32, k: Nat, +n: List<&2, U32>, +t: Tok, +whole: List<&2, U32>, +no: Loc) -> Rr:
   on.maybe(U32, Rr, List.get(&2, U32, hosts(cx.obs(cx), q), Nat.sub(k, 1n)),
     u => rr.er(t, no, text(whole) ++ " steps out of the module, which has no host"),
     +h => when(Rr, cx.has(cx, h, n), v => rr.final(cx, h, 0, n, t, no),
@@ -3679,7 +3724,7 @@ def rr.host(+cx: Cx, +o: U32, +q: U32, k: Nat, +n: List<&2, U32>, +t: Tok, +whol
 
 # `_n`: a local, or `_` alone, or in a module's definition, as written
 # (local); else a prior
-def rr.under(+local: Bool, +cx: Cx, +o: U32, +q: U32, +r: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.under(+local: Bool, +cx: Cx, +o: U32, +q: U32, +r: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   match local:
     case True{}:
       rr.tok(t)
@@ -3691,7 +3736,7 @@ def rr.under(+local: Bool, +cx: Cx, +o: U32, +q: U32, +r: List<&2, U32>, +t: Tok
 # are tested, not matched, and the tests branched on here, so that a law
 # can follow it (LAWS.bend, `locals`): a byte's match leaves a
 # proof stuck
-def rr.mark.k(+up: Bool, +tpl: Bool, +under: Bool, +cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +h: U32, +r: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.mark.k(+up: Bool, +tpl: Bool, +under: Bool, +cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +h: U32, +r: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   match up tpl under:
     case True{} _ _:
       rr.host(cx, o, q, carets(Con{h, r}), List.drop(&2, U32, Con{h, r}, carets(Con{h, r})), t, Con{h, r}, no)
@@ -3702,10 +3747,10 @@ def rr.mark.k(+up: Bool, +tpl: Bool, +under: Bool, +cx: Cx, +o: U32, +q: U32, +l
     case False{} False{} False{}:
       rr.plain(cx, o, q, locals, 0, Con{h, r}, t, no)
 
-def rr.mark(+cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +h: U32, +r: List<&2, U32>, +t: Tok, +no: U32) -> Rr:
+def rr.mark(+cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +h: U32, +r: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
   rr.mark.k(U32.is_eq(h, 94), U32.is_eq(h, 126), U32.is_eq(h, 95), cx, o, q, locals, h, r, t, no)
 
-def rr.of(+cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +t: Tok, +no: U32) -> Rr:
+def rr.of(+cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +t: Tok, +no: Loc) -> Rr:
   match t:
     case TName{+x}:
       match x:
@@ -3725,9 +3770,9 @@ type Rb is Data:
 def rb.cons(x: Rr, rest: Rb) -> Rb:
   match x rest:
     case Rr{rt, e, i} Rb{ls, es, more}:
-      Rb{Con{Rl{0, 0, [rt]}, ls}, List.append(&2, Er, e, es), List.append(&2, In, i, more)}
+      Rb{Con{Rl{loc.top(0), 0, [rt]}, ls}, List.append(&2, Er, e, es), List.append(&2, In, i, more)}
 
-def rb.toks(ts: List<&2, Tok>, +cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +no: U32) -> Rb:
+def rb.toks(ts: List<&2, Tok>, +cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +no: Loc) -> Rb:
   match ts:
     case Nil{}:
       Rb{Nil{}, Nil{}, Nil{}}
@@ -3744,7 +3789,7 @@ def rl.join(ls: List<&2, Rl>) -> List<&2, Rt>:
         case Rl{+no, +ind, ts}:
           List.append(&2, Rt, ts, rl.join(t))
 
-def rb.line(+no: U32, +ind: U32, b: Rb) -> Rb:
+def rb.line(+no: Loc, +ind: U32, b: Rb) -> Rb:
   match b:
     case Rb{ls, es, more}:
       Rb{[Rl{no, ind, rl.join(ls)}], es, more}
@@ -3765,9 +3810,9 @@ def rb.lines(bs: List<&2, Bl>, +cx: Cx, +o: U32, +q: U32, +locals: List<&2, List
 
 # a body's binders, with the line of each
 type Lc is Data:
-  Lc{name: List<&2, U32>, +no: U32}
+  Lc{name: List<&2, U32>, +no: Loc}
 
-def lc.tag(ns: List<&2, List<&2, U32>>, +no: U32) -> List<&2, Lc>:
+def lc.tag(ns: List<&2, List<&2, U32>>, +no: Loc) -> List<&2, Lc>:
   match ns:
     case Nil{}:
       Nil{}
@@ -3824,7 +3869,7 @@ def objs.only(xs: List<&2, U32>, +obs: List<&2, Ob>) -> List<&2, U32>:
 def visible(+cx: Cx, +o: U32, +q: U32, +n: List<&2, U32>) -> Bool:
   Maybe.is_some(&2, U32, look(cx, objs.only(Con{o, hosts(cx.obs(cx), q)}, cx.obs(cx)), n))
 
-def shadow.params(ps: List<&2, List<&2, U32>>, +cx: Cx, +o: U32, +q: U32, +dn: String, +no: U32) -> List<&2, Er>:
+def shadow.params(ps: List<&2, List<&2, U32>>, +cx: Cx, +o: U32, +q: U32, +dn: String, +no: Loc) -> List<&2, Er>:
   match ps:
     case Nil{}:
       Nil{}
@@ -3975,7 +4020,7 @@ def copy.of(+cx: Cx, +o: U32, +i: In) -> Rd & Rb:
   match i:
     case In{+n, +q, +prior}:
       on.maybe(Node, Rd & Rb, cx.mem(cx, q, n),
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
+        u => (Rd{i, NBad{Nil{}, loc.top(0)}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
         nd => copy.node(cx, o, i, nd))
 
 def in.eq(a: In, b: In) -> Bool:
@@ -4265,7 +4310,7 @@ def show.ocs(+obs: List<&2, Ob>, os: List<&2, Oc>) -> String:
 def er.same(a: Er, b: Er) -> Bool:
   match a b:
     case Er{+x, m} Er{+y, n}:
-      U32.is_eq(x, y) && String.eq(m, n)
+      loc.eq(x, y) && String.eq(m, n)
 
 # sorted errors, each once: a body copied into several objects may raise
 # one error in each
@@ -4398,7 +4443,7 @@ def toks.same(xs: List<&2, Tok>, ys: List<&2, Tok>) -> Bool:
 def bl.same(a: Bl, b: Bl) -> Bool:
   match a b:
     case Bl{+n1, +i1, t1} Bl{+n2, +i2, t2}:
-      U32.is_eq(n1, n2) && U32.is_eq(i1, i2) && toks.same(t1, t2)
+      loc.eq(n1, n2) && U32.is_eq(i1, i2) && toks.same(t1, t2)
 
 def bls.same(xs: List<&2, Bl>, ys: List<&2, Bl>) -> Bool:
   match xs ys:
@@ -4413,7 +4458,7 @@ def ndef.same(a: Node, b: Node) -> Bool:
   match a b:
     case NDef{+s1, +u1, n1, r1, p1, b1, +o1, +i1, +w1} NDef{+s2, +u2, n2, r2, p2, b2, +o2, +i2, +w2}:
       U32.is_eq(s1, s2) && Bool.not(Bool.xor(u1, u2)) && same(n1, n2) && same(r1, r2) && names.eq(p1, p2) && bls.same(b1, b2) &&
-        U32.is_eq(o1, o2) && U32.is_eq(i1, i2) && U32.is_eq(w1, w2)
+        loc.eq(o1, o2) && U32.is_eq(i1, i2) && U32.is_eq(w1, w2)
     case _ _:
       False{}
 
@@ -4485,23 +4530,23 @@ def units.held(us: List<&2, Un>, +ds: List<&2, Node>) -> Bool:
 # The markers' terms for the tree and the units (LAWS.bend,
 # `markers.tree`, `markers.units`): a body's lines numbered on from k
 
-def bl.from(bs: List<&2, Bl>, +k: U32) -> Bool:
+def bl.from(bs: List<&2, Bl>, +k: Loc) -> Bool:
   match bs:
     case Nil{}:
       True{}
     case Con{b, +t}:
       match b:
         case Bl{+no, +ind, ts}:
-          U32.is_eq(no, k) && bl.from(t, (k + 1 : U32))
+          loc.eq(no, k) && bl.from(t, loc.next(k))
 
-def rl.from(ls: List<&2, Rl>, +k: U32) -> Bool:
+def rl.from(ls: List<&2, Rl>, +k: Loc) -> Bool:
   match ls:
     case Nil{}:
       True{}
     case Con{l, +t}:
       match l:
         case Rl{+no, +ind, ts}:
-          U32.is_eq(no, k) && rl.from(t, (k + 1 : U32))
+          loc.eq(no, k) && rl.from(t, loc.next(k))
 
 # every definition of a tree, its objects' members' included, its body
 # numbered on from its header's line, or from the line after
@@ -4514,7 +4559,7 @@ def defs.ok(ns: List<&2, Node>) -> Bool:
         case NObj{+abs, +ext, name, parents, kids, +no}:
           defs.ok(kids) && defs.ok(t)
         case NDef{+share, +upd, name, rest, params, +body, +no, +ind, +what}:
-          (bl.from(body, no) || bl.from(body, (no + 1 : U32))) && defs.ok(t)
+          (bl.from(body, no) || bl.from(body, loc.next(no))) && defs.ok(t)
         case _:
           defs.ok(t)
 
@@ -4535,14 +4580,14 @@ def toks.blank(ts: List<&2, Tok>) -> Bool:
     case Con{t, r}:
       False{}
 
-def bl.deep(bs: List<&2, Bl>, +no: U32, +ind: U32, +first: Bool) -> Bool:
+def bl.deep(bs: List<&2, Bl>, +no: Loc, +ind: U32, +first: Bool) -> Bool:
   match bs:
     case Nil{}:
       True{}
     case Con{b, t}:
       match b:
         case Bl{+n, +i, ts}:
-          ((first && U32.is_eq(n, no)) || toks.blank(ts) || U32.is_gt(i, ind)) && bl.deep(t, no, ind, False{})
+          ((first && loc.eq(n, no)) || toks.blank(ts) || U32.is_gt(i, ind)) && bl.deep(t, no, ind, False{})
 
 def defs.deep(ns: List<&2, Node>) -> Bool:
   match ns:
@@ -4571,7 +4616,7 @@ def un.ok(u: Un) -> Bool:
     case Un{+o, i, nd, hd, +ls}:
       match nd:
         case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
-          rl.from(ls, no) || rl.from(ls, (no + 1 : U32))
+          rl.from(ls, no) || rl.from(ls, loc.next(no))
         case _:
           True{}
 
@@ -4589,14 +4634,14 @@ def rts.blank(ts: List<&2, Rt>) -> Bool:
     case Con{t, r}:
       False{}
 
-def rl.deep(ls: List<&2, Rl>, +no: U32, +ind: U32, +first: Bool) -> Bool:
+def rl.deep(ls: List<&2, Rl>, +no: Loc, +ind: U32, +first: Bool) -> Bool:
   match ls:
     case Nil{}:
       True{}
     case Con{l, t}:
       match l:
         case Rl{+n, +i, ts}:
-          ((first && U32.is_eq(n, no)) || rts.blank(ts) || U32.is_gt(i, ind)) && rl.deep(t, no, ind, False{})
+          ((first && loc.eq(n, no)) || rts.blank(ts) || U32.is_gt(i, ind)) && rl.deep(t, no, ind, False{})
 
 # a unit's lines clear of a marker's place, where it is a definition
 def un.deep(u: Un) -> Bool:
@@ -4636,7 +4681,7 @@ def un.lines(u: Un) -> List<&2, Rl>:
 def un.or(m: Maybe<&2, Un>) -> Un:
   match m:
     case None{}:
-      Un{0, In{Nil{}, 0, False{}}, NBad{Nil{}, 0}, Nil{}, Nil{}}
+      Un{0, In{Nil{}, 0, False{}}, NBad{Nil{}, loc.top(0)}, Nil{}, Nil{}}
     case Some{u}:
       u
 
@@ -4689,12 +4734,12 @@ def ux.find(+t: Ht<Xe>, +r: Rf) -> Maybe<&2, U32>:
   +h = rf.hash(r)
   xe.find(ht.leaf(Xe, t, (h .&. 1 : U32), h), r)
 
-def node.no(n: Node) -> U32:
+def node.no(n: Node) -> Loc:
   match n:
     case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
       no
     case _:
-      0
+      loc.top(0)
 
 def node.ind(n: Node) -> U32:
   match n:
@@ -4725,9 +4770,9 @@ def un.name(+obs: List<&2, Ob>, +us: List<&2, Un>, +i: U32) -> List<&2, U32>:
 
 # a use: the unit used or using, and the line
 type Ru is Data:
-  Ru{+u: U32, +no: U32}
+  Ru{+u: U32, +no: Loc}
 
-def refs.rts(ts: List<&2, Rt>, +ux: Ht<Xe>, +self: U32, +no: U32) -> List<&2, Ru>:
+def refs.rts(ts: List<&2, Rt>, +ux: Ht<Xe>, +self: U32, +no: Loc) -> List<&2, Ru>:
   match ts:
     case Nil{}:
       Nil{}
@@ -4785,12 +4830,12 @@ def rus.or(m: Maybe<&2, List<&2, Ru>>) -> List<&2, Ru>:
 # the units a source-order slot holds: a definition of the module's, or a
 # concrete object
 type Sl is Data:
-  Sl{+no: U32, +kind: U32, name: List<&2, U32>, +id: U32}
+  Sl{+no: Loc, +kind: U32, name: List<&2, U32>, +id: U32}
 
 def sl.le(a: Sl, b: Sl) -> Bool:
   match a b:
     case Sl{+x, +k1, n1, +i1} Sl{+y, +k2, n2, +i2}:
-      U32.is_le(x, y)
+      loc.le(x, y)
 
 def slots.mod(ns: List<&2, Node>) -> List<&2, Sl>:
   match ns:
@@ -5392,20 +5437,20 @@ def times(+n: U32) -> String:
       ", " ++ U32.show(n) ++ " times"
 
 # the uses grouped by user and line: `Obj.f (line 9, twice)`
-def uses.say(rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&2, Un>, +u: U32, +no: U32, +n: U32) -> List<&2, String>:
+def uses.say(rs: List<&2, Ru>, +obs: List<&2, Ob>, +us: List<&2, Un>, +u: U32, +no: Loc, +n: U32) -> List<&2, String>:
   match rs:
     case Nil{}:
       when(List<&2, String>, U32.is_eq(n, 0), v => Nil{},
-        v => [text(un.name(obs, us, u)) ++ " (line " ++ U32.show(no) ++ times(n) ++ ")"])
+        v => [text(un.name(obs, us, u)) ++ " (line " ++ U32.show(loc.line(no)) ++ times(n) ++ ")"])
     case Con{r, +t}:
       match r:
         case Ru{+v, +l}:
-          when(List<&2, String>, (U32.is_eq(v, u) && U32.is_eq(l, no)) || U32.is_eq(n, 0), w => uses.say(t, obs, us, v, l, (n + 1 : U32)),
-            w => Con{text(un.name(obs, us, u)) ++ " (line " ++ U32.show(no) ++ times(n) ++ ")", uses.say(t, obs, us, v, l, 1)})
+          when(List<&2, String>, (U32.is_eq(v, u) && loc.eq(l, no)) || U32.is_eq(n, 0), w => uses.say(t, obs, us, v, l, (n + 1 : U32)),
+            w => Con{text(un.name(obs, us, u)) ++ " (line " ++ U32.show(loc.line(no)) ++ times(n) ++ ")", uses.say(t, obs, us, v, l, 1)})
 
 def er.affine(+obs: List<&2, Ob>, +us: List<&2, Un>, +x: U32, +rs: List<&2, Ru>) -> Er:
   Er{node.no(un.node(un.at(us, x))), text(un.name(obs, us, x)) ++ " is affine and has " ++ U32.show(U32.from_nat(List.length(&2, Ru, rs))) ++
-    " uses, in " ++ show.strs(uses.say(rs, obs, us, 0, 0, 0)) ++ ": mark it shared or copied"}
+    " uses, in " ++ show.strs(uses.say(rs, obs, us, 0, loc.top(0), 0)) ++ ": mark it shared or copied"}
 
 # each unit's copies, in a table on the units' bits (`blend-scale.mults`,
 # `blend-laws.sharing`), a unit not set plain (`mu.or`)
@@ -5512,7 +5557,7 @@ def mu.after(+m: U32, +mu: Mu) -> Mu:
 # the emitted units, as a search of them gathers them, which mults hands
 # on in one pass instead (LAWS.bend, `mults.uses`)
 
-def uses.in.k(+hit: Bool, +e: U32, +no: U32, rest: List<&2, Ru>) -> List<&2, Ru>:
+def uses.in.k(+hit: Bool, +e: U32, +no: Loc, rest: List<&2, Ru>) -> List<&2, Ru>:
   match hit:
     case True{}:
       Con{Ru{e, no}, rest}
@@ -5822,9 +5867,9 @@ def rl.put(l: Rl, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: Tb) ->
     case Rl{+no, +ind, ts}:
       match ts:
         case Nil{}:
-          tb.put(b, rl.lead(first && U32.is_eq(no, node.no(un.node(ec.un(e, x)))), True{}, 0n))
+          tb.put(b, rl.lead(first && loc.eq(no, node.no(un.node(ec.un(e, x)))), True{}, 0n))
         case Con{t, r}:
-          rts.put(Con{t, r}, e, x, j, tb.put(b, rl.lead(first && U32.is_eq(no, node.no(un.node(ec.un(e, x)))), False{},
+          rts.put(Con{t, r}, e, x, j, tb.put(b, rl.lead(first && loc.eq(no, node.no(un.node(ec.un(e, x)))), False{},
             U32.to_nat(when(U32, U32.is_gt(ind, dind), v => (ind - dind : U32), v => 0)))))
 
 def rls.put(ls: List<&2, Rl>, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, b: Tb) -> Tb:
@@ -5843,11 +5888,11 @@ def ec.files(e: Ec) -> List<&2, List<&2, U32>>:
 # `# blend: FILE:LINE`: its body's lines follow as they do there, so the
 # emitted line k lines below the marker is the source's k lines below
 # LINE (where.sh finds it)
-def marker.at(+files: List<&2, List<&2, U32>>, +no: U32) -> List<&2, U32>:
+def marker.at(+files: List<&2, List<&2, U32>>, +no: Loc) -> List<&2, U32>:
   List.append(&2, U32, codes("\n# blend: "), List.append(&2, U32, loc.file(files, no), Con{58, codes(U32.show(loc.line(no)))}))
 
 # the marker's line as where.sh reads it, `# blend: FILE:LINE`
-def marker.line(+files: List<&2, List<&2, U32>>, +no: U32) -> List<&2, U32>:
+def marker.line(+files: List<&2, List<&2, U32>>, +no: Loc) -> List<&2, U32>:
   List.append(&2, U32, codes("# blend: "), List.append(&2, U32, loc.file(files, no), Con{58, codes(U32.show(loc.line(no)))}))
 
 def marker(+e: Ec, +x: U32) -> List<&2, U32>:
@@ -6279,8 +6324,8 @@ def rr.made(r: Rr, +tk: Tok) -> Bool:
       rt.made(rt, tk) && ins.made(ins, tok.bytes(tk))
 
 # a body's lines numbered on from its header's line, or the line after
-def rls.from(+ls: List<&2, Rl>, +no: U32) -> Bool:
-  rl.from(ls, no) || rl.from(ls, (no + 1 : U32))
+def rls.from(+ls: List<&2, Rl>, +no: Loc) -> Bool:
+  rl.from(ls, no) || rl.from(ls, loc.next(no))
 
 # a unit's head written after b as where.sh reads it: a newline, the
 # marker's line, a newline, then the header's line, none holding one
@@ -6288,25 +6333,25 @@ def wr.head(+e: Ec, +s: U32, +x: U32, +j: U32, +b: Tb) -> Bool:
   +ml = marker.line(ec.files(e), node.no(un.node(ec.un(e, s))))
   inline(ml) && same(tb.from(unit.head(e, s, x, j, b)), Con{10, rev.onto(ml, Con{10, tb.acc(b)})})
 
-def rl.no(l: Rl) -> U32:
+def rl.no(l: Rl) -> Loc:
   match l:
     case Rl{+no, +ind, ts}:
       no
 
 # a body line written after b, numbered n, on the text's line k: after a
 # newline of its own, or on b's line, holding none after
-def wr.line(+l: Rl, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: Tb, +k: Nat, +n: U32) -> Bool:
+def wr.line(+l: Rl, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: Tb, +k: Nat, +n: Loc) -> Bool:
   +a = rl.put(l, e, x, j, dind, first, b)
-  U32.is_eq(rl.no(l), n) && Nat.is_eq(tb.nls(a), k) && (same(tb.from(a), Con{10, tb.acc(b)}) || same(tb.from(a), tb.from(b)))
+  loc.eq(rl.no(l), n) && Nat.is_eq(tb.nls(a), k) && (same(tb.from(a), Con{10, tb.acc(b)}) || same(tb.from(a), tb.from(b)))
 
 # each of a body's lines so, numbered on and a line further each, and
 # then the text the writer ends with, fin
-def wr.at(ls: List<&2, Rl>, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: Tb, +k: Nat, +n: U32, +fin: List<&2, U32>) -> Bool:
+def wr.at(ls: List<&2, Rl>, +e: Ec, +x: U32, +j: U32, +dind: U32, +first: Bool, +b: Tb, +k: Nat, +n: Loc, +fin: List<&2, U32>) -> Bool:
   match ls:
     case Nil{}:
       same(tb.acc(b), fin)
     case Con{+l, t}:
-      wr.line(l, e, x, j, dind, first, b, k, n) && wr.at(t, e, x, j, dind, False{}, rl.put(l, e, x, j, dind, first, b), 1n+k, (n + 1 : U32), fin)
+      wr.line(l, e, x, j, dind, first, b, k, n) && wr.at(t, e, x, j, dind, False{}, rl.put(l, e, x, j, dind, first, b), 1n+k, loc.next(n), fin)
 
 # a unit's copy written after b: its head as where.sh reads it, then its
 # body's lines, the first on the header's line where numbered as it,
@@ -6317,7 +6362,7 @@ def wr.unit(+e: Ec, +s: U32, +x: U32, +j: U32, +b: Tb) -> Bool:
   +no = node.no(un.node(ec.un(e, s)))
   +dind = node.ind(un.node(ec.un(e, s)))
   +fin = tb.acc(unit.body(e, s, x, j, b))
-  wr.head(e, s, x, j, b) && (wr.at(ls, e, s, j, dind, True{}, h, tb.nls(h), no, fin) || wr.at(ls, e, s, j, dind, True{}, h, 1n+tb.nls(h), (no + 1 : U32), fin))
+  wr.head(e, s, x, j, b) && (wr.at(ls, e, s, j, dind, True{}, h, tb.nls(h), no, fin) || wr.at(ls, e, s, j, dind, True{}, h, 1n+tb.nls(h), loc.next(no), fin))
 
 # the first byte of a text's last line, the text kept reversed; a newline
 # where that line is empty (LAWS.bend, `markers.unambiguous`): a byte
@@ -6509,14 +6554,14 @@ def datatypes(ns: List<&2, Node>, +files: List<&2, List<&2, U32>>) -> List<&2, U
 
 # a datatype's lines as read: numbered on from its line, the first its
 # `type` header, the rest blank or deeper than it, each within a line
-def bend.ok(ls: List<&2, Ln>, +no: U32) -> Bool:
+def bend.ok(ls: List<&2, Ln>, +no: Loc) -> Bool:
   match ls:
     case Nil{}:
       True{}
     case Con{l, +t}:
       match l:
         case Ln{+n, +i, +txt}:
-          U32.is_eq(n, no) && is.datatype(txt) && inline(txt) && ln.from(t, (no + 1 : U32)) && ln.deep(t, no, i, False{}) && lns.inline(t)
+          loc.eq(n, no) && is.datatype(txt) && inline(txt) && ln.from(t, loc.next(no)) && ln.deep(t, no, i, False{}) && lns.inline(t)
 
 # each datatype of a tree so, its objects' members' too
 def nodes.bend(ns: List<&2, Node>) -> Bool:
@@ -6670,7 +6715,7 @@ def pf.put(p: Pf, b: Tb) -> Tb:
 
 def module.bytes(+files: List<&2, List<&2, U32>>, +e: Ec, +order: List<&2, U32>, +tree: List<&2, Node>, +more: List<&2, U32>, lw: Pf, pf: Pf) -> List<&2, U32>:
   tb.bytes(pf.put(pf, pf.put(lw, module.table(e, order, rev.onto(List.append(&2, U32, codes("# Written by Blend from "),
-    List.append(&2, U32, loc.file(files, 0), List.append(&2, U32, codes("; do not edit.\n"),
+    List.append(&2, U32, loc.file(files, loc.top(0)), List.append(&2, U32, codes("; do not edit.\n"),
     List.append(&2, U32, imports(tree), List.append(&2, U32, more, datatypes(tree, files)))))), Nil{})))))
 
 def ds.order(d: Ds) -> List<&2, U32>:
@@ -6715,7 +6760,7 @@ def emit.out(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +e
 
 # an emitted name, and the unit and line it is given for
 type Nm is Data:
-  Nm{name: List<&2, U32>, +u: U32, +no: U32}
+  Nm{name: List<&2, U32>, +u: U32, +no: Loc}
 
 # Definitions emitted
 # -------------------
@@ -6778,14 +6823,14 @@ def names.all(xs: List<&2, U32>, +e: Ec) -> List<&2, Nm>:
     case Con{+x, t}:
       List.append(&2, Nm, names.copies(1n+U32.to_nat(mu.m(ec.mu(e, x))), e, x, 0), names.all(t, e))
 
-def nm.find(ns: List<&2, Nm>, +n: List<&2, U32>) -> Maybe<&2, U32>:
+def nm.find(ns: List<&2, Nm>, +n: List<&2, U32>) -> Maybe<&2, Loc>:
   match ns:
     case Nil{}:
       None{}
     case Con{m, t}:
       match m:
         case Nm{+name, +u, +no}:
-          when(Maybe<&2, U32>, same(name, n), v => Some{no}, v => nm.find(t, n))
+          when(Maybe<&2, Loc>, same(name, n), v => Some{no}, v => nm.find(t, n))
 
 # no name twice among ns (LAWS.bend, `emit.unique`)
 def nms.distinct(ns: List<&2, Nm>) -> Bool:
@@ -6795,7 +6840,7 @@ def nms.distinct(ns: List<&2, Nm>) -> Bool:
     case Con{m, +t}:
       match m:
         case Nm{+name, +u, +no}:
-          Bool.not(Maybe.is_some(&2, U32, nm.find(t, name))) && nms.distinct(t)
+          Bool.not(Maybe.is_some(&2, Loc, nm.find(t, name))) && nms.distinct(t)
 
 # a name two definitions would be emitted by, a prior's or a copy's and a
 # definition's whose name has dots (`tag.Plain` beside `_tag` from Plain)
@@ -6805,7 +6850,7 @@ def nm.put(t: Ht<Nm>, +m: Nm) -> Ht<Nm>:
       +h = hash.name(name)
       ht.put(Nm, t, (h .&. 1 : U32), h, Nm{name, u, no})
 
-def nm.seen(+t: Ht<Nm>, +n: List<&2, U32>) -> Maybe<&2, U32>:
+def nm.seen(+t: Ht<Nm>, +n: List<&2, U32>) -> Maybe<&2, Loc>:
   +h = hash.name(n)
   nm.find(ht.leaf(Nm, t, (h .&. 1 : U32), h), n)
 
@@ -6817,16 +6862,16 @@ def er.names(ns: List<&2, Nm>, +seen: Ht<Nm>) -> List<&2, Er>:
     case Con{+m, +t}:
       match m:
         case Nm{+name, +u, +no}:
-          on.maybe(U32, List<&2, Er>, nm.seen(seen, name), v => er.names(t, nm.put(seen, m)),
-            +l => Con{Er{no, text(name) ++ " would name two emitted definitions, those of lines " ++ U32.show(l) ++ " and " ++
-              U32.show(no) ++ ": rename one"}, er.names(t, nm.put(seen, m))})
+          on.maybe(Loc, List<&2, Er>, nm.seen(seen, name), v => er.names(t, nm.put(seen, m)),
+            +l => Con{Er{no, text(name) ++ " would name two emitted definitions, those of lines " ++ U32.show(loc.line(l)) ++ " and " ++
+              U32.show(loc.line(no)) ++ ": rename one"}, er.names(t, nm.put(seen, m))})
 
 def er.names.of(+ns: List<&2, Nm>) -> List<&2, Er>:
   er.names(ns, ht.for(Nm, List.length(&2, Nm, ns)))
 
 # a law, a proof or a lemma named where a definition is wanted: a law is
 # a claim, and its proof and a lemma are Bend's alone to call
-def er.law.rts(ts: List<&2, Rt>, +ut: Ht<Pk<Un>>, +ux: Ht<Xe>, +no: U32) -> List<&2, Er>:
+def er.law.rts(ts: List<&2, Rt>, +ut: Ht<Pk<Un>>, +ux: Ht<Xe>, +no: Loc) -> List<&2, Er>:
   match ts:
     case Nil{}:
       Nil{}
@@ -7478,7 +7523,7 @@ def objects(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2,
 # a module read: its path from where the root was read, its bytes, whether
 # it was read, and the import line that first reached it
 type Md is Data:
-  Md{path: List<&2, U32>, bs: List<&2, U32>, +ok: Bool, +from: U32}
+  Md{path: List<&2, U32>, bs: List<&2, U32>, +ok: Bool, +from: Loc}
 
 def mds.has(ms: List<&2, Md>, +p: List<&2, U32>) -> Bool:
   match ms:
@@ -7491,7 +7536,7 @@ def mds.has(ms: List<&2, Md>, +p: List<&2, U32>) -> Bool:
 
 # a module still to read, and the import line reaching it
 type Td is Data:
-  Td{path: List<&2, U32>, +from: U32}
+  Td{path: List<&2, U32>, +from: Loc}
 
 # the Blend imports of a module read, as paths from where the root was
 def tds.of(+path: List<&2, U32>, xs: List<&2, Im>) -> List<&2, Td>:
@@ -7505,7 +7550,7 @@ def tds.of(+path: List<&2, U32>, xs: List<&2, Im>) -> List<&2, Td>:
 
 # the modules a module read imports, its lines numbered for place k
 def md.next(+path: List<&2, U32>, +bs: List<&2, U32>, +k: U32) -> List<&2, Td>:
-  tds.of(path, ims.blend(ims.of(read.at(bs, (k * 1000000 : U32)))))
+  tds.of(path, ims.blend(ims.of(read.at(bs, loc.top(k)))))
 
 def md.path(m: Md) -> List<&2, U32>:
   match m:
@@ -7563,7 +7608,7 @@ def mds.trees(ms: List<&2, Md>, +k: U32) -> List<&2, List<&2, Node>>:
     case Con{m, t}:
       match m:
         case Md{path, bs, +ok, +from}:
-          Con{read.at(bs, (k * 1000000 : U32)), mds.trees(t, (k + 1 : U32))}
+          Con{read.at(bs, loc.top(k)), mds.trees(t, (k + 1 : U32))}
 
 # the modules an import reached but none could read
 def mds.ers(ms: List<&2, Md>, +root: List<&2, U32>) -> List<&2, Er>:
@@ -7652,16 +7697,16 @@ def ims.alias(xs: List<&2, Im>, +a: List<&2, U32>) -> Bool:
           same(alias, a) || ims.alias(t, a)
 
 # the line of a module's object or definition whose name's first part is a
-def nodes.named(ns: List<&2, Node>, +a: List<&2, U32>) -> Maybe<&2, U32>:
+def nodes.named(ns: List<&2, Node>, +a: List<&2, U32>) -> Maybe<&2, Loc>:
   match ns:
     case Nil{}:
       None{}
     case Con{nd, t}:
       match nd:
         case NObj{+abs, +ext, name, parents, kids, +no}:
-          when(Maybe<&2, U32>, same(List.head.or(parts(name)), a), u => Some{no}, u => nodes.named(t, a))
+          when(Maybe<&2, Loc>, same(List.head.or(parts(name)), a), u => Some{no}, u => nodes.named(t, a))
         case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
-          when(Maybe<&2, U32>, same(List.head.or(parts(name)), a), u => Some{no}, u => nodes.named(t, a))
+          when(Maybe<&2, Loc>, same(List.head.or(parts(name)), a), u => Some{no}, u => nodes.named(t, a))
         case _:
           nodes.named(t, a)
 
@@ -7677,13 +7722,13 @@ def ims.fresh(xs: List<&2, Im>, +seen: List<&2, Im>, +ns: List<&2, Node>) -> Lis
               u => [Er{no, "import " ++ text(path) ++ " as " ++ text(alias) ++ ": " ++ text(alias) ++ " is an earlier import's alias: give each import an alias of its own"}],
               u => Nil{}),
             List.append(&2, Er,
-              on.maybe(U32, List<&2, Er>, nodes.named(ns, alias), u => Nil{},
+              on.maybe(Loc, List<&2, Er>, nodes.named(ns, alias), u => Nil{},
                 +l => [Er{l, text(alias) ++ " is the alias of import " ++ text(path) ++ ": an object or definition of the module takes another name"}]),
               ims.fresh(t, Con{Im{path, alias, blend, no}, seen}, ns)))
 
 # an import of a Blend module without an alias, which Blend would take for
 # Bend's and never read (`im.of`)
-def im.bare(r: List<&2, U32> & List<&2, U32>, +named: Bool, +no: U32) -> List<&2, Er>:
+def im.bare(r: List<&2, U32> & List<&2, U32>, +named: Bool, +no: Loc) -> List<&2, Er>:
   (+path, rest) = r
   when(List<&2, Er>, Bool.not(named) && ends(path, codes(".blend")),
     u => [Er{no, "import " ++ text(path) ++ ": a Blend module is imported by an alias, import " ++ text(path) ++ " as NAME"}],
@@ -7707,39 +7752,10 @@ def trees.plain.ers(ts: List<&2, List<&2, Node>>) -> List<&2, Er>:
     case Con{+x, t}:
       List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), List.append(&2, Er, ims.fresh(ims.of(x), Nil{}, x), trees.plain.ers(t))))
 
-# whether bytes hold a million lines or more, a newline ending each and
-# the last ended by none (`lines.at`): module k's lines are numbered from
-# k * 1000000, so that its millionth would read as the next module's
-def nl.many(bs: List<&2, U32>, +k: U32) -> Bool:
-  match bs:
-    case Nil{}:
-      U32.is_ge(k, 999999)
-    case Con{+b, t}:
-      nl.many(t, (k + when(U32, U32.is_eq(b, 10), u => 1, u => 0) : U32))
-
-def mds.long(ms: List<&2, Md>, +root: List<&2, U32>) -> List<&2, Er>:
-  match ms:
-    case Nil{}:
-      Nil{}
-    case Con{m, +t}:
-      match m:
-        case Md{path, bs, +ok, +from}:
-          when(List<&2, Er>, ok && nl.many(bs, 0),
-            u => Con{Er{from, text(md.name(root, path)) ++ " holds a million lines or more, past those Blend numbers"}, mds.long(t, root)},
-            u => mds.long(t, root))
-
-# a tree of more modules than Blend numbers: the 4295th's lines would
-# start past U32 (k * 1000000), wrapping onto the first's
-def mds.many(+ms: List<&2, Md>) -> List<&2, Er>:
-  when(List<&2, Er>, U32.is_gt(U32.from_nat(List.length(&2, Md, ms)), 4294),
-    u => [Er{0, "the tree holds more than 4294 modules, past those Blend numbers"}],
-    u => Nil{})
-
-# the modules' errors as read: an import none could read, a module too
-# long to number, too many modules, one whose path Bend would refuse
+# the modules' errors as read: an import none could read, one whose path
+# Bend would refuse
 def load.ers(+r: Md, +t: List<&2, Md>) -> List<&2, Er>:
-  List.append(&2, Er, mds.ers(t, md.path(r)), List.append(&2, Er, mds.long(Con{r, t}, md.path(r)),
-    List.append(&2, Er, mds.many(Con{r, t}), trees.plain.ers(mds.trees(Con{r, t}, 0)))))
+  List.append(&2, Er, mds.ers(t, md.path(r)), trees.plain.ers(mds.trees(Con{r, t}, 0)))
 
 # a command over the modules read, the root first; the modules' errors as
 # read first
@@ -7906,7 +7922,7 @@ def read.file(+path: List<&2, U32>) -> IO(Maybe<&2, List<&2, U32>>):
     r : Result<&1, &1, U32 & String, File> <- File.open_bytes(path, "r")
     read.opened(r)
 
-def md.of(+path: List<&2, U32>, m: Maybe<&2, List<&2, U32>>, +from: U32) -> Md:
+def md.of(+path: List<&2, U32>, m: Maybe<&2, List<&2, U32>>, +from: Loc) -> Md:
   match m:
     case None{}:
       Md{path, Nil{}, False{}, from}
@@ -7958,12 +7974,12 @@ def load.go(n: Nat, todo: List<&2, Td>, +mods: List<&2, Md>) -> IO(List<&2, Md>)
 
 def main.file(+cmd: U32, +path: String) -> IO(Unit):
   do IO<Unit>:
-    ms : List<&2, Md> <- load.go(load.fuel(), [Td{codes(path), 0}], Nil{})
+    ms : List<&2, Md> <- load.go(load.fuel(), [Td{codes(path), loc.top(0)}], Nil{})
     main.out(run.mods(cmd, ms))
 
 def main.file.q(+cmd: U32, +q: List<&2, U32>, +path: String) -> IO(Unit):
   do IO<Unit>:
-    ms : List<&2, Md> <- load.go(load.fuel(), [Td{codes(path), 0}], Nil{})
+    ms : List<&2, Md> <- load.go(load.fuel(), [Td{codes(path), loc.top(0)}], Nil{})
     main.out(run.mods.q(cmd, q, ms))
 
 # `show FILE.blend [--read|--objects|--resolve] [NAME]`: a view is a
@@ -8110,7 +8126,7 @@ def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>
     case Nil{}:
       verify.cks(acc, Nil{}, fs)
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{d, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{d, loc.top(0)}], Nil{}),
         +ms => verify.deps(dt, List.append(&2, Ck, acc, dep.checks(run.mods(4, ms), d)), fs))
 
 # Stamps (`blend-cli.stamps`, `blend-stamps`): each file Blend writes
@@ -8375,14 +8391,14 @@ def mk.above(ls: List<&2, Ln>, +no: U32, +src: List<&2, U32>) -> List<&2, U32>:
       match l:
         case Ln{+a, +ind, +txt}:
           when(List<&2, U32>, U32.is_eq(ind, 0) && Maybe.is_some(&2, Mk, mk.of(txt)),
-            u => on.maybe(Mk, List<&2, U32>, mk.of(txt), v => Nil{}, m => mk.src(m, src, when(U32, U32.is_gt(no, a), w => (no - a - 1 : U32), w => 0))),
+            u => on.maybe(Mk, List<&2, U32>, mk.of(txt), v => Nil{}, m => mk.src(m, src, when(U32, U32.is_gt(no, loc.line(a)), w => (no - loc.line(a) - 1 : U32), w => 0))),
             u => mk.above(t, no, src))
 
 # a written file's lines up to line no, latest first
 def wr.upto(ls: List<&2, Ln>, +no: U32) -> List<&2, Ln>:
   List.reverse(&2, Ln, List.take(&2, Ln, ls, U32.to_nat(no)))
 
-def ln.no(l: Ln) -> U32:
+def ln.no(l: Ln) -> Loc:
   match l:
     case Ln{+no, +ind, txt}:
       no
@@ -8394,7 +8410,7 @@ def wr.hit.at(+up: List<&2, Ln>, +no: U32, +t: List<&2, U32>, +loc: List<&2, U32
     case Nil{}:
       False{}
     case Con{+h, r}:
-      U32.is_eq(ln.no(h), no) && same(ln.out(h), t) && (List.is_empty(&2, U32, loc) || same(hd.above(up), loc))
+      U32.is_eq(loc.line(ln.no(h)), no) && same(ln.out(h), t) && (List.is_empty(&2, U32, loc) || same(hd.above(up), loc))
 
 def wr.hit(w: Wr, +no: U32, +t: List<&2, U32>, +loc: List<&2, U32>) -> Bool:
   match w:
@@ -8588,7 +8604,7 @@ def emit.deps(ds: List<&2, List<&2, U32>>, +force: Bool, st: Em) -> IO(Em):
     case Nil{}:
       IO.pure(Em, st)
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Em, load.go(load.fuel(), [Td{d, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Em, load.go(load.fuel(), [Td{d, loc.top(0)}], Nil{}),
         +ms => IO.bind(Maybe<&2, List<&2, U32>>, Em, read.file(bend.of(d)),
           +m => emit.deps(dt, force, em.dep(em.fresh(force, m, d, ms), st, d, ms, m))))
 
@@ -8645,7 +8661,7 @@ def main.emit.go(ps: List<&2, String>, +alone: Bool, +force: Bool, +mode: U32, +
     case Nil{}:
       emit.end(st, alone, force, mode, deps.missed(deps, named, Nil{}))
     case Con{+p, t}:
-      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{codes(p), 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{codes(p), loc.top(0)}], Nil{}),
         +ms => IO.bind(Maybe<&2, List<&2, U32>>, Unit, read.file(bend.of(codes(p))),
           +m => main.emit.go(t, alone, force, mode, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
             em.dep(em.fresh(force, m, codes(p), ms), st, codes(p), ms, m))))
@@ -8811,7 +8827,7 @@ def deps.go(ds: List<&2, List<&2, U32>>, +make: Bool, +bytes: Bool, +bad: Bool) 
     case Nil{}:
       when(IO(Unit), bad, u => IO.exit(1), u => IO.pure(Unit, Unit{}))
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{d, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{d, loc.top(0)}], Nil{}),
         +ms => IO.bind(Maybe<&2, List<&2, U32>>, Unit, read.file(bend.of(d)),
           m => IO.bind(U32, Unit, deps.state(m, bytes, d, ms),
             +st => IO.bind(Unit, Unit, dep.say(make, st, d, ms), u => deps.go(dt, make, bytes, bad || dep.bad(make, st))))))
@@ -8823,7 +8839,7 @@ def deps.gather(ps: List<&2, List<&2, U32>>, +make: Bool, +bytes: Bool, +named: 
     case Nil{}:
       deps.go(List.append(&2, List<&2, U32>, deps.missed(ds, named, Nil{}), named), make, bytes, False{})
     case Con{+p, t}:
-      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{p, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{p, loc.top(0)}], Nil{}),
         +ms => deps.gather(t, make, bytes, named, List.append(&2, List<&2, U32>, ds, List.tail(&2, List<&2, U32>, mds.paths(ms)))))
 
 def main.deps.k(+make: Bool, +bytes: Bool, +xs: List<&2, String>) -> IO(Unit):

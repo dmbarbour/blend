@@ -92,6 +92,9 @@ its modules, namespaces and emitted names are Bend's.
   hub, passed to Bend as written.
 - [`blend-paths-no-newline`](decisions/blend-paths-no-newline.md): a path
   holding a newline is refused, as it would break each line naming it.
+- [`blend-locations`](decisions/blend-locations.md): a place in the
+  source is a location, its module and its line, read only through its
+  API.
 - [`blend-c3`](decisions/blend-c3.md): inheritance is linearized by C3,
   an error where no order keeps every list it merges.
 - [`blend-frozen-host`](decisions/blend-frozen-host.md): `^` sees the host a

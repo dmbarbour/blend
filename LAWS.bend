@@ -36,7 +36,7 @@ law locals.not_name:
   for +q: U32
   for +locals: List<&2, List<&2, U32>>
   for +t: B.Tok
-  for +no: U32
+  for +no: B.Loc
   for h: {B.tok.txt(t) == Nil{} : List<&2, U32>}
   {B.rr.of(cx, o, q, locals, t, no) == B.rr.tok(t) : B.Rr}
 
@@ -51,7 +51,7 @@ law locals.kept:
   for +locals: List<&2, List<&2, U32>>
   for +h: U32
   for +r: List<&2, U32>
-  for +no: U32
+  for +no: B.Loc
   for a: {U32.is_eq(h, 94) == False{} : Bool}
   for b: {U32.is_eq(h, 126) == False{} : Bool}
   for +l: {B.names.has(locals, Con{h, r}) == True{} : Bool}
@@ -65,7 +65,7 @@ law locals.template:
   for +q: U32
   for +locals: List<&2, List<&2, U32>>
   for +r: List<&2, U32>
-  for +no: U32
+  for +no: B.Loc
   for l: {B.names.has(locals, r) == True{} : Bool}
   {B.rr.of(cx, o, q, locals, B.TName{Con{126, r}}, no) == B.rr.tok(B.TName{Con{126, r}}) : B.Rr}
 
@@ -374,8 +374,8 @@ law sharing.affine:
 # Record: blend-adds-no-bend-logic
 law markers.lines:
   for +bs: List<&2, U32>
-  for +base: U32
-  {B.ln.from(B.lines.at(bs, base), (base + 1 : U32)) == True{} : Bool}
+  for +base: B.Loc
+  {B.ln.from(B.lines.at(bs, base), B.loc.next(base)) == True{} : Bool}
 
 # LAW: lines numbered one more each read as items, each definition's body
 # is the lines after its header's, none dropped nor merged, numbered on
@@ -384,7 +384,7 @@ law markers.lines:
 # Record: blend-adds-no-bend-logic
 law markers.items:
   for +ls: List<&2, B.Ln>
-  for +k: U32
+  for +k: B.Loc
   for +h: {B.ln.from(ls, k) == True{} : Bool}
   {B.items.ok(B.flat(ls)) == True{} : Bool}
 
@@ -404,7 +404,7 @@ law deep.items:
 # Record: blend-adds-no-bend-logic
 law bends.items:
   for +ls: List<&2, B.Ln>
-  for +k: U32
+  for +k: B.Loc
   for +h: {B.ln.from(ls, k) == True{} : Bool}
   for +hi: {B.lns.inline(ls) == True{} : Bool}
   {B.items.bend(B.flat(ls)) == True{} : Bool}
@@ -422,7 +422,7 @@ law bends.tree:
 # Record: blend-adds-no-bend-logic
 law bends.read:
   for +bs: List<&2, U32>
-  for +base: U32
+  for +base: B.Loc
   {B.nodes.bend(B.read.at(bs, base)) == True{} : Bool}
 
 # LAW: and every object's members, the made objects' included, keep the
@@ -459,7 +459,7 @@ law deep.tree:
 # Record: blend-adds-no-bend-logic
 law deep.read:
   for +bs: List<&2, U32>
-  for +base: U32
+  for +base: B.Loc
   {B.defs.deep(B.read.at(bs, base)) == True{} : Bool}
 
 # LAW: and the units copied from trees so, each where its definition is
@@ -613,7 +613,7 @@ law markers.tree:
 # Record: blend-adds-no-bend-logic
 law markers.read:
   for +bs: List<&2, U32>
-  for +base: U32
+  for +base: B.Loc
   {B.defs.ok(B.read.at(bs, base)) == True{} : Bool}
 
 # LAW: and the units copied from trees so numbered, each where its
@@ -707,7 +707,7 @@ law markers.datatypes:
 # Record: blend-adds-no-bend-logic
 law inline.lines:
   for +bs: List<&2, U32>
-  for +base: U32
+  for +base: B.Loc
   {B.lns.inline(B.lines.at(bs, base)) == True{} : Bool}
 
 # LAW: lines holding no newline read as items whose texts hold none: a
@@ -733,7 +733,7 @@ law inline.tree:
 # Record: blend-adds-no-bend-logic
 law inline.read:
   for +bs: List<&2, U32>
-  for +base: U32
+  for +base: B.Loc
   {B.nodes.inline(B.read.at(bs, base)) == True{} : Bool}
 
 # LAW: the objects made from trees whose texts hold no newline have paths
@@ -829,7 +829,7 @@ law imports.package:
   for +p: List<&2, U32>
   for +alias: List<&2, U32>
   for +blend: Bool
-  for +no: U32
+  for +no: B.Loc
   for +h: {B.path.pkg(p) == True{} : Bool}
   {B.cis.of(Con{B.Im{p, alias, blend, no}, Nil{}}, mpath) == Con{B.Ci{alias, p, no}, Nil{}} : List<&2, B.Ci>}
 
@@ -904,7 +904,7 @@ law resolve.names:
   for +q: U32
   for +locals: List<&2, List<&2, U32>>
   for +t: B.Tok
-  for +no: U32
+  for +no: B.Loc
   {B.rr.made(B.rr.of(cx, o, q, locals, t, no), t) == True{} : Bool}
 
 # LAW: the units' table holds the units' list by position: a lookup at i
