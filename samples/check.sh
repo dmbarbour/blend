@@ -160,7 +160,9 @@ mkdir -p ../results/absolute || exit 1
   { echo "blend: a module named by its absolute path fails"; status=1; }
 # `show`: what a name resolves to, its kind, the objects giving it, the
 # final first, where it is written and its lines; a name of no
-# definition refused
+# definition refused; a view a flag, never a name (`read` one), and
+# `--objects NAME` that object alone, NAME refused where a view takes
+# none
 want="AnyOf.double (def): AnyOf < Monoid, laws.blend:60
   upd def double(+x: T()) -> T():
     x"
@@ -173,6 +175,22 @@ elif [ "$got" != "blend: no definition Nope.x" ]; then
   echo "blend: show of no definition says '$got'"
   status=1
 fi
+got=$("$CAPPED" 500 30 "$BLEND" show laws.blend read 2>&1) && { echo "blend: show takes a name for a view"; status=1; }
+[ "$got" = "blend: no definition read" ] || { echo "blend: show of the name read says '$got'"; status=1; }
+want="AnyOf: AnyOf, Monoid
+  double: AnyOf < Monoid
+  right_id: Monoid
+  double_op: Monoid
+  double_op#: AnyOf < Monoid
+  T: AnyOf
+  zero: AnyOf
+  op: AnyOf
+  right_id#: AnyOf"
+got=$("$CAPPED" 500 30 "$BLEND" show laws.blend AnyOf --objects 2>&1) || { echo "blend: show --objects of an object fails"; status=1; }
+[ "$got" = "$want" ] || { echo "blend: show --objects of an object says '$got', not '$want'"; status=1; }
+want="blend: --read shows the whole module, and takes no name"
+got=$("$CAPPED" 500 30 "$BLEND" show laws.blend --read AnyOf 2>&1) && { echo "blend: show --read takes a name"; status=1; }
+[ "$got" = "$want" ] || { echo "blend: show --read with a name says '$got', not '$want'"; status=1; }
 # a tree into a directory: refused, its imports' paths kept
 want="blend: a tree is written beside its modules, its imports' paths kept; into a directory, --alone writes the modules named"
 if got=$("$CAPPED" 500 30 "$BLEND" emit imports.blend ../results/absolute 2>&1); then
