@@ -124,6 +124,21 @@ fi
 mkdir -p ../results/absolute || exit 1
 "$CAPPED" 500 30 "$BLEND" emit "$PWD/imports.blend" ../results/absolute >/dev/null ||
   { echo "blend: a module named by its absolute path fails"; status=1; }
+# `show`: what a name resolves to, its kind, the objects giving it, the
+# final first, where it is written and its lines; a name of no
+# definition refused
+want="AnyOf.double (def): AnyOf < Monoid, laws.blend:60
+  upd def double(+x: T()) -> T():
+    x"
+got=$("$CAPPED" 500 30 "$BLEND" show laws.blend AnyOf.double 2>&1) || { echo "blend: show of a name fails"; status=1; }
+[ "$got" = "$want" ] || { echo "blend: show of a name says '$got', not '$want'"; status=1; }
+if got=$("$CAPPED" 500 30 "$BLEND" show laws.blend Nope.x 2>&1); then
+  echo "blend: show of no definition succeeds"
+  status=1
+elif [ "$got" != "blend: no definition Nope.x" ]; then
+  echo "blend: show of no definition says '$got'"
+  status=1
+fi
 # a path holding a newline would break the markers naming it: refused
 nl="imports
 .blend"

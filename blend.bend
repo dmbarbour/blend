@@ -2889,6 +2889,126 @@ def show.ers(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, es
           "Error: " ++ msg ++ "\nLocation: " ++ text(loc.file(files, no)) ++ er.at(no) ++ er.excerpt(src.of(srcs, loc.mod(no)), loc.line(no)) ++
             show.ers.more(t) ++ show.ers(files, srcs, t)
 
+# Show (`blend show FILE.blend NAME`, blend-command-mirrors-bend): what
+# a name resolves to, as `bend base NAME` shows Base's: for each of its
+# members (a law and its proof alike), its kind, the objects that give
+# it, the final first, where its final definition is written, and its
+# lines there: its header's and those after it deeper or blank, as Blend
+# reads a body (`markers.unambiguous`)
+
+def what.word(+what: U32) -> String:
+  match what:
+    case 1:
+      "law"
+    case 2:
+      "proof"
+    case 3:
+      "lemma"
+    case 4:
+      "declare"
+    case _:
+      "def"
+
+def body.take(ls: List<&2, Ln>, +hind: U32) -> List<&2, Ln>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, t}:
+      match l:
+        case Ln{+no, +ind, +txt}:
+          when(List<&2, Ln>, blank(txt) || U32.is_gt(ind, hind), u => Con{Ln{no, ind, txt}, body.take(t, hind)}, u => Nil{})
+
+def lns.unblank(ls: List<&2, Ln>) -> List<&2, Ln>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, +t}:
+      match l:
+        case Ln{+no, +ind, +txt}:
+          when(List<&2, Ln>, blank(txt), u => lns.unblank(t), u => Con{Ln{no, ind, txt}, t})
+
+# lines shown two spaces in, each as deep below the header as written
+def lns.text(ls: List<&2, Ln>, +hind: U32) -> String:
+  match ls:
+    case Nil{}:
+      ""
+    case Con{l, t}:
+      match l:
+        case Ln{+no, +ind, txt}:
+          "\n  " ++ text(List.replicate(U32, Nat.sub(U32.to_nat(ind), U32.to_nat(hind)), 32)) ++ text(txt) ++ lns.text(t, hind)
+
+# two blocks of text, a blank line between where both have any
+def para(+a: String, +b: String) -> String:
+  when(String, String.eq(a, ""), u => b, u => when(String, String.eq(b, ""), v => a, v => a ++ "\n\n" ++ b))
+
+def lns.from(ls: List<&2, Ln>, +k: U32) -> List<&2, Ln>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, +t}:
+      match l:
+        case Ln{+no, +ind, +txt}:
+          when(List<&2, Ln>, U32.is_eq(no, k), u => Con{Ln{no, ind, txt}, t}, u => lns.from(t, k))
+
+def def.text.k(ls: List<&2, Ln>) -> String:
+  match ls:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      match h:
+        case Ln{+no, +ind, +txt}:
+          lns.text(Con{Ln{no, ind, txt}, List.reverse(&2, Ln, lns.unblank(List.reverse(&2, Ln, body.take(t, ind))))}, ind)
+
+# a definition's lines in its source, from its header's line l
+def def.text(+bs: List<&2, U32>, +l: U32) -> String:
+  def.text.k(lns.from(lines(bs), l))
+
+def show.en(+obs: List<&2, Ob>, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, e: En) -> String:
+  match e:
+    case En{name, chain, +no, +what}:
+      text(q) ++ " (" ++ what.word(what) ++ "): " ++ show.chain(obs, chain) ++ ", " ++ text(loc.file(files, no)) ++ er.at(no) ++
+        def.text(src.of(srcs, loc.mod(no)), loc.line(no))
+
+def show.ens.q(+obs: List<&2, Ob>, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, es: List<&2, En>, +m: List<&2, U32>) -> String:
+  match es:
+    case Nil{}:
+      ""
+    case Con{e, t}:
+      match e:
+        case En{+name, +chain, +no, +what}:
+          para(when(String, same(name.plain(name), m), u => show.en(obs, files, srcs, q, En{name, chain, no, what}), u => ""), show.ens.q(obs, files, srcs, q, t, m))
+
+# the member of an object the name means: the module's by the name
+# itself, another's after its path and a dot
+def show.fd.q(+obs: List<&2, Ob>, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +path: List<&2, List<&2, U32>>, +module: Bool, m: Maybe<&2, Fd>) -> String:
+  match m:
+    case None{}:
+      ""
+    case Some{d}:
+      match d:
+        case Fd{+map, fes, ix}:
+          when(String, module, u => show.ens.q(obs, files, srcs, q, map, q),
+            u => when(String, starts(q, List.append(&2, U32, dots(path), [46])),
+              v => show.ens.q(obs, files, srcs, q, map, drop(1n+List.length(&2, U32, dots(path)), q)), v => ""))
+
+def show.ob.q(+obs: List<&2, Ob>, o: Ob, f: Maybe<&2, Fd>, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>) -> String:
+  match o:
+    case Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+      show.fd.q(obs, files, srcs, q, path, U32.is_eq(id, host), f)
+
+def show.query.go(+obs: List<&2, Ob>, os: List<&2, Ob>, fs: List<&2, Maybe<&2, Fd>>, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>) -> String:
+  match os fs:
+    case Con{o, ot} Con{f, ft}:
+      para(show.ob.q(obs, o, f, files, srcs, q), show.query.go(obs, ot, ft, files, srcs, q))
+    case _ _:
+      ""
+
+def show.query.k(+got: String, +q: List<&2, U32>) -> Out:
+  when(Out, String.eq(got, ""), u => Out{False{}, "blend: no definition " ++ text(q)}, u => Out{True{}, got})
+
+def show.query(+obs: List<&2, Ob>, +fs: List<&2, Maybe<&2, Fd>>, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>) -> Out:
+  show.query.k(show.query.go(obs, obs, fs, files, srcs, q), q)
+
 # References
 # ==========
 #
@@ -6789,18 +6909,18 @@ def resolved.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, Li
       when(Out, Maybe.is_some(&2, Er, List.head(&2, Er, ocs.ers(os))), u => resolved(files, srcs, cx.obs(cx), os),
         u => emitted(files, srcs, cx, os))
 
-def objects.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +als: List<&2, Al>, +paths: List<&2, List<&2, U32>>, +pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>) -> Out:
+def objects.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +als: List<&2, Al>, +paths: List<&2, List<&2, U32>>, +pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>) -> Out:
   match cmd:
     case 2:
-      Out{True{}, show.obs(obs, ls, fs, obs)}
+      when(Out, List.is_empty(&2, U32, q), u => Out{True{}, show.obs(obs, ls, fs, obs)}, u => show.query(obs, fs, files, srcs, q))
     case _:
       +cx = {Cx{obs, ls, fs, als, paths, pss, nxs.of(fs), mds.of(obs)} : Cx}
       resolved.next(cmd, files, srcs, cx, module.copies(obs, cx))
 
-def objects.out(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +als: List<&2, Al>, +paths: List<&2, List<&2, U32>>, +pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>, es: List<&2, Er>) -> Out:
+def objects.out(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +als: List<&2, Al>, +paths: List<&2, List<&2, U32>>, +pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>, es: List<&2, Er>) -> Out:
   match es:
     case Nil{}:
-      objects.next(cmd, files, srcs, als, paths, pss, obs, ls, fs)
+      objects.next(cmd, files, srcs, q, als, paths, pss, obs, ls, fs)
     case Con{e, t}:
       ers.out(files, srcs, Con{e, t})
 
@@ -7148,7 +7268,7 @@ def syn.of(+als: List<&2, Al>, +obs0: List<&2, Ob>) -> Sy:
 def obs.made(+sy: Sy) -> List<&2, Ob>:
   made.abs(sy.obs(sy), sy.obs(sy), sy.pss(sy))
 
-def objects(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
+def objects(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
   +obs0 = obs(trees)
   +als = als.all(trees, 0, paths, obs0)
   +sy = syn.of(als, obs0)
@@ -7156,7 +7276,7 @@ def objects(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2,
   +ls = sy.ls(sy)
   +obs = obs.made(sy)
   +fs = folds(ls, obs, chains.bad(obs, obs, pss))
-  objects.out(cmd, files, srcs, als, paths, pss, obs, ls, fs,
+  objects.out(cmd, files, srcs, q, als, paths, pss, obs, ls, fs,
     List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss), 
       List.append(&2, Er, er.obs(obs, als, obs), List.append(&2, Er, er.made.parents(obs, als, obs, ls),
       List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs)))))))
@@ -7321,17 +7441,17 @@ def basename(path: String) -> String:
   base.k(until(List.reverse(&2, U32, codes(path)), 47))
 
 def usage() -> String:
-  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR; --alone those named alone\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend read|objects|resolve FILE.blend     print a stage\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
+  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR; --alone those named alone\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [read|objects|resolve|NAME]  a stage, the objects by default, or what NAME resolves to\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
 
 # 1 read, 2 objects, 3 resolve, 4 emit
-def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
+def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
   match cmd:
     case 1:
       Out{True{}, show(tree.root(trees), 1n+count(tree.root(trees)))}
     case 0:
       Out{False{}, usage()}
     case _:
-      objects(cmd, files, srcs, paths, trees)
+      objects(cmd, files, srcs, q, paths, trees)
 
 def ims.plain.ers(xs: List<&2, Im>) -> List<&2, Er>:
   match xs:
@@ -7355,7 +7475,9 @@ def load.ers(+r: Md, +t: List<&2, Md>) -> List<&2, Er>:
 
 # a command over the modules read, the root first; the modules' errors as
 # read first
-def run.mods(+cmd: U32, +ms: List<&2, Md>) -> Out:
+# a command over the modules read, a name asked of the objects stage
+# (`blend show`), else none
+def run.mods.q(+cmd: U32, +q: List<&2, U32>, +ms: List<&2, Md>) -> Out:
   match ms:
     case Nil{}:
       Out{False{}, usage()}
@@ -7363,8 +7485,11 @@ def run.mods(+cmd: U32, +ms: List<&2, Md>) -> Out:
       when(Out, md.ok(r),
         u => when(Out, Maybe.is_some(&2, Er, List.head(&2, Er, load.ers(r, t))),
           v => ers.out(mds.names(Con{r, t}, md.path(r)), mds.srcs(Con{r, t}), load.ers(r, t)),
-          v => run(cmd, mds.names(Con{r, t}, md.path(r)), mds.srcs(Con{r, t}), mds.paths(Con{r, t}), mds.trees(Con{r, t}, 0))),
+          v => run(cmd, mds.names(Con{r, t}, md.path(r)), mds.srcs(Con{r, t}), q, mds.paths(Con{r, t}), mds.trees(Con{r, t}, 0))),
         u => Out{False{}, "blend: cannot read " ++ text(md.path(r))})
+
+def run.mods(+cmd: U32, +ms: List<&2, Md>) -> Out:
+  run.mods.q(cmd, Nil{}, ms)
 
 def write.done(fr: File & Result<&1, &1, U32 & String, Unit>) -> IO(Bool):
   (f, r) = fr
@@ -7549,6 +7674,33 @@ def main.file(+cmd: U32, +path: String) -> IO(Unit):
   do IO<Unit>:
     ms : List<&2, Md> <- load.go(4096n, [Td{codes(path), 0}], Nil{})
     main.out(run.mods(cmd, ms))
+
+def main.file.q(+cmd: U32, +q: List<&2, U32>, +path: String) -> IO(Unit):
+  do IO<Unit>:
+    ms : List<&2, Md> <- load.go(4096n, [Td{codes(path), 0}], Nil{})
+    main.out(run.mods.q(cmd, q, ms))
+
+# `show FILE.blend [read|objects|resolve|NAME]`: a stage, the objects by
+# default, or what a name resolves to
+def main.show.k(+path: String, +w: String) -> IO(Unit):
+  when(IO(Unit), String.eq(w, "read"), u => main.file(1, path),
+    u => when(IO(Unit), String.eq(w, "objects"), v => main.file(2, path),
+      v => when(IO(Unit), String.eq(w, "resolve"), x => main.file(3, path), x => main.file.q(2, codes(w), path))))
+
+def main.show(+xs: List<&2, String>) -> IO(Unit):
+  match xs:
+    case Con{+path, r}:
+      match r:
+        case Nil{}:
+          main.file(2, path)
+        case Con{+w, t}:
+          match t:
+            case Nil{}:
+              main.show.k(path, w)
+            case Con{h, u}:
+              main.out(Out{False{}, usage()})
+    case Nil{}:
+      main.out(Out{False{}, usage()})
 
 # a path's directory, `.` for a bare name
 def dir.of(+p: List<&2, U32>) -> List<&2, U32>:
@@ -7853,6 +8005,8 @@ def main.cmd(+cmd: U32, +xs: List<&2, String>) -> IO(Unit):
       main.emit(xs)
     case 5:
       main.deps(xs)
+    case 6:
+      main.show(xs)
     case _:
       match xs:
         case Con{+path, r}:
@@ -7864,19 +8018,21 @@ def main.cmd(+cmd: U32, +xs: List<&2, String>) -> IO(Unit):
         case Nil{}:
           main.out(Out{False{}, usage()})
 
-def cmd.of(+rd: Bool, +ob: Bool, +rs: Bool, +em: Bool, +dp: Bool) -> U32:
-  match rd ob rs em dp:
-    case True{} _ _ _ _:
+def cmd.of(+rd: Bool, +ob: Bool, +rs: Bool, +em: Bool, +dp: Bool, +sh: Bool) -> U32:
+  match rd ob rs em dp sh:
+    case True{} _ _ _ _ _:
       1
-    case False{} True{} _ _ _:
+    case False{} True{} _ _ _ _:
       2
-    case False{} False{} True{} _ _:
+    case False{} False{} True{} _ _ _:
       3
-    case False{} False{} False{} True{} _:
+    case False{} False{} False{} True{} _ _:
       4
-    case False{} False{} False{} False{} True{}:
+    case False{} False{} False{} False{} True{} _:
       5
-    case False{} False{} False{} False{} False{}:
+    case False{} False{} False{} False{} False{} True{}:
+      6
+    case False{} False{} False{} False{} False{} False{}:
       0
 
 # whether an argument holds a newline: a path that would break each line
@@ -7890,7 +8046,7 @@ def args.nl(xs: List<&2, String>) -> Bool:
 
 def main.args.r(+flag: String, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), args.nl(xs), v => main.out(Out{False{}, "blend: a path holding a newline would break the lines naming it: refused"}),
-    v => main.cmd(cmd.of(String.eq(flag, "read"), String.eq(flag, "objects"), String.eq(flag, "resolve"), String.eq(flag, "emit"), String.eq(flag, "deps")), xs))
+    v => main.cmd(cmd.of(String.eq(flag, "read"), String.eq(flag, "objects"), String.eq(flag, "resolve"), String.eq(flag, "emit"), String.eq(flag, "deps"), String.eq(flag, "show")), xs))
 
 def main.args.k(+flag: String, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), String.eq(flag, "--help") || String.eq(flag, "-h"), u => main.out(Out{True{}, usage()}),

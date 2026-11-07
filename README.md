@@ -39,10 +39,13 @@ argument as its own). Where the modules named have errors, nothing is
 written. DIR takes every file flat, for checking: two
 modules writing one name there are an error. A path holding a newline
 is refused, as it would break each line naming it
-(`blend-paths-no-newline`). The
-stages before it print what they find: `read` the structure, `objects`
-each object's linearization and definitions, `resolve` each copy and
-what its names reach. `run.sh` runs the tool built once for each
+(`blend-paths-no-newline`). `blend show FILE.blend` prints a stage
+before emission: `read` the structure, `objects` (the default) each
+object's linearization and definitions, `resolve` each copy and what
+its names reach; `blend show FILE.blend NAME`, what a name resolves to,
+as `bend base NAME` shows Base's: each of its members, its kind, the
+objects that give it, the final first, where its final definition is
+written, and its lines there. `run.sh` runs the tool built once for each
 version of its sources (`build.sh`); `bend blend.bend COMMAND ...`
 runs the same, checked and compiled each time. `check.sh` is Blend's
 gate, run before every commit: its docs, its laws, its proofs and the
