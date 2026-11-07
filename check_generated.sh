@@ -27,7 +27,7 @@ blend_check() {
   echo "$got" | while read -r state mod; do
     case $state in
       current) echo "$dir/${mod%.blend}.bend: matches blend" ;;
-      stale|missing) echo "$dir/$mod is $state: regenerate it (cd $dir && $up/run.sh emit --alone $mod)" ;;
+      stale|missing) echo "$dir/$mod is $state: regenerate it (cd $dir && $up/run.sh emit --alone --force $mod)" ;;
       *) echo "$state $mod" ;;
     esac
   done

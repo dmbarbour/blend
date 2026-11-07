@@ -35,7 +35,7 @@ what a module reaches and a `deps` to list it, a dry run.
   writes them, each current, stale, missing, refused or a package's,
   and exits 1 where any is not current, as `make -q` does; `--make`
   prints them as a makefile's rules, each `.bend` from its `.blend` and
-  every `.blend` it reaches, `blend emit --alone` the recipe, the status
+  every `.blend` it reaches, `blend emit --alone --force` the recipe, the status
   1 only where a module has errors (rules being no report of state). It learns staleness from each
   file's stamp (`blend-stamps`), emitting in memory only where a file
   is not current.
