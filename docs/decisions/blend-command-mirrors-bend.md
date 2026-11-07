@@ -75,4 +75,4 @@ what a module reaches and a `deps` to list it, a dry run.
   (`blend-cli.out`).
 
 **Rule lives in:** `docs/plans/Blend_2026-11-04.md`, `blend-cli`, until
-the command is built; then `README.md`, Status.
+the command is built; then `GUIDE.md`, The command.

@@ -3,7 +3,7 @@
 Why Blend is the way it is. Each decision is a small record in
 [`decisions/`](decisions/), grouped here under the larger decisions they
 belong to. The rules themselves live in Blend's standing docs (the
-README's model above all, `LAWS.bend`): a record says why, and names
+guide's model above all, `LAWS.bend`): a record says why, and names
 where its rule lives. Blend grew in glam-in-bend, whose records some of
 these cite by slug (`generated-sources`, `shadowing-is-an-error`).
 
@@ -54,6 +54,10 @@ Blend is a command of its own, shaped as Bend's and installed beside it.
   `blend` a launcher in `$BEND_HOME/bin` running the tool built natively,
   else through Bend; installed from a checkout or a release, which it
   reports but never takes unasked.
+- [`blend-guide`](decisions/blend-guide.md): the guide, `GUIDE.md`,
+  which `blend guide` prints, describes the language, what Blend writes
+  and the command; the README motivates and gets a user started; their
+  examples whole modules the gate emits and checks.
 
 ## The model
 

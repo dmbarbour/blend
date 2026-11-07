@@ -1,391 +1,70 @@
 # Blend
 
-Static objects for Bend, after glam's object model: a preprocessor of our
-own that reads `.blend` files and writes `.bend` files, the objects
-vanishing in the translation. It is meant to specialize code without
-sharing it by accident: Bend folds a chain of functions into one compiled
-segment only while each function has one caller, so a family of
-strategies wants a copy of its chain each, and a hook a family supplies
-wants to be a definition it overrides rather than a template argument
-threaded through every signature (`docs/plans/Codegen_2026-11-04.md`,
-`codegen-vehicle.blend`).
+Static objects for Bend: inheritance, overrides and families, with
+laws stated once for every family, written out as plain Bend in which
+the objects are gone.
 
-Status: the tool emits. `install.sh` installs the command `blend`
-beside `bend`, in `~/.bend/bin`, running this checkout: the tool built
-natively, built again when Blend or Bend changes, else run through Bend
-(`blend version`, `blend rebuild`, `blend --help`;
-`blend-command-mirrors-bend`). `blend FILE.blend [args]`, `-o OUT`,
-`--check-only` or `--verdict` emits the module's tree, unchecked, then
-runs `bend FILE.bend`, which checks it, with the same arguments, each error Bend reports on a
-line of a file of the module's tree followed by the `.blend` line it
-comes from (`Source: FILE.blend:LINE`). Blend's own errors take Bend's
-shape: `Error:` and the message, `Location: FILE:LINE`, and the
-source's lines around it, its own marked `>|`. `blend emit [--alone] [--no-check|--verdict]
-FILE.blend... [DIR]` (or `run.sh emit ...`, the checkout's tool without installing) writes, for each module named, the `.bend` it makes, every
-concrete object's definitions, then its laws and their proofs where it
-has any, beside the module or into DIR, printing each path; or, writing nothing at all, the errors of
-any (on stderr, the status 1). A module's emission depends on nothing
-that imports it (every definition emitted, no top-level object
-extended), so modules emit independently. `emit` writes a module's
-tree, the imports none names written too, first, each beside its
-`.blend` (imports are local, so the tree is the user's own); `--alone`
-writes the modules named, and no other. Then `emit` checks what it
-wrote with Bend, `bend FILE.bend --check-only` (`BEND` naming Bend,
-else the path): each file holding laws, proofs or witnesses, unless
-another so checked reaches it, Bend checking every definition of the
-files a file imports; Bend's failures follow, each excerpt's line
-followed by the `.blend` line it comes from, as a run's are, and the
-status 1. `--verdict` has the kernel recheck them (Bend's
-`--verdict`); `--no-check` leaves them to the run that loads them.
-`blend deps [--make]
-FILE.blend...` lists the modules `emit` would write, imports first, each
-current, stale, missing or refused, the status 1 where any is not
-current; `--make` prints each as a makefile's rule instead
-(`blend-emit-verifies-imports`;
-`bend blend.bend -- emit --alone ...` under Bend, which takes a dashed
-argument as its own). Where the modules named have errors, nothing is
-written. DIR takes the modules named, flat, with `--alone` alone (a
-tree's imports there would not be where the files importing them
-look): two modules writing one name there are an error. A path holding a newline
-is refused, as it would break each line naming it
-(`blend-paths-no-newline`). `blend show FILE.blend
-[--read|--objects|--resolve] [NAME]` prints a stage before emission:
-`--read` the structure, `--objects` (the default) each object's
-linearization and definitions, `--resolve` each copy and what its names
-reach; given NAME, what a name resolves to, as `bend base NAME` shows
-Base's: each of its members, its kind, the objects that give it, the
-final first, where its final definition is written, and its lines
-there; `--objects NAME`, that object alone. A view is a flag, so that
-no name is ever taken for one. `run.sh` runs the tool built once for each
-version of its sources (`build.sh`); `bend blend.bend COMMAND ...`
-runs the same, checked and compiled each time. `check.sh` is Blend's
-gate, run before every commit: its docs, its laws, its proofs and the
-mutations they must fail, its generated samples current
-(`check_generated.sh`), its samples (`samples/check.sh`, holding every
-sample to its `.bend` or its `.err`) and its Bend files. `bench/`
-measures how Blend's cost grows with a module (its README). Blend is
-arranged as a repository of its own (`blend-own-repository`, and
-`AGENTS.md` for working on it).
+Bend compiles a chain of functions into one fast segment only while
+each function has a single caller. Code meant to vary resists that: a
+hook passed as a template argument threads through every signature on
+its way down, and a helper two variants share has two callers. Blend
+gives each object its own copy of every definition it inherits, bound
+to its own overrides, so each variant folds on its own; sharing is
+asked for, never accidental.
 
-The maintainer's direction (2026-11-04): `def` and `upd` for
-introduction and override, definitions affine unless marked; the samples
-may change to fit the implementation, keeping their intention. The tool
-and the kernel's move onto it: `docs/plans/Blend_2026-11-04.md`.
+```blend machine.blend
+import Base
 
-## The model
+abstract object Machine with
+  declare after
+  def step(+n: U32) -> U32:
+    after((n * 2 : U32))
+  def run(k: Nat, +n: U32) -> U32:
+    match k:
+      case 0n:
+        n
+      case 1n+p:
+        run(p, step(n))
 
-A `.blend` file is a module of Bend's kind, holding its imports, its own
-definitions and its objects. The module is no object
-(`blend-module-is-bend`): its own definitions are plain Bend, emitted as
-written, with no prefix, no `upd`, no `declare` and no sharing marks.
-Bend's imports pass through.
+object Plain extends Machine with
+  def after(+n: U32) -> U32:
+    n
 
-    import Base
-    import ./kprim.bend as P
+object Counted extends Machine with
+  def after(+n: U32) -> U32:
+    (n + 1 : U32)
 
-    object Name extends Parent1, Parent2 with   # `with` before members
-      def f(+x: U32) -> U32:        # introduces f: an error if Name has f
-        g(x)
-      upd def g(+x: U32) -> U32:    # updates g: an error if Name has none
-        (_g(x) + 1 : U32)
-      upd h(+x: U32) -> U32:        # `upd` alone: sugar for `upd def`
-        (_h(x) * 2 : U32)
-      shared def k(...) -> ...:     # sharing other than affine, stated
-        ...
-      object Inner with             # objects nest
-        ...
+def main() -> IO(Unit):
+  IO.print(U32.show(Plain.run(3n, 1)) ++ " " ++ U32.show(Counted.run(3n, 1)))
+```
 
-    abstract object Family with     # emitted only through its children
-      declare after                 # a name a concrete child must define
-      declare step(+n: U32) -> U32  # and what it must be, Bend checking
+`blend machine.blend` prints `8 15`. It wrote `machine.bend`, where
+`Counted.run` calls `Counted.step`, which calls `Counted.after`: no
+template argument, no shared caller.
 
-    object Both extends Name, Family    # no members: no `with`
+## Getting started
 
-    abstract object Monoid with
-      declare type T
-      declare zero, op
-      law right_id:                 # a claim, each family its own
-        for +x: T()
-        {op(x, zero()) == x : T()}
+Blend needs Bend (`curl -fsSL https://bend-lang.com/install.sh | sh`),
+and clang to build itself natively; without clang it runs through Bend,
+slower. Releases are planned; for now, from a checkout:
 
-    object NatAdd extends Monoid with
-      ...
-      proof right_id(x):            # its proof, Bend's def of the law
-        ...
+    git clone https://github.com/dmbarbour/blend
+    sh blend/install.sh
 
-- **Definitions** are Bend definitions, `def` introducing a name and
-  `upd def` replacing one the object has, glam's `=` and `:=`; `upd`
-  alone is sugar for `upd def`, as `upd type` updates a type (the
-  maintainer, 2026-11-04). A body is Bend.
-- **References** in a body, as in glam: a bare name called binds to the
-  final object's definition, so that an update reaches every definition
-  that calls it; a reference takes the longest name defined, dots
-  included (`note.go`). `_name` is the prior definition, the one this
-  `upd` replaces. `^name` steps out of the innermost object to its
-  host's scope, `^^name` two steps: a top-level object's host is the
-  module, the outermost scope, with no host of its own. `Obj.name` or
-  `Outer.Inner.name` is that object's final definition. A bare name that
-  no object in reach defines may be one of the module's definitions,
-  Bend's, its text kept; any other name is Bend's. A bare name is a local
-  or an object's definition, never both (`blend-no-shadowing`).
-- **Nested objects** are members too, folded down their host's
-  linearization as a definition is: `object Inner` introduces one,
-  `extend Inner with` updates it (glam's `extend`, a mixin on the named
-  object), `extend abstract Inner` keeps it abstract, a plain `extend`
-  instantiating it. An object has its parents' nested objects, each its
-  own (`Outer2.Inner`), linearized from the contributors nearest it to
-  the one introducing it, then that one's parents. `extend` stays out of
-  the top level (`blend-namespaces-as-bends`).
-- **`^` is frozen** (`blend-frozen-host`), glam's semantics: a bare name
-  binds to the final object's definition; a nested object made for host
-  X binds a copy of each mixin it is made of to X, `^` in their bodies X
-  and `^^` X's host, a bare name in the introducing mixin's `extends`
-  found from X as well; inheritance never binds again. So `Outer2.Inner`
-  sees Outer2, being made again for each host, and an object inheriting
-  `Outer2.Inner` sees Outer2 in every body, as a call of `Outer2.foo`
-  would. Each made object's copies are its own: inheriting
-  `Outer2.Inner` and `Outer.Inner` together introduces their shared
-  names twice, an error as any two introductions are.
-- **Inheritance** is multiple, linearized by C3 as glam's is: a parent
-  named twice is one parent. An object's definitions apply after its
-  parents', so that an `upd`'s prior is the definition the next object
-  in the linearization gives (`prior`: Bold's update of Loud's of
-  Plain's).
-- **Sharing** is stated for each definition, within the emitted program:
-  - affine, the default: one use at most (a definition's calls to itself
-    aside), so that Bend folds it into its caller;
-  - `shared`: one copy, however many use it;
-  - `copied`: emitted by its own name, and a copy more for each use, each
-    folding into its own caller (`blend-copies-keep-their-name`); an
-    affine definition a copy alone reaches is copied with it.
-  The module's definitions are Bend's, and shared; their uses count.
-- **Types** are members too: `type S = T` is sugar for a shared
-  definition returning the type, `shared def S() -> Type: T`, and
-  `type S: Data = T` for one of kind Data; `type Pair(A: Data) = A & A`
-  takes parameters; `upd type` and `declare type` as for any definition
-  (the maintainer, 2026-11-04). A name of one is a call, `S()`, bound as
-  a definition's is, in signatures as in bodies, so that no family
-  threads type parameters. Bend erases them. A type member is
-  transparent, the type it computes: `Sum.S()` is `U32` wherever it
-  meets one, no type of its own as a datatype is (Bend's datatypes are
-  nominal, by file and name).
-- **Laws and proofs** are members too (`blend-laws-in-module`):
-  `law name:` with its `for` lines and its claim, Bend's, stated over
-  the object's definitions and types, each concrete object getting its
-  own instance, `NatAdd.LAW.right_id`, bound to its own finals; `proof
-  name(params):` proves the law `name`, where the law is stated or in
-  any object below it, and `upd proof` proves it again where a family
-  needs its own, `_name` its prior proof. A typed proof, `proof
-  add_succ(a: Nat, -b: Nat) -> {...}:`, is a lemma, stating what it
-  proves. In a proof, its own law named is the proof itself, its
-  induction; another law named is that law's final proof. A law is a
-  claim stated once: never updated (the maintainer, 2026-11-04: a
-  robust foundation), and code names no law, proof or lemma. A member's
-  kind holds down the linearization: `upd` updates a definition,
-  `upd proof` a proof or a lemma. An inherited proof, a prior's too, is
-  checked against the family's finals, as any inherited body is: a
-  family that changes what a proof relies on proves it again. A law not
-  yet proven belongs in an abstract object: a concrete object proves
-  every law it has, and the module every law of its own, a law unproven
-  there an error, as it would stop every run of the file. The module's
-  own laws and proofs, at its top level, are Bend's, as its definitions
-  are, `LAW.name`, written as an object's are. A name the code writes
-  with a part `LAW` is an error, kept for the laws.
-- **Declarations** say what a family must give (`blend-declares-witnessed`):
-  `declare after` a name, untyped; `declare def push(st: S(), +x: U32)
-  -> S()`, or `declare push(...) -> S()` for short, what the definition
-  must be; `declare type S: Data`, the kind a type must have. A typed
-  declaration is bound in each concrete object to its own finals, so
-  that a family's types flow into it, and is fixed where first made, the
-  families varying by their types. Blend has no type checker: for each
-  concrete object it writes a witness with the laws,
-  `def Listed.LAW.push.as_declared(st: Listed.S(), +x: U32) ->
-  Listed.S(): Listed.push(st, x)`, and Bend checks it; no `main` reaches
-  it, so it is not compiled and splits no segment.
-- **Templates** are Bend's, passed through: a `~` parameter binds as any
-  parameter, and a `~` argument is a reference as any, bound to the
-  final object's definition (`~inc` emitted `~Twice.inc`), or a closed
-  lambda. A typed declaration's witness passes a template's parameter
-  on as `~f` and an erased one as `A`. A template is affine by default,
-  as any definition (`blend-templates-affine`): used twice, it is an
-  error until marked. Bend compiles each distinct set of `~` arguments
-  to a copy of its own, so the choice is:
-  - `shared`: one definition, Bend making a copy for each distinct set
-    of `~` arguments; the least code. But two sites passing the same
-    arguments share one copy, two callers, and an affine definition the
-    template's body calls has a caller in each of Bend's copies, which
-    Blend, counting the one call in the body, does not see.
-  - `copied`: a copy for each use, `T.c1`, `T.c2`, each instantiated by
-    Bend once and folding into its caller; and an affine definition only
-    the template reaches is copied with it, transitively, each copy of
-    the template calling its own. The affine guarantee holds throughout,
-    at the cost of a copy of the template and of its affine callees for
-    each use.
-- **Nothing at run time.** Datatypes stay in plain Bend, the module's,
-  passed through as written (`type Box<A> is Data:`); a type member can
-  be one's argument (`Box<S()>`).
-- **Imports** of other `.blend` files, `import ./lib/shapes.blend as
-  S`, name their objects `S.Square`, to extend and to call. Imports form
-  a DAG, each file read once, a cycle an error, and an object means the
-  same however an import reaches it, the module being no object
-  (`blend-module-is-bend`). An import's path, of a `.blend` file or a
-  `.bend`, is local: plain names (letters, digits, `_`, `-`) led by `./`
-  at most, never `../` or `/`, so that a directory holds all it imports
-  and may be shared as a package; or a package's on Bend's hub,
-  `0x<hash>/...` or `<name>@<version>/...`, passed to Bend as written,
-  importing its Blend files not supported yet (`blend-imports-local`). Each module emits its own `.bend`; the
-  root's import of one names it. An object extending another module's
-  copies what it inherits, and the bodies copied name that module's
-  definitions through its alias.
-- **Namespaces are Bend's** (`blend-namespaces-as-bends`): a file's
-  definitions, datatypes and constructors by their names, another's
-  through an alias it imports, local to it and passed through no
-  import. A body copied from another module keeps its meaning: its
-  module's aliases and datatypes are named in the copy through the
-  root's own alias for the file, else one Blend reserves (`Blend_1`),
-  which no name the user writes may begin. `extend` stays out of the top
-  level.
-- **No Bend logic of its own.** Blend translates objects; what a
-  definition says in Bend means what Bend makes of it, so two
-  definitions calling each other are an error, as in Bend
-  (`blend-adds-no-bend-logic`). Anything more is a construct of Blend's
-  own, named where it is used.
+That puts `blend` beside `bend`, in `~/.bend/bin`. Then:
 
-## What it emits
+    blend machine.blend        write machine.bend, then run it with bend
+    blend emit machine.blend   write it, and have bend check its laws
+    blend guide                the language, what Blend writes, the command
+    blend --help
 
-For each concrete object, every definition its linearization gives it,
-its own copy, bound to its own finals: no sharing between objects.
+Errors come in Bend's shape, and an error Bend reports on a written line
+is followed by the `.blend` line it comes from.
 
-- The final definition of `f` in `Obj` is `Obj.f`; a definition it
-  replaced, where reached through `_f`, is `Obj.f.Origin`, after the
-  object that defined it; a copied `f` is `Obj.f`, and its copies for its
-  uses `Obj.f.c1`, `Obj.f.c2`, one for each use; the
-  module's definitions call `Obj.f`. A nested object's prefix is its
-  path, `Outer.Inner.f`.
-- Definitions come callees first, as Bend requires. Two definitions
-  calling each other have no such order: an error, as Bend has no mutual
-  recursion. Any other order, and which copy of a copied definition takes
-  which number, is the tool's, not Blend's: they change nothing Bend
-  observes (the maintainer, 2026-11-04), and a plain `.bend` file calls a
-  copied definition by its own name. The samples hold the tool to its
-  present order.
-- An abstract object emits nothing of its own.
-- Laws and proofs go into the module's own file after its code
-  (`blend-laws-in-module`), so that whoever loads it checks them, a
-  package's importers too: every law, `law NatAdd.LAW.right_id:`; then
-  every proof, `def NatAdd.LAW.right_id(...)`, the def Bend pairs with
-  the law of its name, every lemma, `def NatAdd.LAW.add_succ(...) ->
-  ...`, and every typed declaration's witness,
-  `def Listed.LAW.push.as_declared(...)`, each after those it uses. The
-  programs built carry none, Bend compiling what `main` reaches; each run
-  checks them, seconds at Blend's scale. The gate rechecks each sample
-  holding a law with `--verdict`.
-- A prior proof is written only where a proof reaches it by `_name`:
-  replaced and not named, it is gone, and nothing checks it. Reached, it
-  is a def of its own, `AnyOf.LAW.double_op.Monoid`, proving its
-  law for the family's finals; Bend gives an untyped def the type of the
-  law of its name, so the laws state that law again by the prior's
-  name. It is no new claim, the same law named twice, and the
-  prior must hold for the family as the proof relying on it does.
-- Before each definition, a marker names where it is written,
-  `# blend: FILE:LINE`; its lines follow as they are there, so the line
-  k lines below a marker is the source's k lines below LINE.
-  `where.sh FILE.bend LINE` finds it, for Bend's errors on emitted
-  code.
+## Working on Blend
 
-## The samples
-
-`samples/`: each `.blend` beside the `.bend` it emits, a generated
-file checked current by `check_generated.sh`, and the `.out` its
-program prints.
-
-- `override`: introduction, update, late binding.
-- `prior`: `_name`, and C3 over a diamond of updates.
-- `family`: an abstract object's declared hook, introduced by each
-  family, in place of a template argument; a definition calling itself.
-- `sharing`: affine by default, `shared` and `copied`.
-- `nested`: nested objects, `^name`, the module's definitions as Bend's.
-- `family-nested`: nested objects inherited and extended down their
-  hosts' linearizations, `^` seeing the final host.
-- `nested-reach`: frozen hosts, an object inheriting `Outer2.Inner` by
-  its path, a nested object's `extends` found from its host, a diamond
-  of hosts.
-- `types`: type members declared, given by each family and named in
-  signatures, a datatype of the module's taking one as its argument.
-- `imports`, with `lib/shapes.blend`: an object extending an imported
-  one, the library's definitions named through its alias.
-- `choice`: a family's choice as a constant definition, the branch
-  on it left to the C compiler to fold.
-- `laws`, its laws and proofs in `laws.bend` after its code: laws an abstract
-  family states, proved by each family by induction or cases, or once
-  for all by the family stating them, `upd proof` where a family's
-  update of a definition needs its own; a lemma; the module's own law
-  and proof at its top level.
-- `declares`: typed declarations of a definition, of its short form and
-  of a type's kind, each family's checked by its witnesses; an untyped
-  declaration beside them.
-- `templates`: a template in a family, marked shared, called with a
-  definition and with a lambda; typed declarations taking a template's
-  parameter and an erased one.
-- `laws-imported`, with `lib/adds.blend`: laws a library states and
-  proves for every family, a family's own law proved with an inherited
-  one, and a prior proof reached across modules.
-
-`samples/invalid/`: each `.blend` beside the error it must raise
-(`.err`): an update of nothing, an introduction of a name inherited, an
-affine definition used twice, mutual recursion, a declared name left
-undefined, a parameter shadowing a definition, parents with no C3
-linearization, `^` in a definition of the module, members after a header
-that leaves out `with`, a declared type left undefined, a datatype in an
-object, an import reaching the module importing it, an import of no
-file, an import's path Blend refuses, a name beginning `Blend_`, an extension of nothing inherited, a
-nested object introduced where one is inherited, `extend` at the top
-level, two nested objects made of one mixin inherited together, a proof
-of no law, code naming a law, `upd law`, a proof introduced where one
-is inherited, `upd proof` with no proof to update, `upd` of an
-inherited law, a definition meeting an inherited law, code naming a
-lemma, `upd proof` of a definition, a declaration made again below, a
-typed declaration with no return type, a concrete object's law with no
-proof, a module's own law with no proof, a name with a part `LAW` (an
-object's too), an
-import climbing out of its directory or naming a file by `/`, a
-package's Blend file.
-
-`samples/refused/`: each `.blend` Blend emits and Bend refuses,
-its file failing as its `.err` says: a family's definition that
-does not fit its declaration, a type of another kind than declared.
-
-## Known issues
-
-- Symlinks: Blend identifies a module by its path made plain (`.` and
-  `..` resolved), where Bend goes by the file a path resolves to, a
-  symlink included; a `.blend` file reached by a symlink is two modules
-  to Blend (`docs/plans/Blend_2026-11-04.md`, `blend-symlinks`).
-
-## Open questions
-
-- Partial evaluation: a constant definition and the C compiler cover
-  static choices (the sample `choice`); next, `static` definitions
-  substituted where used and a `static match` pruning arms; at most,
-  definitions computed by running Bend when generating, as
-  `spike/tools/gen_krules.bend` does.
-- A plain `.bend` file names an object's definitions by their emitted
-  names, `Eager.go` (the maintainer, 2026-11-04). A module emits every
-  definition, not only those some roots reach, so that a module several
-  import is emitted once (the maintainer, 2026-11-04).
-- A `blend` command of its own, shaped as Bend's, so that no script
-  stands between the user and the tool (`blend-command-mirrors-bend`,
-  `blend-cli`).
-- Verifying an import costs its emission again. A stamp in each
-  emitted file's header, a hash of the sources it comes from and of
-  Blend, would let verification read a line instead (`blend-cli.stamps`).
-- Blend's own laws (`blend-laws`); what a declared definition must be,
-  checked by a witness in the proof file (`blend-typed-declares`).
-- Theories, `theory` declarations as objects, should something more
-  extensible and mutable than laws be wanted (the maintainer,
-  2026-11-04, `blend-theories`).
-- Macros, explicit in the source, marked apart from Bend's templates
-  (`~~name`): the maintainer allows that Blend may support them
-  (2026-11-04, `blend-macros`).
-- Blend's own home: written in Bend (`generated-sources`), here first,
-  perhaps shared beyond this project.
+Blend is written in Bend (`blend.bend`), and holds itself to laws it
+proves (`LAWS.bend`, `PROOF.bend`). `samples/` is its specification:
+each `.blend` beside what it writes and prints, or the error it must
+raise. `check.sh` is the gate; `AGENTS.md` has the rest, and
+`docs/plans/` what comes next.

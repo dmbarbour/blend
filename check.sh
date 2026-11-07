@@ -4,7 +4,8 @@
 # names), its law history and the records its laws cite, its proofs (each
 # PROOF.bend checked by Bend and rechecked by BendTT's proven kernel,
 # `--verdict`), the mutations each law must fail (each MUTANTS.txt), that
-# its generated samples match what it emits, its samples, and that every
+# its generated samples match what it emits, its samples, the examples
+# in its README and guide (examples_check.sh), and that every
 # other Bend file of its typechecks. A check whose inputs are unchanged
 # keeps its pass (kept.py: a verdict, a mutants file's, a typecheck),
 # never a failure, under results/kept. Times each section, and exits
@@ -74,6 +75,9 @@ section generated
 
 section samples
 samples/check.sh || status=1
+
+section examples
+./examples_check.sh || status=1
 
 section launcher
 ./launcher_check.sh || status=1

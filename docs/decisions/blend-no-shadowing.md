@@ -19,4 +19,4 @@ host's) or `~` (a template's argument) is neither.
   laws `locals.not_name`, `locals.kept`, `locals.template`).
 - The error is the invalid sample `shadow` (`samples/invalid/`).
 
-**Rule lives in:** `README.md`, The model.
+**Rule lives in:** `GUIDE.md`, Objects.

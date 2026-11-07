@@ -31,4 +31,4 @@ is independent of the module being one (the maintainer, 2026-11-04).
   nested object; `host-at-module` fails for `^` in a definition of the
   module.
 
-**Rule lives in:** `README.md`, The model.
+**Rule lives in:** `GUIDE.md`, What Blend writes.

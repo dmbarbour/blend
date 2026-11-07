@@ -19,4 +19,4 @@ written into, is an error before anything is read or written.
   the markers' law can then rely on.
 - `samples/check.sh` checks the refusal.
 
-**Rule lives in:** `README.md`, Status.
+**Rule lives in:** `GUIDE.md`, Limits.

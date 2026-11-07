@@ -10,7 +10,8 @@ It grew in glam-in-bend, and is a repository of its own
 
 Required:
 
-- `README.md` - the model, what Blend emits, the samples
+- `GUIDE.md` - the language, what Blend writes, the command (`blend
+  guide`); `README.md` - why Blend, and how to start
 - `docs/Decisions.md` - why things are as they are, indexing
   `docs/decisions/`
 - `docs/plans/README.md` - how work proceeds, and the active plans
@@ -24,6 +25,8 @@ Contingent:
 
 ## Layout
 
+- `README.md` why Blend, for a user; `GUIDE.md` the guide, its examples
+  and the README's whole modules the gate emits (`blend-guide`)
 - `blend.bend` the tool; `LAWS.bend` what must hold of it, `PROOF.bend`
   the proofs, `MUTANTS.txt` the mutations each law must fail
 - `samples/` executable specifications: each valid `.blend` beside the
@@ -37,7 +40,8 @@ Contingent:
   `~/.bend/bin`, running the checkout; `where.sh` maps an emitted line
   back to its source
 - `check.sh` the gate; `check_generated.sh` the generated samples;
-  `samples/check.sh` the samples; `launcher_check.sh` the launcher
+  `samples/check.sh` the samples; `examples_check.sh` the docs'
+  examples; `launcher_check.sh` the launcher
 - `scripts/` the tools (`capped.sh`, `count.sh`, `results.py`, `kept.py`,
   `one_law.py`, `check_docs.py`, `check_laws.py`, `check_staged.py`,
   `cgroup-delegate.sh`), copied from glam-in-bend's at the split and
@@ -83,7 +87,8 @@ it. Agents write both.
 
 Run `check.sh` before every commit to Blend: its docs, law history and
 citations, proofs (rechecked by BendTT's kernel, `--verdict`), mutants,
-generated samples, samples and Bend files, each section timed. A check
+generated samples, samples, the docs' examples, the launcher and Bend
+files, each section timed. A check
 whose inputs are unchanged keeps its pass, never a failure. Report its
 result as it is: a check skipped or too slow to finish is not a pass.
 glam-in-bend's gate runs Blend's, and its pre-commit hook Blend's

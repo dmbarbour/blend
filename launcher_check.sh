@@ -25,6 +25,7 @@ esac
 got=$(BEND_HOME=$h "$b" --help 2>&1) || fail "--help fails"
 [ "$(echo "$got" | head -n 1)" = "usage:" ] || fail "--help says '$got'"
 BEND_HOME=$h "$b" update | grep -q "runs the checkout at $root" || fail "update names no checkout"
+[ "$(BEND_HOME=$h "$b" guide | head -n 1)" = "# The Blend guide" ] || fail "guide prints no guide"
 (cd samples && BEND_HOME=$h "$b" emit --alone choice.blend "$o/native" > /dev/null) || fail "a native emit fails"
 cmp -s "$o/native/choice.bend" samples/choice.bend || fail "a native emit differs from samples/choice.bend"
 (cd samples && BLEND_NATIVE=0 BEND_HOME=$h "$b" emit --alone choice.blend "$o/bend" > /dev/null) || fail "an emit through bend fails"
@@ -65,5 +66,5 @@ if got=$(cd "$r" && BEND_HOME=$h "$b" imp/root.blend 2>&1); then
 else
   echo "$got" | grep -qx "Source: imp/lib/bad.blend:5" || fail "an imported module's error names no source line: $got"
 fi
-[ "$status" = 0 ] && echo "launcher: installed, version, --help, update, native and through bend, a run, an error's source, emit's check natively and through bend, an import's: ok"
+[ "$status" = 0 ] && echo "launcher: installed, version, --help, update, guide, native and through bend, a run, an error's source, emit's check natively and through bend, an import's: ok"
 exit "$status"

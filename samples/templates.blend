@@ -2,7 +2,7 @@
 # distinct set of `~` arguments compiling to a copy of its own. A
 # template is affine as any definition; used twice, it is marked: shared
 # here, Bend making its copies, or copied, a copy for each use with its
-# affine callees (README.md, Templates). A `~` argument is
+# affine callees (GUIDE.md, Templates). A `~` argument is
 # a reference as any, bound to the final object's definition (`~inc` is
 # `~Twice.inc`), or a closed lambda. A typed declaration may take a
 # template's parameter or an erased one, its witness passing each on as

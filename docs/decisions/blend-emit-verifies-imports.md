@@ -34,4 +34,4 @@ The mode that wrote the modules named and verified the rest goes:
   directory checked on its own; samples/check.sh holds the tree written
   with its imports, and `--alone` to its bypass.
 
-**Rule lives in:** `README.md`, Status.
+**Rule lives in:** `GUIDE.md`, The command.

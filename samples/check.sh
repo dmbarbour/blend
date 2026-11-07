@@ -1,5 +1,5 @@
 #!/bin/sh
-# Blend's samples (README.md): each valid sample's .bend, what Blend
+# Blend's samples (AGENTS.md): each valid sample's .bend, what Blend
 # emits from its .blend (a generated file, checked current by
 # check_generated.sh), runs under Bend to print what its .out says; each
 # invalid sample fails, its errors exactly its .err; each refused sample

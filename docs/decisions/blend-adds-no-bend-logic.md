@@ -29,4 +29,4 @@ members (`blend-object-laws`), each emitted as Bend.
   through as Bend, unprefixed and shared by every object; each is now a
   member (`blend-laws-in-module` for laws and proofs).
 
-**Rule lives in:** `README.md`, The model.
+**Rule lives in:** `GUIDE.md`, What Blend writes.

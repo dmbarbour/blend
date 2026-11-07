@@ -22,7 +22,7 @@ callees copied with it, transitively.
 **Consequences.**
 - A template used more than once is marked, its sharing stated as any
   definition's is; the sample `templates` marks one `shared`.
-- No rule keyed on `~`; the README's Templates and the planned
-  `blend guide` carry the trade-offs.
+- No rule keyed on `~`; this record and the guide's Templates carry
+  the trade-offs.
 
-**Rule lives in:** `README.md`, The model.
+**Rule lives in:** `GUIDE.md`, Templates.

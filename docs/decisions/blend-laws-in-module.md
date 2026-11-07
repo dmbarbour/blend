@@ -84,4 +84,4 @@ a module's proofs at each load costs seconds: Blend's code 0.8 s alone,
   `upd-proof-undefined`, `law-updated`, `law-shadowed`, `lemma-named`,
   `upd-proof-def`.
 
-**Rule lives in:** `README.md`, The model and What it emits.
+**Rule lives in:** `GUIDE.md`, Laws and proofs and What Blend writes.
