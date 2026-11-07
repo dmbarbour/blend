@@ -10,4 +10,4 @@ Location: Wrong.LAW.push.as_declared
 19>| def Wrong.LAW.push.as_declared(st: Wrong.S(), +x: U32) -> Wrong.S(): Wrong.push(st, x)
    |                                                                      ^^^^^^^^^^^^^^^^^
 20 | 
-Source: refused/declare-misfit.blend:8
+Source: declare-misfit.blend:8

@@ -20,7 +20,7 @@ BLEND_ROOT=$PWD
 shape=$1 n=$2 mb=${3:-4000} secs=${4:-600}
 BEND=${BEND:-$(command -v bend || echo "$HOME/.bend/bin/bend")}
 out=results/bench
-mkdir -p "$out/emitted" || exit 1
+mkdir -p "$out" || exit 1
 gen=$out/families
 if [ ! -x "$gen" ] || [ bench/families.bend -nt "$gen" ]; then
   "$TOOLS/capped.sh" 1500 300 "$BEND" bench/families.bend -o "$gen" >&2 || exit 1
@@ -31,7 +31,7 @@ for k in "$n" $((2 * n)) $((4 * n)); do
   mod=$out/$shape$k.blend
   "$gen" "$shape" "$k" > "$mod" || exit 1
   start=$(date +%s.%N)
-  "$TOOLS/capped.sh" "$mb" "$secs" "$TOOLS/count.sh" "$blend" emit "$mod" "$out/emitted" > /dev/null 2> "$out/run.err"
+  "$TOOLS/capped.sh" "$mb" "$secs" "$TOOLS/count.sh" "$blend" emit --alone --no-check "$mod" > /dev/null 2> "$out/run.err"
   ok=$?
   t=$(awk -v a="$start" -v b="$(date +%s.%N)" 'BEGIN { printf "%.2f", b - a }')
   ins=$(sed -n 's/^count.sh: \([0-9]*\) instructions.*/\1/p' "$out/run.err")

@@ -4,15 +4,28 @@ Static objects for Bend: inheritance, overrides and families, with
 laws stated once for every family, written out as plain Bend in which
 the objects are gone.
 
-Bend compiles a chain of functions into one fast segment only while
-each function has a single caller. Code meant to vary resists that: a
-hook passed as a template argument threads through every signature on
-its way down, and a helper two variants share has two callers. Blend
-gives each object its own copy of every definition it inherits, bound
-to its own overrides, so each variant folds on its own; sharing is
-asked for, never accidental.
+- **Extensible.** A new variant extends an object and overrides only
+  what differs; everything it inherits is bound to its overrides. Code
+  is reopened by extension, never edited in place.
+- **Configurations that mix.** An object may extend several, each
+  contributing its choices, combined in a fixed order (C3); `Bold` and
+  `Loud` make `BoldLoud` without either knowing of the other.
+- **Fast as written by hand.** Bend compiles a chain of functions into
+  one segment only while each function has a single caller. A hook
+  passed as a template argument threads through every signature, and a
+  helper two variants share has two callers. Blend gives each object its
+  own copy of every definition it inherits, so each variant folds on its
+  own; sharing is asked for, never accidental.
+- **Laws per family.** A law stated once in an abstract object is
+  instantiated, and proved, for each concrete family, and Bend checks
+  it.
 
-```blend machine.blend
+```blend samples/family.blend
+# Families as objects: an abstract object declares the hook its
+# definitions call, and each family introduces it. Where a template took
+# the hook as a `~` argument through every signature, a family overrides
+# one definition, and gets its own copy of every definition that calls
+# it. A definition may call itself; Bend checks that it terminates.
 import Base
 
 abstract object Machine with
@@ -38,7 +51,9 @@ def main() -> IO(Unit):
   IO.print(U32.show(Plain.run(3n, 1)) ++ " " ++ U32.show(Counted.run(3n, 1)))
 ```
 
-`blend machine.blend` prints `8 15`. It wrote `machine.bend`, where
+    $ blend family.blend
+    8 15
+
 `Counted.run` calls `Counted.step`, which calls `Counted.after`: no
 template argument, no shared caller.
 
@@ -53,9 +68,9 @@ slower. Releases are planned; for now, from a checkout:
 
 That puts `blend` beside `bend`, in `~/.bend/bin`. Then:
 
-    blend machine.blend        write machine.bend, then run it with bend
-    blend emit machine.blend   write it, and have bend check its laws
-    blend guide                the language, what Blend writes, the command
+    blend family.blend        write family.bend, then run it with bend
+    blend emit family.blend   write it, and have bend check its laws
+    blend guide               the language, what Blend writes, the command
     blend --help
 
 Errors come in Bend's shape, and an error Bend reports on a written line
@@ -66,5 +81,5 @@ is followed by the `.blend` line it comes from.
 Blend is written in Bend (`blend.bend`), and holds itself to laws it
 proves (`LAWS.bend`, `PROOF.bend`). `samples/` is its specification:
 each `.blend` beside what it writes and prints, or the error it must
-raise. `check.sh` is the gate; `AGENTS.md` has the rest, and
-`docs/plans/` what comes next.
+raise; the guide's examples are among them. `check.sh` is the gate;
+`AGENTS.md` has the rest, and `docs/plans/` what comes next.

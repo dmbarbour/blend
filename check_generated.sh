@@ -1,14 +1,13 @@
 #!/bin/sh
 # Blend's generated files match what Blend writes now (glam-in-bend's
-# `generated-sources`): a sample directory's modules emitted all at once,
-# each module's one file, its laws and proofs in it (`blend-laws-in-module`),
-# written into results/generated (out of git, each file overwritten, none
-# removed) and compared with the files beside the samples; a laws or
-# proofs file of the Blend before, left beside a sample, is stale. Checks, never writes the files checked: a stale file fails,
-# and regenerating it is the developer's step. Run by Blend's gate
-# (check.sh) and by the pre-commit hooks, Blend's and glam-in-bend's.
-# Blend runs built (build.sh): its build, 13 s, comes once for each
-# version of its sources.
+# `generated-sources`): `blend deps` emits each sample module in memory
+# and compares it with its file, each module's one file, its laws and
+# proofs in it (`blend-laws-in-module`), a laws or proofs file of the
+# Blend before, left beside a sample, stale too. Checks, never writes: a
+# stale file fails, and regenerating it is the developer's step. Run by
+# Blend's gate (check.sh) and by the pre-commit hooks, Blend's and
+# glam-in-bend's. Blend runs built (build.sh): its build, 13 s, comes
+# once for each version of its sources.
 #
 #   check_generated.sh
 set -u
@@ -16,48 +15,20 @@ cd "$(dirname "$0")" || exit 1
 root=$PWD
 status=0
 
-# one directory's modules, emitted all at once and compared
+# one directory's modules, each current or the step to make it so
 blend_check() {
   dir=$1
   shift
-  out=$root/results/generated/$dir
-  again="(cd $dir && $(echo "$dir" | sed 's#[^/][^/]*#..#g')/run.sh emit --alone $*)"
-  mkdir -p "$out" || return 1
-  # unchecked: samples/check.sh runs each under Bend (blend-cli.checks)
-  if ! wrote=$(cd "$dir" && "$root/run.sh" emit --alone --no-check "$@" "$out"); then
-    echo "$dir: blend emit $* fails"
-    return 1
-  fi
-  ok=0
-  names=" "
-  for p in $wrote; do
-    name=${p##*/}
-    names="$names$name "
-    if cmp -s "$p" "$dir/$name"; then
-      echo "$dir/$name: matches blend"
-    else
-      echo "$dir/$name differs from what blend writes: regenerate it $again"
-      ok=1
-    fi
+  up=$(echo "$dir" | sed 's#[^/][^/]*#..#g')
+  got=$(cd "$dir" && "$root/run.sh" deps "$@" 2>&1) || status=1
+  echo "$got" | while read -r state mod; do
+    case $state in
+      current) echo "$dir/${mod%.blend}.bend: matches blend" ;;
+      stale|missing) echo "$dir/$mod is $state: regenerate it (cd $dir && $up/run.sh emit --alone $mod)" ;;
+      *) echo "$state $mod" ;;
+    esac
   done
-  for src in "$@"; do
-    for name in "${src%.blend}_LAWS.bend" "${src%.blend}_PROOF.bend"; do
-      case $names in
-        *" $name "*) ;;
-        *) [ ! -e "$dir/$name" ] || { echo "$dir/$name: blend writes it no longer: remove it"; ok=1; } ;;
-      esac
-    done
-  done
-  return "$ok"
 }
 
-# one line each: a directory and its modules
-while read -r dir rest; do
-  [ -n "$dir" ] || continue
-  # shellcheck disable=SC2086 # the modules split as written
-  blend_check "$dir" $rest || status=1
-done <<'LIST'
-samples family.blend nested.blend override.blend prior.blend sharing.blend choice.blend types.blend imports.blend family-nested.blend nested-reach.blend laws.blend laws-imported.blend declares.blend templates.blend
-samples/lib shapes.blend adds.blend
-LIST
+blend_check samples family.blend nested.blend override.blend prior.blend sharing.blend choice.blend types.blend imports.blend family-nested.blend nested-reach.blend laws.blend laws-imported.blend declares.blend templates.blend monoid.blend lib/shapes.blend lib/adds.blend
 exit "$status"

@@ -7,8 +7,7 @@
 #     --objects that object
 #   run.sh emit [--alone] [--no-check|--verdict] FILE.blend... [DIR]
 #     writes each module's tree beside it, or with --alone the modules
-#     named, beside them or into DIR: each .bend, its laws and proofs in
-#     it after its code; prints each path written, or the errors of any,
+#     named: each .bend, its laws and proofs in it after its code; prints each path written, or the errors of any,
 #     writing none; then has Bend check those holding laws
 set -u
 bin=$("$(dirname "$0")/build.sh") || exit 1

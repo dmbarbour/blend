@@ -63,13 +63,18 @@ what a module reaches and a `deps` to list it, a dry run.
 - `run.sh` and `bend blend.bend -- ...` give way to the command; the
   build stays cached, rebuilt when Bend or Blend changes.
 - Each form has samples of its output and status, as `emit` has.
-- `check_generated.sh` may become a `deps` per directory.
+- `check_generated.sh` asks `deps`, which compares each sample's
+  emission with its file in memory.
 - Bend checks every definition of each file a file imports (tried
   2026-11-07), so `emit` checks a file holding laws only where no other
   it checks reaches it; the run form emits unchecked, Bend checking as
-  it runs. A tree is written beside its modules only, a directory taking
-  the modules named `--alone` (`blend-cli.checks` found a tree's imports
-  written there flat, where no import looked), until `blend-cli.out`.
+  it runs.
+- `emit` writes each module beside it, and nowhere else: its directory
+  form is dropped (the maintainer, 2026-11-07), much less relevant with
+  `../` forbidden in imports, packages published emitted, and a stale
+  package admitted only by an explicit setting (`blend-cli.out`). The
+  stage words `read`, `objects` and `resolve` are retired for `show`'s
+  flags.
 - `blend FILE.blend` and its flags emit the module's tree, as `emit`
   does (the maintainer, 2026-11-06), beside its sources
   (`blend-cli.out`).
