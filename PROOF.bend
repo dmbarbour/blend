@@ -7524,7 +7524,7 @@ def mods_ok(ts: List<&2, List<&2, B.Node>>, +k: U32, +out: List<&2, B.Ob>, +ds: 
       ho
     case Con{+tr, +t}:
       mods_ok(t, U32.add(k, 1), B.obs.mod(tr, k, out), ds, and_r(B.defs.within(tr, ds), tsw(t, ds), ht),
-        og_ok(Nat.add(Nat.add(B.count(tr), B.count(tr)), 2n), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
+        og_ok(B.wf.turns([B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}]), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
           Con{B.Ob{U32.from_nat(List.length(&2, B.Ob, out)), U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, False{}, Nil{}, tr, B.loc.top(k), 0,
             U32.from_nat(List.length(&2, B.Ob, out))}, out}, ds,
           and_intro(B.defs.within(tr, ds), True{}, and_l(B.defs.within(tr, ds), tsw(t, ds), ht), {==}),
@@ -10428,7 +10428,7 @@ def mods_il(ts: List<&2, List<&2, B.Node>>, +k: U32, +out: List<&2, B.Ob>, +ht: 
       ho
     case Con{+tr, +t}:
       mods_il(t, U32.add(k, 1), B.obs.mod(tr, k, out), and_r(B.nodes.inline(tr), B.trees.inline(t), ht),
-        og_il(Nat.add(Nat.add(B.count(tr), B.count(tr)), 2n), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
+        og_il(B.wf.turns([B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}]), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
           Con{B.Ob{U32.from_nat(List.length(&2, B.Ob, out)), U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, False{}, Nil{}, tr, B.loc.top(k), 0,
             U32.from_nat(List.length(&2, B.Ob, out))}, out},
           wf_on(U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr, Nil{}, {==}, and_l(B.nodes.inline(tr), B.trees.inline(t), ht), {==}), ho))
@@ -11452,7 +11452,7 @@ def modsm(ts: List<&2, List<&2, B.Node>>, +k: U32, +out: List<&2, B.Ob>, +ht: {B
       ho
     case Con{+tr, +t}:
       modsm(t, U32.add(k, 1), B.obs.mod(tr, k, out), and_r(B.nodes.inline(tr), B.trees.inline(t), ht),
-        ogm(Nat.add(Nat.add(B.count(tr), B.count(tr)), 2n), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
+        ogm(B.wf.turns([B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}]), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
           Con{B.Ob{U32.from_nat(List.length(&2, B.Ob, out)), U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, False{}, Nil{}, tr, B.loc.top(k), 0,
             U32.from_nat(List.length(&2, B.Ob, out))}, out},
           wf_on(U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr, Nil{}, {==}, and_l(B.nodes.inline(tr), B.trees.inline(t), ht), {==}),
@@ -16088,7 +16088,7 @@ def bm_mods(ts: List<&2, List<&2, B.Node>>, +k: U32, +out: List<&2, B.Ob>, +ht: 
       ho
     case Con{+tr, +t}:
       bm_mods(t, U32.add(k, 1), B.obs.mod(tr, k, out), and_r(B.nodes.bend(tr), B.trees.bend(t), ht),
-        bm_og(Nat.add(Nat.add(B.count(tr), B.count(tr)), 2n), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
+        bm_og(B.wf.turns([B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}]), [B.Wf{U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr}], U32.add(U32.from_nat(List.length(&2, B.Ob, out)), 1),
           Con{B.Ob{U32.from_nat(List.length(&2, B.Ob, out)), U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, False{}, Nil{}, tr, B.loc.top(k), 0,
             U32.from_nat(List.length(&2, B.Ob, out))}, out},
           bwf_on(U32.from_nat(List.length(&2, B.Ob, out)), Nil{}, tr, Nil{}, and_l(B.nodes.bend(tr), B.trees.bend(t), ht), {==}),
@@ -16568,4 +16568,81 @@ def Laws.close.fuel(st, i, k):
     case 1n+(+j):
       Equal.trans(List<&2, B.Fr>, B.close.go(1n+Nat.add(j, List.length(&2, B.Fr, st)), st, i), B.close.go(Nat.add(j, List.length(&2, B.Fr, st)), st, i), B.close(st, i),
         close_more(Nat.add(j, List.length(&2, B.Fr, st)), st, i, le_add_l(j, List.length(&2, B.Fr, st))), Laws.close.fuel(st, i, j))
+
+# The objects' fuel (`obs.fuel`): a turn for each node and each list's
+# end, as `obs.turns` counts them, an object's members pushed as a list
+# of their own (`add_assoc` regrouping their turns); a stack never holds
+# no turn (`turns_nz`).
+
+def turns_nz(nodes: List<&2, B.Node>, +r: Nat) -> {Nat.is_le(Nat.add(B.obs.turns(nodes), r), 0n) == False{} : Bool}:
+  match nodes:
+    case Nil{}:
+      {==}
+    case Con{nd, t}:
+      match nd:
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          {==}
+        case B.NImport{+txt, +no}:
+          {==}
+        case B.NDecl{+names, +no}:
+          {==}
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          {==}
+        case B.NBad{+txt, +no}:
+          {==}
+        case B.NErr{+msg, +no}:
+          {==}
+        case B.NBend{+lines, +no}:
+          {==}
+
+# obs.go past the turns left: one more changes nothing
+def obs_more(n: Nat, st: List<&2, B.Wf>, +next: U32, +out: List<&2, B.Ob>, +h: MNat.le(B.wf.turns(st), n)) -> {B.obs.go(1n+n, st, next, out) == B.obs.go(n, st, next, out) : List<&2, B.Ob>}:
+  match n:
+    case 0n:
+      match st:
+        case Nil{}:
+          {==}
+        case Con{f, +rest}:
+          match f:
+            case B.Wf{+host, +path, +nodes}:
+              Empty.absurd({B.obs.go(1n, Con{B.Wf{host, path, nodes}, rest}, next, out) == B.obs.go(0n, Con{B.Wf{host, path, nodes}, rest}, next, out) : List<&2, B.Ob>},
+                MB.false_ne_true()(Equal.trans(Bool, False{}, Nat.is_le(Nat.add(B.obs.turns(nodes), B.wf.turns(rest)), 0n), True{},
+                  Equal.sym(Bool, Nat.is_le(Nat.add(B.obs.turns(nodes), B.wf.turns(rest)), 0n), False{}, turns_nz(nodes, B.wf.turns(rest))), h)))
+    case 1n+(+m):
+      match st:
+        case Nil{}:
+          {==}
+        case Con{f, +rest}:
+          match f:
+            case B.Wf{+host, +path, nodes}:
+              match nodes:
+                case Nil{}:
+                  obs_more(m, rest, next, out, h)
+                case Con{nd, +t}:
+                  match nd:
+                    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+                      obs_more(m, Con{B.Wf{next, List.append(&2, List<&2, U32>, path, [name]), kids}, Con{B.Wf{host, path, t}, rest}}, U32.add(next, 1),
+                        Con{B.Ob{next, host, List.append(&2, List<&2, U32>, path, [name]), abs, parents, kids, no, B.ob.kind.of(ext, path), next}, out},
+                        (%MNat.add_assoc(B.obs.turns(kids), B.obs.turns(t), B.wf.turns(rest)) : MNat.le(_, m)
+                          h))
+                    case B.NImport{+txt, +no}:
+                      obs_more(m, Con{B.Wf{host, path, t}, rest}, next, out, h)
+                    case B.NDecl{+names, +no}:
+                      obs_more(m, Con{B.Wf{host, path, t}, rest}, next, out, h)
+                    case B.NDef{+share, +upd, +dname, +drest, +params, +body, +no, +ind, +what}:
+                      obs_more(m, Con{B.Wf{host, path, t}, rest}, next, out, h)
+                    case B.NBad{+txt, +no}:
+                      obs_more(m, Con{B.Wf{host, path, t}, rest}, next, out, h)
+                    case B.NErr{+msg, +no}:
+                      obs_more(m, Con{B.Wf{host, path, t}, rest}, next, out, h)
+                    case B.NBend{+lines, +no}:
+                      obs_more(m, Con{B.Wf{host, path, t}, rest}, next, out, h)
+
+def Laws.obs.fuel(st, next, out, k):
+  match k:
+    case 0n:
+      {==}
+    case 1n+(+j):
+      Equal.trans(List<&2, B.Ob>, B.obs.go(1n+Nat.add(j, B.wf.turns(st)), st, next, out), B.obs.go(Nat.add(j, B.wf.turns(st)), st, next, out), B.obs.from(st, next, out),
+        obs_more(Nat.add(j, B.wf.turns(st)), st, next, out, le_add_l(j, B.wf.turns(st))), Laws.obs.fuel(st, next, out, j))
 

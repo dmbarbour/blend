@@ -1107,3 +1107,17 @@ objects closed on a fuel one short of the stack's height
   close.go(List.length(&2, Fr, st), st, i)
 +++
   close.go(Nat.sub(List.length(&2, Fr, st), 1n), st, i)
+
+=== turns_short obs.fuel
+a node not an object counted as no turn, the fuel then short
+--- blend.bend
+          1n+obs.turns(t)
++++
+          obs.turns(t)
+
+=== obs_fuel_short obs.fuel
+the objects made on a fuel one short of the turns
+--- blend.bend
+  obs.go(wf.turns(st), st, next, out)
++++
+  obs.go(Nat.sub(wf.turns(st), 1n), st, next, out)

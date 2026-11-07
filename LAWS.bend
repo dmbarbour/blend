@@ -1261,3 +1261,15 @@ law close.fuel:
   for +k: Nat
   {B.close.go(Nat.add(k, List.length(&2, B.Fr, st)), st, i) == B.close(st, i) : List<&2, B.Fr>}
 
+# LAW: and the objects made from the trees' member lists take a turn
+# for each node and each list's end, so that more fuel than the turns a
+# stack holds changes nothing (`obs.from`, `wf.turns`), no object
+# dropped for want of it.
+# Record: blend-no-silent-failures
+law obs.fuel:
+  for +st: List<&2, B.Wf>
+  for +next: U32
+  for +out: List<&2, B.Ob>
+  for +k: Nat
+  {B.obs.go(Nat.add(k, B.wf.turns(st)), st, next, out) == B.obs.from(st, next, out) : List<&2, B.Ob>}
+

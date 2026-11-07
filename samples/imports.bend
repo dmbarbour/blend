@@ -1,5 +1,5 @@
 # Written by Blend from imports.blend; do not edit.
-# blend stamp: 591204f0bb6d 38c908d30f09cdaf
+# blend stamp: 3428828f8605 33b3ce32c5fd3ffa
 import Base
 import ./lib/shapes.bend as S
 
