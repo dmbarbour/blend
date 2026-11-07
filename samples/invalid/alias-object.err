@@ -1,0 +1,5 @@
+Error: M is the alias of import ./cycle.blend: an object or definition of the module takes another name
+Location: alias-object.blend:5
+4 | 
+5>| object M with
+6 |   def g() -> U32:

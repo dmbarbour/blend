@@ -7638,12 +7638,74 @@ def ims.plain.ers(xs: List<&2, Im>) -> List<&2, Er>:
       List.append(&2, Er, im.plain.ers(i), ims.plain.ers(t))
 
 # each module's Blend imports whose paths Bend would refuse
+# a module's names bound once each, as Bend has them ("a fresh alias",
+# "a fresh name"): an import's alias names no earlier import, nor an
+# object's or a definition's first part (`blend-no-shadowing`, at a
+# module's scope)
+def ims.alias(xs: List<&2, Im>, +a: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}:
+      False{}
+    case Con{i, t}:
+      match i:
+        case Im{path, alias, +blend, +no}:
+          same(alias, a) || ims.alias(t, a)
+
+# the line of a module's object or definition whose name's first part is a
+def nodes.named(ns: List<&2, Node>, +a: List<&2, U32>) -> Maybe<&2, U32>:
+  match ns:
+    case Nil{}:
+      None{}
+    case Con{nd, t}:
+      match nd:
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          when(Maybe<&2, U32>, same(List.head.or(parts(name)), a), u => Some{no}, u => nodes.named(t, a))
+        case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          when(Maybe<&2, U32>, same(List.head.or(parts(name)), a), u => Some{no}, u => nodes.named(t, a))
+        case _:
+          nodes.named(t, a)
+
+def ims.fresh(xs: List<&2, Im>, +seen: List<&2, Im>, +ns: List<&2, Node>) -> List<&2, Er>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{i, t}:
+      match i:
+        case Im{+path, +alias, +blend, +no}:
+          List.append(&2, Er,
+            when(List<&2, Er>, ims.alias(seen, alias),
+              u => [Er{no, "import " ++ text(path) ++ " as " ++ text(alias) ++ ": " ++ text(alias) ++ " is an earlier import's alias: give each import an alias of its own"}],
+              u => Nil{}),
+            List.append(&2, Er,
+              on.maybe(U32, List<&2, Er>, nodes.named(ns, alias), u => Nil{},
+                +l => [Er{l, text(alias) ++ " is the alias of import " ++ text(path) ++ ": an object or definition of the module takes another name"}]),
+              ims.fresh(t, Con{Im{path, alias, blend, no}, seen}, ns)))
+
+# an import of a Blend module without an alias, which Blend would take for
+# Bend's and never read (`im.of`)
+def im.bare(r: List<&2, U32> & List<&2, U32>, +named: Bool, +no: U32) -> List<&2, Er>:
+  (+path, rest) = r
+  when(List<&2, Er>, Bool.not(named) && ends(path, codes(".blend")),
+    u => [Er{no, "import " ++ text(path) ++ ": a Blend module is imported by an alias, import " ++ text(path) ++ " as NAME"}],
+    u => Nil{})
+
+def ims.bare(ns: List<&2, Node>) -> List<&2, Er>:
+  match ns:
+    case Nil{}:
+      Nil{}
+    case Con{nd, t}:
+      match nd:
+        case NImport{+txt, +no}:
+          List.append(&2, Er, im.bare(until(drop(7n, txt), 32), Maybe.is_some(&2, Im, im.of(txt, no)), no), ims.bare(t))
+        case _:
+          ims.bare(t)
+
 def trees.plain.ers(ts: List<&2, List<&2, Node>>) -> List<&2, Er>:
   match ts:
     case Nil{}:
       Nil{}
-    case Con{x, t}:
-      List.append(&2, Er, ims.plain.ers(ims.of(x)), trees.plain.ers(t))
+    case Con{+x, t}:
+      List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), List.append(&2, Er, ims.fresh(ims.of(x), Nil{}, x), trees.plain.ers(t))))
 
 # the modules' errors as read: an import none could read, one whose path
 # Bend would refuse

@@ -1,0 +1,7 @@
+# Two imports by one alias: the second shadows the first, a name of the
+# module bound twice, which Bend refuses too.
+import ./cycle.blend as M
+import ./shadow.blend as M
+
+def main() -> U32:
+  0

@@ -345,7 +345,9 @@ and imports through the alias, `S.twice`, or through one Blend reserves,
 `Blend_1` (the sample `namespaces`; `blend-namespaces-as-bends`). An
 import path is local, plain names led by `./` at most, never `../` or
 `/`, so that a directory holds all it imports; or a package on Bend's
-hub, its `.bend` files only for now (`blend-imports-local`).
+hub, its `.bend` files only for now (`blend-imports-local`). A `.blend`
+is imported by an alias, which names that import alone: no other import,
+object or definition of the module takes it (`blend-no-shadowing`).
 
 ## What Blend writes
 

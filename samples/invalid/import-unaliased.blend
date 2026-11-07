@@ -1,0 +1,6 @@
+# A Blend module imported without an alias, which Blend would take for
+# Bend's and never read.
+import ./cycle.blend
+
+def main() -> U32:
+  0

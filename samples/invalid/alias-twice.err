@@ -1,0 +1,5 @@
+Error: import ./shadow.blend as M: M is an earlier import's alias: give each import an alias of its own
+Location: alias-twice.blend:4
+3 | import ./cycle.blend as M
+4>| import ./shadow.blend as M
+5 | 
