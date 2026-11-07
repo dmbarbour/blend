@@ -16358,3 +16358,214 @@ def Laws.laws.emitted(dse, mse, all, order, e, lwe, pfe, h):
   le_any(B.units.lawful(all), all,
     ers_laws(dse, mse, B.er.laws.if(B.units.lawful(all), all),
       List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, lwe, pfe)), h), {==})
+
+# Errors reach the output (`errors.*`)
+# ------------------------------------
+#
+# Each stage's dispatcher gives an error-free output only where its
+# errors are none: `ers.out` is never a success, and a test branched on
+# is split (`rm_k1`, `rm_k2`, `rn_k`); a list whose head is none is
+# empty (`head_nil`).
+
+def head_nil(es: List<&2, B.Er>, h: {Maybe.is_some(&2, B.Er, List.head(&2, B.Er, es)) == False{} : Bool}) -> {es == Nil{} : List<&2, B.Er>}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{e, t}:
+      Empty.absurd({Con{e, t} == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(Equal.sym(Bool, True{}, False{}, h)))
+
+def rm_k2(c2: Bool, +cmd: U32, +q: List<&2, U32>, +r: B.Md, +t: List<&2, B.Md>, +eq: {c2 == Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.load.ers(r, t))) : Bool},
+    h: {B.out.ok(B.when(B.Out, c2, v => B.ers.out(B.mds.names(Con{r, t}, B.md.path(r)), B.mds.srcs(Con{r, t}), B.load.ers(r, t)), v => B.run(cmd, B.mds.names(Con{r, t}, B.md.path(r)), B.mds.srcs(Con{r, t}), q, B.mds.paths(Con{r, t}), B.mds.trees(Con{r, t}, 0)))) == True{} : Bool}) ->
+    {B.load.ers(r, t) == Nil{} : List<&2, B.Er>}:
+  match c2:
+    case True{}:
+      Empty.absurd({B.load.ers(r, t) == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+    case False{}:
+      head_nil(B.load.ers(r, t), Equal.sym(Bool, False{}, Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.load.ers(r, t))), eq))
+
+def rm_k1(c1: Bool, +cmd: U32, +q: List<&2, U32>, +r: B.Md, +t: List<&2, B.Md>,
+    h: {B.out.ok(B.when(B.Out, c1, u => B.when(B.Out, Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.load.ers(r, t))), v => B.ers.out(B.mds.names(Con{r, t}, B.md.path(r)), B.mds.srcs(Con{r, t}), B.load.ers(r, t)), v => B.run(cmd, B.mds.names(Con{r, t}, B.md.path(r)), B.mds.srcs(Con{r, t}), q, B.mds.paths(Con{r, t}), B.mds.trees(Con{r, t}, 0))), u => B.Out{False{}, "blend: cannot read " ++ B.text(B.md.path(r))})) == True{} : Bool}) ->
+    {B.load.ers(r, t) == Nil{} : List<&2, B.Er>}:
+  match c1:
+    case True{}:
+      rm_k2(Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.load.ers(r, t))), cmd, q, r, t, {==}, h)
+    case False{}:
+      Empty.absurd({B.load.ers(r, t) == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+
+def Laws.errors.read(cmd, q, r, t, h):
+  rm_k1(B.md.ok(r), cmd, q, r, t, h)
+
+def objout_ok(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +cx: B.Cx, es: List<&2, B.Er>,
+    h: {B.out.ok(B.objects.out(cmd, files, srcs, q, cx, es)) == True{} : Bool}) -> {es == Nil{} : List<&2, B.Er>}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+
+def Laws.errors.objects(cmd, files, srcs, q, paths, trees, h):
+  objout_ok(cmd, files, srcs, q, B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees)), B.objects.ers(B.als.all(trees, 0, paths, B.obs(trees)), B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), h)
+
+def ro_ok(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +os: List<&2, B.Oc>, es: List<&2, B.Er>,
+    h: {B.out.ok(B.resolve.out(files, srcs, obs, os, es)) == True{} : Bool}) -> {es == Nil{} : List<&2, B.Er>}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+
+def rn_k(c: Bool, +cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx: B.Cx, +os: List<&2, B.Oc>, +eq: {c == Bool.or(U32.is_eq(cmd, 3), Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.ocs.ers(os)))) : Bool},
+    h: {B.out.ok(B.resolved.out(c, files, srcs, cx, os)) == True{} : Bool}) ->
+    {B.ocs.ers(os) == Nil{} : List<&2, B.Er>}:
+  match c:
+    case True{}:
+      ro_ok(files, srcs, B.cx.obs(cx), os, B.ocs.ers(os), h)
+    case False{}:
+      head_nil(B.ocs.ers(os), or_false_r(U32.is_eq(cmd, 3), Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.ocs.ers(os))), Equal.sym(Bool, False{}, Bool.or(U32.is_eq(cmd, 3), Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.ocs.ers(os)))), eq)))
+
+def Laws.errors.copies(cmd, files, srcs, cx, os, h):
+  rn_k(Bool.or(U32.is_eq(cmd, 3), Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.ocs.ers(os)))), cmd, files, srcs, cx, os, {==}, h)
+
+def Laws.errors.emitted(files, srcs, e, order, tree, more, lw, pf, es, h):
+  match es:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+
+# Fuel enough (`flat.fuel`, `close.fuel`)
+# ---------------------------------------
+#
+# A loop on fuel takes at least one of its input a turn: past the input
+# left, one more turn of fuel changes nothing (`flat_more`, `close_more`),
+# so that any more changes nothing; `body.go` leaves no more lines than
+# it was given (`bg_len`), and closing an object keeps the stack's height
+# but for its frame (`into_len`, `with_len`).
+
+def bgl_k(c: Bool, +no: B.Loc, +li: U32, +txt: List<&2, U32>, +t: List<&2, B.Ln>, +ind: U32, +acc: List<&2, B.Ln>,
+    ih: MNat.le(List.length(&2, B.Ln, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Con{B.Ln{no, li, txt}, acc}))), List.length(&2, B.Ln, t))) ->
+    MNat.le(List.length(&2, B.Ln, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, bgk(c, no, li, txt, t, ind, acc))), 1n+List.length(&2, B.Ln, t)):
+  match c:
+    case True{}:
+      MNat.le_trans(List.length(&2, B.Ln, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Con{B.Ln{no, li, txt}, acc}))), List.length(&2, B.Ln, t), 1n+List.length(&2, B.Ln, t),
+        ih, MNat.le_succ(List.length(&2, B.Ln, t)))
+    case False{}:
+      MNat.le_refl(1n+List.length(&2, B.Ln, t))
+
+# body.go's lines left: no more than it was given
+def bg_len(ls: List<&2, B.Ln>, +ind: U32, +acc: List<&2, B.Ln>) -> MNat.le(List.length(&2, B.Ln, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(ls, ind, acc))), List.length(&2, B.Ln, ls)):
+  match ls:
+    case Nil{}:
+      MNat.le_refl(0n)
+    case Con{l, +t}:
+      match l:
+        case B.Ln{+no, +li, +txt}:
+          bgl_k(Bool.or(B.blank(txt), U32.is_gt(li, ind)), no, li, txt, t, ind, acc, bg_len(t, ind, Con{B.Ln{no, li, txt}, acc}))
+
+def fm_k(c: Bool, +m: Nat, +txt: List<&2, U32>, +t: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +out: List<&2, B.Item>, +h: MNat.le(List.length(&2, B.Ln, t), m),
+    ih: @ls2:List<&2, B.Ln> -> @o2:List<&2, B.Item> -> @h2:MNat.le(List.length(&2, B.Ln, ls2), m) -> {B.flat.go(1n+m, ls2, o2) == B.flat.go(m, ls2, o2) : List<&2, B.Item>}) ->
+    {fgk(c, 1n+m, txt, t, no, ind, out) == fgk(c, m, txt, t, no, ind, out) : List<&2, B.Item>}:
+  match c:
+    case True{}:
+      %Equal.sym(List<&2, B.Item>, B.on.pair(List<&2, B.Ln>, List<&2, B.Ln>, List<&2, B.Item>, B.body.go(t, ind, Nil{}), body => rest => B.flat.go(1n+m, rest, Con{B.flat.block(txt, B.body.trim(body), no, ind), out})), B.flat.go(1n+m, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out}), pair_eta(B.body.go(t, ind, Nil{}), body => rest => B.flat.go(1n+m, rest, Con{B.flat.block(txt, B.body.trim(body), no, ind), out}))) :
+        {_ == fgk(True{}, m, txt, t, no, ind, out) : List<&2, B.Item>}
+      %Equal.sym(List<&2, B.Item>, B.on.pair(List<&2, B.Ln>, List<&2, B.Ln>, List<&2, B.Item>, B.body.go(t, ind, Nil{}), body => rest => B.flat.go(m, rest, Con{B.flat.block(txt, B.body.trim(body), no, ind), out})), B.flat.go(m, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out}), pair_eta(B.body.go(t, ind, Nil{}), body => rest => B.flat.go(m, rest, Con{B.flat.block(txt, B.body.trim(body), no, ind), out}))) :
+        {B.flat.go(1n+m, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out}) == _ : List<&2, B.Item>}
+      ih(Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{})), Con{B.flat.block(txt, B.body.trim(Pair.fst(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), no, ind), out},
+        MNat.le_trans(List.length(&2, B.Ln, Pair.snd(List<&2, B.Ln>, List<&2, B.Ln>, B.body.go(t, ind, Nil{}))), List.length(&2, B.Ln, t), m, bg_len(t, ind, Nil{}), h))
+    case False{}:
+      ih(t, plk(B.is.member.type(txt), txt, no, ind, out), h)
+
+# flat.go past the lines left: one more turn changes nothing
+def flat_more(n: Nat, ls: List<&2, B.Ln>, +out: List<&2, B.Item>, +h: MNat.le(List.length(&2, B.Ln, ls), n)) -> {B.flat.go(1n+n, ls, out) == B.flat.go(n, ls, out) : List<&2, B.Item>}:
+  match n:
+    case 0n:
+      match ls:
+        case Nil{}:
+          {==}
+        case Con{l, t}:
+          Empty.absurd({B.flat.go(1n, Con{l, t}, out) == B.flat.go(0n, Con{l, t}, out) : List<&2, B.Item>}, MB.false_ne_true()(h))
+    case 1n+(+m):
+      match ls:
+        case Nil{}:
+          {==}
+        case Con{l, +t}:
+          match l:
+            case B.Ln{+no, +ind, +txt}:
+              fm_k(Bool.and(Bool.not(B.is.member.type(txt)), Bool.or(B.is_def(txt), B.is.datatype(txt))), m, txt, t, no, ind, out, h,
+                ls2 => o2 => h2 => flat_more(m, ls2, o2, h2))
+
+def Laws.flat.fuel(ls, k):
+  match k:
+    case 0n:
+      {==}
+    case 1n+(+j):
+      Equal.trans(List<&2, B.Item>, B.flat.go(1n+Nat.add(j, List.length(&2, B.Ln, ls)), ls, Nil{}), B.flat.go(Nat.add(j, List.length(&2, B.Ln, ls)), ls, Nil{}), B.flat(ls),
+        flat_more(Nat.add(j, List.length(&2, B.Ln, ls)), ls, Nil{}, le_add_l(j, List.length(&2, B.Ln, ls))), Laws.flat.fuel(ls, j))
+
+# closing an object keeps the stack's height
+def into_len(st: List<&2, B.Fr>, +n: B.Node) -> {List.length(&2, B.Fr, B.close.into(st, n)) == List.length(&2, B.Fr, st) : Nat}:
+  match st:
+    case Nil{}:
+      {==}
+    case Con{f, rest}:
+      {==}
+
+def with_len(with: Bool, kids: List<&2, B.Node>, +name: List<&2, U32>, +no: B.Loc, +st: List<&2, B.Fr>) ->
+    {List.length(&2, B.Fr, B.close.with(with, kids, name, no, st)) == List.length(&2, B.Fr, st) : Nat}:
+  match with:
+    case True{}:
+      match kids:
+        case Nil{}:
+          {==}
+        case Con{k, t}:
+          {==}
+    case False{}:
+      match kids:
+        case Nil{}:
+          {==}
+        case Con{k, t}:
+          into_len(st, B.NErr{List.append(&2, U32, B.codes("object "), List.append(&2, U32, name, B.codes(" has members, so its header ends with `with`"))), no})
+
+def cm_k(c: Bool, +m: Nat, +top: Bool, +ind: U32, +abs: Bool, +with: Bool, +ext: Bool, +name: List<&2, U32>, +parents: List<&2, List<&2, U32>>,
+    +kids: List<&2, B.Node>, +no: B.Loc, +rest: List<&2, B.Fr>, +i: U32, +h: MNat.le(List.length(&2, B.Fr, rest), m),
+    ih: @st2:List<&2, B.Fr> -> @h2:MNat.le(List.length(&2, B.Fr, st2), m) -> {B.close.go(1n+m, st2, i) == B.close.go(m, st2, i) : List<&2, B.Fr>}) ->
+    {cgo(c, 1n+m, top, ind, abs, with, ext, name, parents, kids, no, rest, i) == cgo(c, m, top, ind, abs, with, ext, name, parents, kids, no, rest, i) : List<&2, B.Fr>}:
+  match c:
+    case True{}:
+      ih(B.close.into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no}),
+        (%Equal.sym(Nat, List.length(&2, B.Fr, B.close.into(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no})),
+            List.length(&2, B.Fr, B.close.with(with, kids, name, no, rest)),
+            into_len(B.close.with(with, kids, name, no, rest), B.NObj{abs, ext, name, parents, List.reverse(&2, B.Node, kids), no})) : MNat.le(_, m)
+          %Equal.sym(Nat, List.length(&2, B.Fr, B.close.with(with, kids, name, no, rest)), List.length(&2, B.Fr, rest), with_len(with, kids, name, no, rest)) : MNat.le(_, m)
+          h))
+    case False{}:
+      {==}
+
+# close.go past the stack left: one more turn changes nothing
+def close_more(n: Nat, st: List<&2, B.Fr>, +i: U32, +h: MNat.le(List.length(&2, B.Fr, st), n)) -> {B.close.go(1n+n, st, i) == B.close.go(n, st, i) : List<&2, B.Fr>}:
+  match n:
+    case 0n:
+      match st:
+        case Nil{}:
+          {==}
+        case Con{f, rest}:
+          Empty.absurd({B.close.go(1n, Con{f, rest}, i) == B.close.go(0n, Con{f, rest}, i) : List<&2, B.Fr>}, MB.false_ne_true()(h))
+    case 1n+(+m):
+      match st:
+        case Nil{}:
+          {==}
+        case Con{f, +rest}:
+          match f:
+            case B.Fr{+top, +ind, +abs, +with, +ext, +name, +parents, +kids, +no}:
+              cm_k(Bool.and(Bool.not(top), U32.is_ge(ind, i)), m, top, ind, abs, with, ext, name, parents, kids, no, rest, i, h,
+                st2 => h2 => close_more(m, st2, i, h2))
+
+def Laws.close.fuel(st, i, k):
+  match k:
+    case 0n:
+      {==}
+    case 1n+(+j):
+      Equal.trans(List<&2, B.Fr>, B.close.go(1n+Nat.add(j, List.length(&2, B.Fr, st)), st, i), B.close.go(Nat.add(j, List.length(&2, B.Fr, st)), st, i), B.close(st, i),
+        close_more(Nat.add(j, List.length(&2, B.Fr, st)), st, i, le_add_l(j, List.length(&2, B.Fr, st))), Laws.close.fuel(st, i, j))
+

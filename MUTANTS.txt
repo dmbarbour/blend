@@ -1046,3 +1046,64 @@ taken for one without laws, and its laws go unchecked
       Bool.not(U32.is_eq(node.what(un.node(u)), 0)) || units.lawful(t)
 +++
       U32.is_gt(node.what(un.node(u)), 1) || units.lawful(t)
+
+=== read_ers_skipped errors.read
+a command over modules read runs on whatever reading reported
+--- blend.bend
+        u => when(Out, Maybe.is_some(&2, Er, List.head(&2, Er, load.ers(r, t))),
++++
+        u => when(Out, False{},
+
+=== objects_ers_dropped errors.objects
+the objects stage hands its dispatcher no error, whatever its checks
+found
+--- blend.bend
+  objects.out(cmd, files, srcs, q, cx, objects.ers(als, cx))
++++
+  objects.out(cmd, files, srcs, q, cx, Nil{})
+
+=== objects_ers_ignored errors.objects
+the objects stage's dispatcher goes on past its errors
+--- blend.bend
+      objects.next(cmd, files, srcs, q, cx)
+    case Con{e, t}:
+      ers.out(files, srcs, Con{e, t})
++++
+      objects.next(cmd, files, srcs, q, cx)
+    case Con{e, t}:
+      objects.next(cmd, files, srcs, q, cx)
+
+=== copies_ers_skipped errors.copies
+the copies emitted whatever errors they reported
+--- blend.bend
+  resolved.out(U32.is_eq(cmd, 3) || Maybe.is_some(&2, Er, List.head(&2, Er, ocs.ers(os))), files, srcs, cx, os)
++++
+  resolved.out(U32.is_eq(cmd, 3), files, srcs, cx, os)
+
+=== emit_ers_ignored errors.emitted
+emission writes its files past its errors
+--- blend.bend
+      ers.out(files, srcs, Con{x, t})
++++
+      Outs{[Fo{root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf)}]}
+
+=== flat_fuel_short flat.fuel
+the lines read into items on a fuel one short of their count
+--- blend.bend
+  flat.go(List.length(&2, Ln, ls), ls, Nil{})
++++
+  flat.go(Nat.sub(List.length(&2, Ln, ls), 1n), ls, Nil{})
+
+=== flat_line_kept flat.fuel
+a line read into an item and read again, the turn taking none
+--- blend.bend
+                u => flat.go(m, t, when(List<&2, Item>, is.member.type(txt), v => Con{type.item(txt, no, ind), out}, v => flat.item.k(txt, no, ind, out))))
++++
+                u => flat.go(m, Con{Ln{no, ind, txt}, t}, when(List<&2, Item>, is.member.type(txt), v => Con{type.item(txt, no, ind), out}, v => flat.item.k(txt, no, ind, out))))
+
+=== close_fuel_short close.fuel
+objects closed on a fuel one short of the stack's height
+--- blend.bend
+  close.go(List.length(&2, Fr, st), st, i)
++++
+  close.go(Nat.sub(List.length(&2, Fr, st), 1n), st, i)
