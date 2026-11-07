@@ -475,10 +475,9 @@ law deep.units:
   for +als2: List<&2, B.Al>
   for +paths: List<&2, List<&2, U32>>
   for +pss: List<&2, List<&2, U32>>
-  for +nxs: List<&2, B.Ht<B.En>>
   for +h: {B.trees.deep(trees) == True{} : Bool}
   {B.units.deep(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-    B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))) == True{} : Bool}
+    B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss)))) == True{} : Bool}
 
 # LAW: each unit a module's objects copy has, where its definition is
 # found, one its objects' members hold: the member table finds among
@@ -492,10 +491,9 @@ law nodes.copies:
   for +als: List<&2, B.Al>
   for +paths: List<&2, List<&2, U32>>
   for +pss: List<&2, List<&2, U32>>
-  for +nxs: List<&2, B.Ht<B.En>>
   for +ds: List<&2, B.Node>
   for +h: {B.objs.within(obs, ds) == True{} : Bool}
-  {B.units.held(B.units(B.module.copies(obs, B.Cx{obs, ls, fs, als, paths, pss, nxs, B.mds.of(obs)})), ds) == True{} : Bool}
+  {B.units.held(B.units(B.module.copies(obs, B.cx.of(obs, ls, fs, als, paths, pss))), ds) == True{} : Bool}
 
 # LAW: an object's copies leave none of its finals uncopied, whatever
 # module defines them, where they report no error: each instance the
@@ -574,7 +572,7 @@ law copies.found:
   for +paths: List<&2, List<&2, U32>>
   for +pss: List<&2, List<&2, U32>>
   for +o: U32
-  {B.rds.defs(B.cp.rds(B.copies(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o))) == True{} : Bool}
+  {B.rds.defs(B.cp.rds(B.copies(B.cx.of(obs, ls, B.folds(ls, obs, bad), als, paths, pss), o))) == True{} : Bool}
 
 # LAW: every object's members, the made objects' included, are
 # definitions the modules' trees hold: an object's members its node's in
@@ -597,9 +595,8 @@ law nodes:
   for +als2: List<&2, B.Al>
   for +paths: List<&2, List<&2, U32>>
   for +pss: List<&2, List<&2, U32>>
-  for +nxs: List<&2, B.Ht<B.En>>
   {B.units.held(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-    B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})),
+    B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss))),
     B.trees.defs(trees)) == True{} : Bool}
 
 # LAW: items whose bodies are numbered on from their headers make a tree
@@ -632,10 +629,9 @@ law markers.units:
   for +als2: List<&2, B.Al>
   for +paths: List<&2, List<&2, U32>>
   for +pss: List<&2, List<&2, U32>>
-  for +nxs: List<&2, B.Ht<B.En>>
   for +h: {B.trees.ok(trees) == True{} : Bool}
   {B.units.ok(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-    B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))) == True{} : Bool}
+    B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss)))) == True{} : Bool}
 
 # LAW: a unit's copy is written as where.sh reads it: after a newline,
 # the marker's line naming its definition's file and line; after
@@ -763,11 +759,10 @@ law inline.units:
   for +als2: List<&2, B.Al>
   for +paths: List<&2, List<&2, U32>>
   for +pss: List<&2, List<&2, U32>>
-  for +nxs: List<&2, B.Ht<B.En>>
   for +h: {B.trees.inline(trees) == True{} : Bool}
   for +hf: {B.fds.inline(fs) == True{} : Bool}
   {B.uns.inline(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-    B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))) == True{} : Bool}
+    B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss)))) == True{} : Bool}
 
 # LAW: the objects made from trees whose texts hold no newline have
 # members holding none: each object's its node's, a copy's its
@@ -881,19 +876,11 @@ law markers.inline:
   for +laws: Bool
   for +hf: {B.inlines(files) == True{} : Bool}
   for +ht: {B.trees.inline(trees) == True{} : Bool}
-  {B.ec.inline(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als,
-    B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-      B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-      als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-      B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-      B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}),
+  {B.ec.inline(B.Ec{files, B.cx.obs(B.objects.cx(als, paths, B.obs(trees))), us, als,
+    B.emit.own(B.objects.cx(als, paths, B.obs(trees))),
     res, paths, mode, rtypes, ux,
-    B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}) == True{} : Bool}
+    B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.cx.obs(B.objects.cx(als, paths, B.obs(trees))),
+      B.objects.cx(als, paths, B.obs(trees)))), laws)), mt}) == True{} : Bool}
 
 # LAW: two definitions the same field by field (`ndef.same`) are equal,
 # as two names the same are (`names.same_eq`): so a unit's definition
@@ -957,19 +944,11 @@ law markers.emitted:
   for +hf: {B.inlines(files) == True{} : Bool}
   for +ht: {B.trees.inline(trees) == True{} : Bool}
   for +hk: {B.trees.ok(trees) == True{} : Bool}
-  {B.wr.unit(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als,
-    B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-      B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-      als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-      B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-      B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}),
+  {B.wr.unit(B.Ec{files, B.cx.obs(B.objects.cx(als, paths, B.obs(trees))), us, als,
+    B.emit.own(B.objects.cx(als, paths, B.obs(trees))),
     res, paths, mode, rtypes, ux,
-    B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}, s, x, j, b) == True{} : Bool}
+    B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.cx.obs(B.objects.cx(als, paths, B.obs(trees))),
+      B.objects.cx(als, paths, B.obs(trees)))), laws)), mt}, s, x, j, b) == True{} : Bool}
 
 # LAW: so every unit emission writes, for the code's file or the laws'
 # and proofs', any unit read, any copy, any text before it, has no line
@@ -998,19 +977,11 @@ law unambiguous.emitted:
   for +hf: {B.inlines(files) == True{} : Bool}
   for +ht: {B.trees.inline(trees) == True{} : Bool}
   for +hd: {B.trees.deep(trees) == True{} : Bool}
-  {B.wr.clear(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als,
-    B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-      B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-      als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-      B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-      B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}),
+  {B.wr.clear(B.Ec{files, B.cx.obs(B.objects.cx(als, paths, B.obs(trees))), us, als,
+    B.emit.own(B.objects.cx(als, paths, B.obs(trees))),
     res, paths, mode, rtypes, ux,
-    B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}, s, x, j, b) == True{} : Bool}
+    B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.cx.obs(B.objects.cx(als, paths, B.obs(trees))),
+      B.objects.cx(als, paths, B.obs(trees)))), laws)), mt}, s, x, j, b) == True{} : Bool}
 
 # LAW: so in the code's file as emitted, each copied unit of the walk's
 # order ends with its counter one more than its numbered copies, each

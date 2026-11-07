@@ -3149,6 +3149,16 @@ def hosts.go(n: Nat, +obs: List<&2, Ob>, +id: U32) -> List<&2, U32>:
 def hosts(+obs: List<&2, Ob>, +id: U32) -> List<&2, U32>:
   hosts.go(1n+List.length(&2, Ob, obs), obs, id)
 
+def cx.ls(c: Cx) -> List<&2, Maybe<&2, Lz>>:
+  match c:
+    case Cx{obs, ls, fs, als, paths, pss, nxs, mds}:
+      ls
+
+def cx.fs(c: Cx) -> List<&2, Maybe<&2, Fd>>:
+  match c:
+    case Cx{obs, ls, fs, als, paths, pss, nxs, mds}:
+      fs
+
 def cx.pss(c: Cx) -> List<&2, List<&2, U32>>:
   match c:
     case Cx{obs, ls, fs, als, paths, pss, nxs, mds}:
@@ -7046,20 +7056,26 @@ def resolved.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, Li
       when(Out, Maybe.is_some(&2, Er, List.head(&2, Er, ocs.ers(os))), u => resolved(files, srcs, cx.obs(cx), os),
         u => emitted(files, srcs, cx, os))
 
-def objects.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +als: List<&2, Al>, +paths: List<&2, List<&2, U32>>, +pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>) -> Out:
+# a context of the objects, their linearizations and folds, with the
+# tables made of them, each object's names (`nxs.of`) and members
+# (`mds.of`): the laws over the copies name it (`blend-laws2.named-builds`)
+def cx.of(+obs: List<&2, Ob>, ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>, als: List<&2, Al>, paths: List<&2, List<&2, U32>>, pss: List<&2, List<&2, U32>>) -> Cx:
+  Cx{obs, ls, fs, als, paths, pss, nxs.of(fs), mds.of(obs)}
+
+def objects.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +cx: Cx) -> Out:
   match cmd:
     case 2:
-      when(Out, List.is_empty(&2, U32, q), u => Out{True{}, show.obs(obs, ls, fs, obs)}, u => show.query(obs, fs, files, srcs, q))
+      when(Out, List.is_empty(&2, U32, q), u => Out{True{}, show.obs(cx.obs(cx), cx.ls(cx), cx.fs(cx), cx.obs(cx))},
+        u => show.query(cx.obs(cx), cx.fs(cx), files, srcs, q))
     case 5:
-      show.obs.k(show.obs.q(obs, ls, fs, obs, q), q)
+      show.obs.k(show.obs.q(cx.obs(cx), cx.ls(cx), cx.fs(cx), cx.obs(cx), q), q)
     case _:
-      +cx = {Cx{obs, ls, fs, als, paths, pss, nxs.of(fs), mds.of(obs)} : Cx}
-      resolved.next(cmd, files, srcs, cx, module.copies(obs, cx))
+      resolved.next(cmd, files, srcs, cx, module.copies(cx.obs(cx), cx))
 
-def objects.out(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +als: List<&2, Al>, +paths: List<&2, List<&2, U32>>, +pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>, es: List<&2, Er>) -> Out:
+def objects.out(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +cx: Cx, es: List<&2, Er>) -> Out:
   match es:
     case Nil{}:
-      objects.next(cmd, files, srcs, q, als, paths, pss, obs, ls, fs)
+      objects.next(cmd, files, srcs, q, cx)
     case Con{e, t}:
       ers.out(files, srcs, Con{e, t})
 
@@ -7407,15 +7423,25 @@ def syn.of(+als: List<&2, Al>, +obs0: List<&2, Ob>) -> Sy:
 def obs.made(+sy: Sy) -> List<&2, Ob>:
   made.abs(sy.obs(sy), sy.obs(sy), sy.pss(sy))
 
+# the objects stage's context: the rounds that make the nested objects
+# from obs0, their linearizations and folds (`cx.of`); the laws over
+# emission name it (`blend-laws2.named-builds`)
+def objects.cx(+als: List<&2, Al>, paths: List<&2, List<&2, U32>>, obs0: List<&2, Ob>) -> Cx:
+  +sy = syn.of(als, obs0)
+  +obs = obs.made(sy)
+  +pss = sy.pss(sy)
+  +ls = sy.ls(sy)
+  cx.of(obs, ls, folds(ls, obs, chains.bad(obs, obs, pss)), als, paths, pss)
+
 def objects(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
   +obs0 = obs(trees)
   +als = als.all(trees, 0, paths, obs0)
-  +sy = syn.of(als, obs0)
-  +pss = sy.pss(sy)
-  +ls = sy.ls(sy)
-  +obs = obs.made(sy)
-  +fs = folds(ls, obs, chains.bad(obs, obs, pss))
-  objects.out(cmd, files, srcs, q, als, paths, pss, obs, ls, fs,
+  +cx = objects.cx(als, paths, obs0)
+  +pss = cx.pss(cx)
+  +ls = cx.ls(cx)
+  +obs = cx.obs(cx)
+  +fs = cx.fs(cx)
+  objects.out(cmd, files, srcs, q, cx,
     List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss), 
       List.append(&2, Er, er.obs(obs, als, obs), List.append(&2, Er, er.made.parents(obs, als, obs, ls),
       List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs)))))))
