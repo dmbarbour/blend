@@ -15,13 +15,13 @@ beside `bend`, in `~/.bend/bin`, running this checkout: the tool built
 natively, built again when Blend or Bend changes, else run through Bend
 (`blend version`, `blend rebuild`, `blend --help`;
 `blend-command-mirrors-bend`). `blend FILE.blend [args]`, `-o OUT`,
-`--check-only` or `--verdict` emits the module's tree, then runs
-`bend FILE.bend` with the same arguments, each error Bend reports on a
+`--check-only` or `--verdict` emits the module's tree, unchecked, then
+runs `bend FILE.bend`, which checks it, with the same arguments, each error Bend reports on a
 line of a file of the module's tree followed by the `.blend` line it
 comes from (`Source: FILE.blend:LINE`). Blend's own errors take Bend's
 shape: `Error:` and the message, `Location: FILE:LINE`, and the
-source's lines around it, its own marked `>|`. `blend emit [--alone] FILE.blend...
-[DIR]` (or `run.sh emit ...`, the checkout's tool without installing) writes, for each module named, the `.bend` it makes, every
+source's lines around it, its own marked `>|`. `blend emit [--alone] [--no-check|--verdict]
+FILE.blend... [DIR]` (or `run.sh emit ...`, the checkout's tool without installing) writes, for each module named, the `.bend` it makes, every
 concrete object's definitions, then its laws and their proofs where it
 has any, beside the module or into DIR, printing each path; or, writing nothing at all, the errors of
 any (on stderr, the status 1). A module's emission depends on nothing
@@ -29,15 +29,24 @@ that imports it (every definition emitted, no top-level object
 extended), so modules emit independently. `emit` writes a module's
 tree, the imports none names written too, first, each beside its
 `.blend` (imports are local, so the tree is the user's own); `--alone`
-writes the modules named, and no other. `blend deps [--make]
+writes the modules named, and no other. Then `emit` checks what it
+wrote with Bend, `bend FILE.bend --check-only` (`BEND` naming Bend,
+else the path): each file holding laws, proofs or witnesses, unless
+another so checked reaches it, Bend checking every definition of the
+files a file imports; Bend's failures follow, each excerpt's line
+followed by the `.blend` line it comes from, as a run's are, and the
+status 1. `--verdict` has the kernel recheck them (Bend's
+`--verdict`); `--no-check` leaves them to the run that loads them.
+`blend deps [--make]
 FILE.blend...` lists the modules `emit` would write, imports first, each
 current, stale, missing or refused, the status 1 where any is not
 current; `--make` prints each as a makefile's rule instead
 (`blend-emit-verifies-imports`;
 `bend blend.bend -- emit --alone ...` under Bend, which takes a dashed
 argument as its own). Where the modules named have errors, nothing is
-written. DIR takes every file flat, for checking: two
-modules writing one name there are an error. A path holding a newline
+written. DIR takes the modules named, flat, with `--alone` alone (a
+tree's imports there would not be where the files importing them
+look): two modules writing one name there are an error. A path holding a newline
 is refused, as it would break each line naming it
 (`blend-paths-no-newline`). `blend show FILE.blend` prints a stage
 before emission: `read` the structure, `objects` (the default) each

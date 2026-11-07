@@ -1,0 +1,24 @@
+# A law false for one of its instances: `same` holds where `op` keeps
+# its first argument, not where it adds, and Bend refuses Sum's proof
+# alone, the copies alike but for their names; emit's check shows the
+# proof's .blend line after Bend's excerpt.
+import Base
+
+abstract object Pick with
+  declare type T
+  declare op
+  law same:
+    for +x: T()
+    {op(x, x) == x : T()}
+  proof same(x):
+    {==}
+
+object First extends Pick with
+  type T: Data = Nat
+  def op(+a: T(), +b: T()) -> T():
+    a
+
+object Sum extends Pick with
+  type T: Data = Nat
+  def op(+a: T(), +b: T()) -> T():
+    Nat.add(a, b)
