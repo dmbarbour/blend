@@ -27,6 +27,11 @@ it alone taught. Add to this file what a new proof teaches.
   that a walk cut short reports an error; a proof that the fuel suffices
   is stronger, and often feasible by a potential (below). Try it before
   settling for the weaker law.
+- **An invariant a walk hands on, as a function**: "every instance done
+  has its copy" is `@h:{done.has(...)} -> {copied(...)}` for the state,
+  each step building the next state's from the last's, which it uses
+  once, and the recursion taking it as an argument (`cm_go`,
+  `copies.embodied`); an empty start gives it by refutation.
 - **Completeness where termination is out of reach**: a worklist whose
   pushes no potential bounds (the copies', which reach priors through
   bodies) runs on ample fuel and reports an error where it runs out with
@@ -178,7 +183,10 @@ it alone taught. Add to this file what a new proof teaches.
   each entry and let a lookup compare: a put at another key then leaves
   a lookup as it was whatever leaf it lands in (`put_else`, the
   descent's two tests split four ways), so no path arithmetic is
-  needed (`units.positions`; `blend-units-keyed`).
+  needed (`units.positions`; `blend-units-keyed`). Its converse, a
+  lookup after a put finds the entry put or one found before
+  (`ins_split`, `copies.embodied`), splits the same four ways, the
+  hypothesis carried across the bit's equation by `Equal.sym` of it.
 - **A trie on a `U32`'s own word** (`U32{Word(32n)}`, the lowest bit
   first) is structural all the way down: a lookup and a put recurse on
   the word, and `Word.cmp`'s last step splits into the tails and the

@@ -4116,6 +4116,16 @@ def cp.done(c: Cp) -> Ht<In>:
     case Cp{rds, ers, done}:
       done
 
+# whether a copy of instance i is among rs (law copies.embodied)
+def rds.has(rs: List<&2, Rd>, +i: In) -> Bool:
+  match rs:
+    case Nil{}:
+      False{}
+    case Con{r, t}:
+      match r:
+        case Rd{inst, node, hd, ls}:
+          in.eq(inst, i) || rds.has(t, i)
+
 def cp.rds(c: Cp) -> List<&2, Rd>:
   match c:
     case Cp{rds, ers, done}:

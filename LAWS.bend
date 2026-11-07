@@ -512,6 +512,18 @@ law copies.complete:
   for +he: {B.cp.ers(B.copies(cx, o)) == Nil{} : List<&2, B.Er>}
   {B.done.has(B.cp.done(B.copies(cx, o)), i) == True{} : Bool}
 
+# LAW: and each instance the copies mark done has its copy among those
+# they make, which become the object's units, one for each
+# (`un.rds`): an instance is put in the set done with its copy added, in
+# one step, and an empty set starts with no copies.
+# Record: blend-adds-no-bend-logic
+law copies.embodied:
+  for +cx: B.Cx
+  for +o: U32
+  for +i: B.In
+  for +hd: {B.done.has(B.cp.done(B.copies(cx, o)), i) == True{} : Bool}
+  {B.rds.has(B.cp.rds(B.copies(cx, o)), i) == True{} : Bool}
+
 # LAW: every object's members, the made objects' included, are
 # definitions the modules' trees hold: an object's members its node's in
 # the tree, a made object's none or a mixin's.

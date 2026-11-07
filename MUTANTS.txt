@@ -881,3 +881,39 @@ the worklist starts empty, the finals never taken
   copies.go(copies.fuel(), cx, o, ins.finals(cx.map(cx, o)), Cp{Nil{}, Nil{}, copies.room(cx)})
 +++
   copies.go(copies.fuel(), cx, o, Nil{}, Cp{Nil{}, Nil{}, copies.room(cx)})
+
+=== copies_add_drops copies.embodied
+an instance is marked done, its copy not added
+--- blend.bend
+      Cp{Con{rd, rds}, List.append(&2, Er, ers, es), done}
++++
+      Cp{rds, List.append(&2, Er, ers, es), done}
+
+=== copies_bad_other copies.embodied
+a member not found is copied as another instance, its prior flag
+flipped
+--- blend.bend
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
++++
+        u => (Rd{In{n, q, Bool.not(prior)}, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
+
+=== copies_node_other copies.embodied
+a definition's copy names another instance, the final for a prior
+--- blend.bend
+          copy.k(In{n, q, prior}, nd,
++++
+          copy.k(In{n, q, False{}}, nd,
+
+=== copies_short_drops copies.embodied
+a worklist past its fuel drops the copies it made, the set kept
+--- blend.bend
+      Cp{rds, Con{Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " outran their fuel"}, ers}, done}
++++
+      Cp{Nil{}, Con{Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " outran their fuel"}, ers}, done}
+
+=== copies_read_short copies.embodied
+the copies read lose the first made
+--- blend.bend
+      List.reverse(&2, Rd, rds)
++++
+      List.reverse(&2, Rd, List.drop(&2, Rd, rds, 1n))
