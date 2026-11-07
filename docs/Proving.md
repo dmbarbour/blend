@@ -39,6 +39,21 @@ it alone taught. Add to this file what a new proof teaches.
   an induction mirroring it), so the result's none brings each step's.
   Proving the fallback never fires is a law of its own, the expensive
   half (`blend-laws2.copies-found`).
+- **An invariant of a list kept beside its index**: where a step reads
+  what it builds on from an index (the fold's `ix`) and writes the list
+  (its map), the invariant holds of both (`fdok`), the trie's laws
+  twinned for its predicate (`hch_put`, `hch_leaf`); a lookup's result
+  is stated for the name sought (`mch`), so that no equation between
+  the index and the list is needed (`folds.chained`).
+- **A walk's twin for one field**: where only one branch of a walk makes
+  the part a law is about (the copies' priors, `rr.prior.of`), the twin
+  reuses the walk's mirrors and proves each other case by `{==}`
+  (`copies.found`, after the `rril` walk).
+- **A context's shape as an equation**: a lemma over a context built one
+  way takes the shape as a hypothesis `{field(cx) == built(..)}`, which
+  can be `+`-marked and handed through a recursion, where a function
+  hypothesis is used once; the law, stating the context so, gives `{==}`
+  (`cxmds`, `copies.found`).
 - **Completeness where termination is out of reach**: a worklist whose
   pushes no potential bounds (the copies', which reach priors through
   bodies) runs on ample fuel and reports an error where it runs out with

@@ -1003,3 +1003,38 @@ an update finds its chain under another name than its own
       on.maybe(En, Fd, ix.find(ix, name),
 +++
       on.maybe(En, Fd, ix.find(ix, List.reverse(&2, U32, name)),
+
+=== prior_other_object copies.found
+a prior's instance names the object after the one its chain gives
+--- blend.bend
+    +c => Rr{RR{0, Rf{o, n, True{}, c}}, Nil{}, [In{n, c, True{}}]})
++++
+    +c => Rr{RR{0, Rf{o, n, True{}, c}}, Nil{}, [In{n, (c + 1 : U32), True{}}]})
+
+=== prior_other_chain copies.found
+a prior is sought in the chain of another name than its own
+--- blend.bend
+  on.maybe(U32, Rr, prior.find(en.chain(cx.find(cx, o, n)), after(cx.ord(cx, o), q)),
++++
+  on.maybe(U32, Rr, prior.find(en.chain(cx.find(cx, o, List.reverse(&2, U32, n))), after(cx.ord(cx, o), q)),
+
+=== finals_module copies.found
+a final's instance names the module, not its chain's head
+--- blend.bend
+          Con{In{name, en.head(chain), False{}}, ins.finals(t)}
++++
+          Con{In{name, 0, False{}}, ins.finals(t)}
+
+=== copy_bogus_prior copies.found
+a copy reaches a prior no chain gives
+--- blend.bend
+      (Rd{i, nd, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
++++
+      (Rd{i, nd, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), Con{In{Nil{}, 0, True{}}, List.append(&2, In, hi, more)}})
+
+=== mem_other_object copies.found
+the copies look a member up in the next object's table
+--- blend.bend
+      md.find(md.or(List.get(&2, Ht<Node>, mds, U32.to_nat(q))), n)
++++
+      md.find(md.or(List.get(&2, Ht<Node>, mds, U32.to_nat((q + 1 : U32)))), n)

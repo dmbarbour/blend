@@ -559,6 +559,23 @@ law folds.chained:
   for +bad: List<&2, U32>
   {B.fds.chained(B.folds(ls, obs, bad), obs) == True{} : Bool}
 
+# LAW: and so, in the context emission builds, every copy an object's
+# copies make holds a definition named as its instance, no error
+# assumed: every instance the copies take has its member, the finals'
+# objects their chains' heads, a prior's in the chain of the entry its
+# name finds, and the member tables find what the members' search finds
+# (`members.indexed`); so `copies.defined`'s error never fires.
+# Record: blend-adds-no-bend-logic
+law copies.found:
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +obs: List<&2, B.Ob>
+  for +bad: List<&2, U32>
+  for +als: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +pss: List<&2, List<&2, U32>>
+  for +o: U32
+  {B.rds.defs(B.cp.rds(B.copies(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o))) == True{} : Bool}
+
 # LAW: every object's members, the made objects' included, are
 # definitions the modules' trees hold: an object's members its node's in
 # the tree, a made object's none or a mixin's.
