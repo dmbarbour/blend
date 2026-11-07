@@ -25,9 +25,10 @@ definitions), so that a later change of shape changes those alone.
 - No limit on a module's lines or the modules of a tree but U32's; the
   errors that reported the old limits are gone.
 - The emitted files, the errors and their order are as before, byte
-  for byte; the families' instructions 1.4 to 1.5% fewer (chain, fan
-  and copies at N to 4N), a scan of every module's bytes for its lines
-  gone with the limits.
+  for byte; the families' instructions 1.4 to 1.6% fewer (chain, fan
+  and copies at N to 4N, each size warmed first, as `bench/measure.sh`
+  now does), a scan of every module's bytes for its lines gone with the
+  limits.
 - A line Bend reports back, in the checks of a written file, stays a
   plain number: it is no place in Blend's sources.
 
