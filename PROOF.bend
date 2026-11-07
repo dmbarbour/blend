@@ -16358,3 +16358,78 @@ def Laws.laws.emitted(dse, mse, all, order, e, lwe, pfe, h):
   le_any(B.units.lawful(all), all,
     ers_laws(dse, mse, B.er.laws.if(B.units.lawful(all), all),
       List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, lwe, pfe)), h), {==})
+
+# Errors reach the output (`errors.*`)
+# ------------------------------------
+#
+# Each stage's dispatcher gives an error-free output only where its
+# errors are none: `ers.out` is never a success, and a test branched on
+# is split (`rm_k1`, `rm_k2`, `rn_k`); a list whose head is none is
+# empty (`head_nil`).
+
+def head_nil(es: List<&2, B.Er>, h: {Maybe.is_some(&2, B.Er, List.head(&2, B.Er, es)) == False{} : Bool}) -> {es == Nil{} : List<&2, B.Er>}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{e, t}:
+      Empty.absurd({Con{e, t} == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(Equal.sym(Bool, True{}, False{}, h)))
+
+def rm_k2(c2: Bool, +cmd: U32, +q: List<&2, U32>, +r: B.Md, +t: List<&2, B.Md>, +eq: {c2 == Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.load.ers(r, t))) : Bool},
+    h: {B.out.ok(B.when(B.Out, c2, v => B.ers.out(B.mds.names(Con{r, t}, B.md.path(r)), B.mds.srcs(Con{r, t}), B.load.ers(r, t)), v => B.run(cmd, B.mds.names(Con{r, t}, B.md.path(r)), B.mds.srcs(Con{r, t}), q, B.mds.paths(Con{r, t}), B.mds.trees(Con{r, t}, 0)))) == True{} : Bool}) ->
+    {B.load.ers(r, t) == Nil{} : List<&2, B.Er>}:
+  match c2:
+    case True{}:
+      Empty.absurd({B.load.ers(r, t) == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+    case False{}:
+      head_nil(B.load.ers(r, t), Equal.sym(Bool, False{}, Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.load.ers(r, t))), eq))
+
+def rm_k1(c1: Bool, +cmd: U32, +q: List<&2, U32>, +r: B.Md, +t: List<&2, B.Md>,
+    h: {B.out.ok(B.when(B.Out, c1, u => B.when(B.Out, Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.load.ers(r, t))), v => B.ers.out(B.mds.names(Con{r, t}, B.md.path(r)), B.mds.srcs(Con{r, t}), B.load.ers(r, t)), v => B.run(cmd, B.mds.names(Con{r, t}, B.md.path(r)), B.mds.srcs(Con{r, t}), q, B.mds.paths(Con{r, t}), B.mds.trees(Con{r, t}, 0))), u => B.Out{False{}, "blend: cannot read " ++ B.text(B.md.path(r))})) == True{} : Bool}) ->
+    {B.load.ers(r, t) == Nil{} : List<&2, B.Er>}:
+  match c1:
+    case True{}:
+      rm_k2(Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.load.ers(r, t))), cmd, q, r, t, {==}, h)
+    case False{}:
+      Empty.absurd({B.load.ers(r, t) == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+
+def Laws.errors.read(cmd, q, r, t, h):
+  rm_k1(B.md.ok(r), cmd, q, r, t, h)
+
+def objout_ok(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +cx: B.Cx, es: List<&2, B.Er>,
+    h: {B.out.ok(B.objects.out(cmd, files, srcs, q, cx, es)) == True{} : Bool}) -> {es == Nil{} : List<&2, B.Er>}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+
+def Laws.errors.objects(cmd, files, srcs, q, paths, trees, h):
+  objout_ok(cmd, files, srcs, q, B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees)), B.objects.ers(B.als.all(trees, 0, paths, B.obs(trees)), B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), h)
+
+def ro_ok(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +obs: List<&2, B.Ob>, +os: List<&2, B.Oc>, es: List<&2, B.Er>,
+    h: {B.out.ok(B.resolve.out(files, srcs, obs, os, es)) == True{} : Bool}) -> {es == Nil{} : List<&2, B.Er>}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+
+def rn_k(c: Bool, +cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx: B.Cx, +os: List<&2, B.Oc>, +eq: {c == Bool.or(U32.is_eq(cmd, 3), Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.ocs.ers(os)))) : Bool},
+    h: {B.out.ok(B.resolved.out(c, files, srcs, cx, os)) == True{} : Bool}) ->
+    {B.ocs.ers(os) == Nil{} : List<&2, B.Er>}:
+  match c:
+    case True{}:
+      ro_ok(files, srcs, B.cx.obs(cx), os, B.ocs.ers(os), h)
+    case False{}:
+      head_nil(B.ocs.ers(os), or_false_r(U32.is_eq(cmd, 3), Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.ocs.ers(os))), Equal.sym(Bool, False{}, Bool.or(U32.is_eq(cmd, 3), Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.ocs.ers(os)))), eq)))
+
+def Laws.errors.copies(cmd, files, srcs, cx, os, h):
+  rn_k(Bool.or(U32.is_eq(cmd, 3), Maybe.is_some(&2, B.Er, List.head(&2, B.Er, B.ocs.ers(os)))), cmd, files, srcs, cx, os, {==}, h)
+
+def Laws.errors.emitted(files, srcs, e, order, tree, more, lw, pf, es, h):
+  match es:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+

@@ -1187,3 +1187,57 @@ law affine.emitted:
   for +ha: {B.mult.share(y, B.pt.of(B.Un, us)) == 0 : U32}
   for +hl: {List.length(&2, B.Ru, B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y)) == 1n : Nat}
   {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.mu.after(B.mu.m(B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ru.user(B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y)))), B.Mu{0, 0}) : B.Mu}
+
+# LAW: errors reach the output, stage by stage (`blend-no-silent-failures`):
+# a command over the modules read succeeds only where reading them
+# reported no error (`run.mods.q`, `load.ers`).
+# Record: blend-no-silent-failures
+law errors.read:
+  for +cmd: U32
+  for +q: List<&2, U32>
+  for +r: B.Md
+  for +t: List<&2, B.Md>
+  for +h: {B.out.ok(B.run.mods.q(cmd, q, Con{r, t})) == True{} : Bool}
+  {B.load.ers(r, t) == Nil{} : List<&2, B.Er>}
+
+# LAW: and over the modules' trees, only where the objects stage's
+# checks reported none, every check of its context (`objects.ers`).
+# Record: blend-no-silent-failures
+law errors.objects:
+  for +cmd: U32
+  for +files: List<&2, List<&2, U32>>
+  for +srcs: List<&2, List<&2, U32>>
+  for +q: List<&2, U32>
+  for +paths: List<&2, List<&2, U32>>
+  for +trees: List<&2, List<&2, B.Node>>
+  for +h: {B.out.ok(B.objects(cmd, files, srcs, q, paths, trees)) == True{} : Bool}
+  {B.objects.ers(B.als.all(trees, 0, paths, B.obs(trees)), B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))) == Nil{} : List<&2, B.Er>}
+
+# LAW: and past the objects, only where the copies reported none
+# (`resolved.next`, `ocs.ers`), whether shown or emitted.
+# Record: blend-no-silent-failures
+law errors.copies:
+  for +cmd: U32
+  for +files: List<&2, List<&2, U32>>
+  for +srcs: List<&2, List<&2, U32>>
+  for +cx: B.Cx
+  for +os: List<&2, B.Oc>
+  for +h: {B.out.ok(B.resolved.next(cmd, files, srcs, cx, os)) == True{} : Bool}
+  {B.ocs.ers(os) == Nil{} : List<&2, B.Er>}
+
+# LAW: and emission writes its files only where its errors are none
+# (`emit.out`). Which errors `emitted` gathers is
+# `blend-laws2.named-builds.emission`'s.
+# Record: blend-no-silent-failures
+law errors.emitted:
+  for +files: List<&2, List<&2, U32>>
+  for +srcs: List<&2, List<&2, U32>>
+  for +e: B.Ec
+  for +order: List<&2, U32>
+  for +tree: List<&2, B.Node>
+  for +more: List<&2, U32>
+  for +lw: B.Pf
+  for +pf: B.Pf
+  for +es: List<&2, B.Er>
+  for +h: {B.out.ok(B.emit.out(files, srcs, e, order, tree, more, lw, pf, es)) == True{} : Bool}
+  {es == Nil{} : List<&2, B.Er>}

@@ -4335,6 +4335,15 @@ type Out is Type:
   Out{+ok: Bool, text: String}
   Outs{fs: List<&2, Fo>}
 
+# whether a command succeeds: files to write, or text where it says so
+# (the laws `errors.*`)
+def out.ok(o: Out) -> Bool:
+  match o:
+    case Out{+ok, text}:
+      ok
+    case Outs{fs}:
+      True{}
+
 def ers.out(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, es: List<&2, Er>) -> Out:
   Out{False{}, show.ers(files, srcs, ers.uniq(List.sort(~Er, ~er.le, es)))}
 
@@ -7104,13 +7113,19 @@ def emitted(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx
 # which Bend reads as that law's proof; the programs built carry none,
 # Bend compiling what `main` reaches.
 
-def resolved.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx: Cx, +os: List<&2, Oc>) -> Out:
-  match cmd:
-    case 3:
+# the copies shown, or emitted where shown is false
+def resolved.out(+shown: Bool, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx: Cx, +os: List<&2, Oc>) -> Out:
+  match shown:
+    case True{}:
       resolved(files, srcs, cx.obs(cx), os)
-    case _:
-      when(Out, Maybe.is_some(&2, Er, List.head(&2, Er, ocs.ers(os))), u => resolved(files, srcs, cx.obs(cx), os),
-        u => emitted(files, srcs, cx, os))
+    case False{}:
+      emitted(files, srcs, cx, os)
+
+# the copies shown (cmd 3), or emitted where they report no error; the
+# test branched on, not matched, so that a law follows it (law
+# errors.copies)
+def resolved.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx: Cx, +os: List<&2, Oc>) -> Out:
+  resolved.out(U32.is_eq(cmd, 3) || Maybe.is_some(&2, Er, List.head(&2, Er, ocs.ers(os))), files, srcs, cx, os)
 
 # a context of the objects, their linearizations and folds, with the
 # tables made of them, each object's names (`nxs.of`) and members
@@ -7479,6 +7494,17 @@ def syn.of(+als: List<&2, Al>, +obs0: List<&2, Ob>) -> Sy:
 def obs.made(+sy: Sy) -> List<&2, Ob>:
   made.abs(sy.obs(sy), sy.obs(sy), sy.pss(sy))
 
+# the objects stage's errors, every check of its context's (law
+# errors.objects)
+def objects.ers(+als: List<&2, Al>, +cx: Cx) -> List<&2, Er>:
+  +pss = cx.pss(cx)
+  +ls = cx.ls(cx)
+  +obs = cx.obs(cx)
+  +fs = cx.fs(cx)
+  List.append(&2, Er, er.endless(pss, obs), List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss),
+    List.append(&2, Er, er.obs(obs, als, obs), List.append(&2, Er, er.made.parents(obs, als, obs, ls),
+    List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs)))))))
+
 # the objects stage's context: the rounds that make the nested objects
 # from obs0, their linearizations and folds (`cx.of`); the laws over
 # emission name it (`blend-laws2.named-builds`)
@@ -7493,14 +7519,7 @@ def objects(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2,
   +obs0 = obs(trees)
   +als = als.all(trees, 0, paths, obs0)
   +cx = objects.cx(als, paths, obs0)
-  +pss = cx.pss(cx)
-  +ls = cx.ls(cx)
-  +obs = cx.obs(cx)
-  +fs = cx.fs(cx)
-  objects.out(cmd, files, srcs, q, cx,
-    List.append(&2, Er, er.endless(pss, obs), List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss), 
-      List.append(&2, Er, er.obs(obs, als, obs), List.append(&2, Er, er.made.parents(obs, als, obs, ls),
-      List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs))))))))
+  objects.out(cmd, files, srcs, q, cx, objects.ers(als, cx))
 
 # Nested objects
 # --------------
