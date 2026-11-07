@@ -1,8 +1,3 @@
-# Laws: an abstract object states a law over what its families give, and
-# each concrete family gets its own instance, bound to its own
-# definitions, and proves it, here by cases. Blend writes the laws and
-# their proofs after the code, `AnyOf.LAW.right_id`, where Bend checks
-# them; the program carries none.
 import Base
 
 abstract object Monoid with
@@ -25,18 +20,5 @@ object AnyOf extends Monoid with
       case False{}:
         {==}
 
-object AllOf extends Monoid with
-  type T: Data = Bool
-  def zero() -> T():
-    True{}
-  def op(+a: T(), +b: T()) -> T():
-    a && b
-  proof right_id(x):
-    match x:
-      case True{}:
-        {==}
-      case False{}:
-        {==}
-
 def main() -> IO(Unit):
-  IO.print(Bool.show(AnyOf.op(True{}, AnyOf.zero())) ++ " " ++ Bool.show(AllOf.op(True{}, AllOf.zero())))
+  IO.print(Bool.show(AnyOf.op(True{}, AnyOf.zero())))

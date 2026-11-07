@@ -1,0 +1,22 @@
+# A library whose bodies name its own datatype and its own import, for
+# the sample `namespaces`.
+import Base
+import ./units.bend as U
+
+type Dim is Data:
+  Dim{+w: U32, +h: U32}
+
+abstract object Shape with
+  declare side
+  def dims.of(+s: U32) -> Dim:
+    Dim{s, s}
+  def area.of(d: Dim) -> U32:
+    match d:
+      case Dim{+w, +h}:
+        U.cm2((w * h : U32))
+  def area() -> U32:
+    area.of(dims.of(side()))
+
+object Square extends Shape with
+  def side() -> U32:
+    3

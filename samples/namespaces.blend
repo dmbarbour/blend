@@ -1,0 +1,14 @@
+# Namespaces are Bend's (`blend-namespaces-as-bends`): an object
+# extending an imported one copies what it inherits, naming the
+# library's datatype through this module's alias for it, `D.Dim`, and
+# the library's own import through an alias Blend reserves,
+# `Blend_1.cm2`, so that no name this module writes is taken.
+import Base
+import ./lib/dims.blend as D
+
+object Big extends D.Square with
+  upd side() -> U32:
+    (_side() * 10 : U32)
+
+def main() -> IO(Unit):
+  IO.print(U32.show(D.Square.area()) ++ " " ++ U32.show(Big.area()))
