@@ -78,6 +78,11 @@
 #   token as one within a line is so (`same_il`); the resolver's
 #   decisions mirrored, messages too; each part a law joined last, a
 #   part a mutation breaks in a small lemma of its own (`eown_il`).
+# - The copies complete (`copies.complete`): an instance in the worklist
+#   or done ends done, by induction on the fuel, a branch's facts handed
+#   to its recursion (`cc_step`), the trie's laws twinned for instances
+#   (`ins_mono.k`, `ins_seen_mono`); the fuel's end an error, refuted
+#   where none is reported (`cc_short`).
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -6243,12 +6248,22 @@ def cg_ok(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +r
       %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cph(_, ds) == True{} : Bool}
       hf
 
+# past the fuel, the copies as they were, an error at most added
+def short_cph(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, +ds: List<&2, B.Node>, hc: {cph(c, ds) == True{} : Bool}) -> {cph(B.cp.short(todo, cx, o, c), ds) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
 # the copies' loop adds copies whose definitions are held
 def copies_ok(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}, +hc: {cph(c, ds) == True{} : Bool}) ->
     {cph(B.copies.go(n, cx, o, todo, c), ds) == True{} : Bool}:
   match n:
     case 0n:
-      hc
+      short_cph(todo, cx, o, c, ds, hc)
     case 1n+(+k):
       match todo:
         case Nil{}:
@@ -6348,6 +6363,218 @@ def Laws.nodes.copies(obs, ls, fs, als, paths, pss, nxs, ds, h):
 # and by every list holding it (`within_app_l`, `within_app_r`), each
 # object's members a node list of a tree, kept by the made objects'
 # rounds (`og_ok`, `sg_ok`).
+
+# The copies complete (`copies.complete`)
+# ---------------------------------------
+#
+# Each instance the copies' worklist takes ends in its set done: found
+# there, or copied and put there; an instance done stays done whatever is
+# put after it (`seen_mono`'s twin for instances); a worklist past its
+# fuel with instances left reports an error (`cp.short`). So, by
+# induction on the fuel, an instance in the worklist or done ends done,
+# where no error is reported.
+
+# an instance the same field by field is equal
+def in_bool_eq(+p: Bool, +s: Bool, h: {Bool.not(Bool.xor(p, s)) == True{} : Bool}) -> {p == s : Bool}:
+  match p s:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      Empty.absurd({True{} == False{} : Bool}, MB.false_ne_true()(h))
+    case False{} True{}:
+      Empty.absurd({False{} == True{} : Bool}, MB.false_ne_true()(h))
+    case False{} False{}:
+      {==}
+
+def in_eq_eq(a: B.In, b: B.In, +h: {B.in.eq(a, b) == True{} : Bool}) -> {a == b : B.In}:
+  match a b:
+    case B.In{+n, +q, +p} B.In{+m, +r, +s}:
+      %Laws.names.same_eq(n, m, MB.eq_true_of_and_left(B.same(n, m), U32.is_eq(q, r), MB.eq_true_of_and_left(Bool.and(B.same(n, m), U32.is_eq(q, r)), Bool.not(Bool.xor(p, s)), h))) : {B.In{n, q, p} == B.In{_, r, s} : B.In}
+      %u32_eq_of_is_eq(q, r, MB.eq_true_of_and_right(B.same(n, m), U32.is_eq(q, r), MB.eq_true_of_and_left(Bool.and(B.same(n, m), U32.is_eq(q, r)), Bool.not(Bool.xor(p, s)), h))) : {B.In{n, q, p} == B.In{n, _, s} : B.In}
+      %in_bool_eq(p, s, MB.eq_true_of_and_right(Bool.and(B.same(n, m), U32.is_eq(q, r)), Bool.not(Bool.xor(p, s)), h)) : {B.In{n, q, p} == B.In{n, q, _} : B.In}
+      {==}
+
+def not_xor_self(+p: Bool) -> {Bool.not(Bool.xor(p, p)) == True{} : Bool}:
+  match p:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def in_eq_refl(i: B.In) -> {B.in.eq(i, i) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +p}:
+      and_intro(Bool.and(B.same(n, n), U32.is_eq(q, q)), Bool.not(Bool.xor(p, p)),
+        and_intro(B.same(n, n), U32.is_eq(q, q), Laws.names.same_refl(n), u32_is_eq_refl(q)), not_xor_self(p))
+
+# membership: an instance found stays found with one before it, the one
+# first is found, and a list's instances are found with more after them
+def ins_cons(+m: B.In, l: List<&2, B.In>, +j: B.In, hs: {B.ins.has(l, j) == True{} : Bool}) -> {B.ins.has(Con{m, l}, j) == True{} : Bool}:
+  or_r_true(B.in.eq(m, j), B.ins.has(l, j), hs)
+
+def ins_self(+m: B.In, l: List<&2, B.In>) -> {B.ins.has(Con{m, l}, m) == True{} : Bool}:
+  or_l_true(B.in.eq(m, m), B.ins.has(l, m), in_eq_refl(m))
+
+def ins_app(t: List<&2, B.In>, +ys: List<&2, B.In>, +j: B.In, h: {B.ins.has(t, j) == True{} : Bool}) ->
+    {B.ins.has(List.append(&2, B.In, t, ys), j) == True{} : Bool}:
+  match t:
+    case Nil{}:
+      Empty.absurd({B.ins.has(ys, j) == True{} : Bool}, MB.false_ne_true()(h))
+    case Con{+x, +r}:
+      or_cases(B.in.eq(x, j), B.ins.has(r, j), Bool.or(B.in.eq(x, j), B.ins.has(List.append(&2, B.In, r, ys), j)), h,
+        fa => or_l_true(B.in.eq(x, j), B.ins.has(List.append(&2, B.In, r, ys), j), fa),
+        fb => or_r_true(B.in.eq(x, j), B.ins.has(List.append(&2, B.In, r, ys), j), ins_app(r, ys, j, fb)))
+
+def ins_then(+t: List<&2, B.In>, xs: List<&2, B.In>, +j: B.In, h: {B.ins.has(t, j) == True{} : Bool}) ->
+    {B.ins.has(B.ins.then(t, xs), j) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h
+    case Con{+x, +r}:
+      ins_app(t, Con{x, r}, j, h)
+
+# the set done: an instance put is found (`leaf_put`), and one found stays
+# found whatever is put (`seen_mono`'s twin)
+def done_put_self(+t: B.Ht<B.In>, +i: B.In) -> {B.done.has(B.done.put(t, i), i) == True{} : Bool}:
+  %leaf_put(B.In, 32n, t, (B.in.hash(i) .&. 1 : U32), B.in.hash(i), i) : {B.ins.has(_, i) == True{} : Bool}
+  ins_self(i, B.ht.leaf.go(B.In, 32n, t, (B.in.hash(i) .&. 1 : U32), B.in.hash(i)))
+
+def ins_mono.k(c2: Bool, c: Bool, +k: Nat, +z: B.Ht<B.In>, +o: B.Ht<B.In>, +b: U32, +h: U32, +h2: U32, +m: B.In, +j: B.In,
+    eq: {c == U32.is_eq(b, 0) : Bool},
+    hs: {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, c, z, o), nb(h), nh(h)), j) == True{} : Bool},
+    ih: @s:B.Ht<B.In> -> @hs2:{B.ins.has(B.ht.leaf.go(B.In, k, s, nb(h), nh(h)), j) == True{} : Bool} ->
+      {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.put.go(B.In, k, s, nb(h2), nh(h2), m), nb(h), nh(h)), j) == True{} : Bool}) ->
+    {B.ins.has(B.ht.leaf.go(B.In, 1n+k, B.ht.join(B.In, c2, B.ht.put.go(B.In, k, B.ht.pick(B.In, c2, z, o), nb(h2), nh(h2), m), B.ht.pick(B.In, c2, o, z)), b, h), j) == True{} : Bool}:
+  match c2 c:
+    case True{} True{}:
+      %eq : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, B.ht.put.go(B.In, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), j) == True{} : Bool}
+      ih(z, hs)
+    case True{} False{}:
+      %eq : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, B.ht.put.go(B.In, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), j) == True{} : Bool}
+      hs
+    case False{} True{}:
+      %eq : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, B.ht.put.go(B.In, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), j) == True{} : Bool}
+      hs
+    case False{} False{}:
+      %eq : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, B.ht.put.go(B.In, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), j) == True{} : Bool}
+      ih(o, hs)
+
+def ins_seen_mono(fuel: Nat, t: B.Ht<B.In>, +b: U32, +h: U32, +b2: U32, +h2: U32, +m: B.In, +j: B.In,
+    hs: {B.ins.has(B.ht.leaf.go(B.In, fuel, t, b, h), j) == True{} : Bool}) ->
+    {B.ins.has(B.ht.leaf.go(B.In, fuel, B.ht.put.go(B.In, fuel, t, b2, h2, m), b, h), j) == True{} : Bool}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          ins_cons(m, es, j, hs)
+        case B.HNode{z, o}:
+          Empty.absurd({B.ins.has(Con{m, Nil{}}, j) == True{} : Bool}, MB.false_ne_true()(hs))
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          ins_cons(m, es, j, hs)
+        case B.HNode{+z, +o}:
+          ins_mono.k(U32.is_eq(b2, 0), U32.is_eq(b, 0), k, z, o, b, h, h2, m, j, {==}, hs,
+            s => hs2 => ins_seen_mono(k, s, nb(h), nh(h), nb(h2), nh(h2), m, j, hs2))
+
+def done_mono(+t: B.Ht<B.In>, +i: B.In, +j: B.In, hs: {B.done.has(t, j) == True{} : Bool}) -> {B.done.has(B.done.put(t, i), j) == True{} : Bool}:
+  ins_seen_mono(32n, t, (B.in.hash(j) .&. 1 : U32), B.in.hash(j), (B.in.hash(i) .&. 1 : U32), B.in.hash(i), i, j, hs)
+
+# a copy added leaves the set done as it was
+def cpadd_done(+rd: B.Rd, b: B.Rb, c: B.Cp) -> {B.cp.done(c) == B.cp.done(B.cp.add(rd, b, c)) : B.Ht<B.In>}:
+  match b:
+    case B.Rb{ls, es, more}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          {==}
+
+# past the fuel: none left, the copies as they were; else an error,
+# which no hypothesis of none allows
+def cc_short(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, +j: B.In,
+    hj: {Bool.or(B.ins.has(todo, j), B.done.has(B.cp.done(c), j)) == True{} : Bool},
+    he: {B.cp.ers(B.cp.short(todo, cx, o, c)) == Nil{} : List<&2, B.Er>}) ->
+    {B.done.has(B.cp.done(B.cp.short(todo, cx, o, c)), j) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hj
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          Empty.absurd({B.done.has(done, j) == True{} : Bool},
+            (%Equal.sym(List<&2, B.Er>, B.cp.ers(B.cp.short(Con{i, t}, cx, o, B.Cp{rds, ers, done})), Nil{}, he) : nil_disc(B.Er, _)
+            Unit{}))
+
+# an instance in the step's worklist or done, found done after the step:
+# done found, or copied and put there
+def cc_true(+i: B.In, +t: List<&2, B.In>, +done: B.Ht<B.In>, +j: B.In,
+    eq: {True{} == B.done.has(done, i) : Bool},
+    hj: {Bool.or(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j)) == True{} : Bool}) ->
+    {Bool.or(B.ins.has(t, j), B.done.has(done, j)) == True{} : Bool}:
+  or_cases(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j), Bool.or(B.ins.has(t, j), B.done.has(done, j)), hj,
+    fa => or_cases(B.in.eq(i, j), B.ins.has(t, j), Bool.or(B.ins.has(t, j), B.done.has(done, j)), fa,
+      fe => or_r_true(B.ins.has(t, j), B.done.has(done, j),
+        (%in_eq_eq(i, j, fe) : {B.done.has(done, _) == True{} : Bool}
+        Equal.sym(Bool, True{}, B.done.has(done, i), eq))),
+      fh => or_l_true(B.ins.has(t, j), B.done.has(done, j), fh)),
+    fd => or_r_true(B.ins.has(t, j), B.done.has(done, j), fd))
+
+def cc_false(+i: B.In, +t: List<&2, B.In>, +more: List<&2, B.In>, +done: B.Ht<B.In>, +j: B.In,
+    hj: {Bool.or(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j)) == True{} : Bool}) ->
+    {Bool.or(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j)) == True{} : Bool}:
+  or_cases(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j), Bool.or(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j)), hj,
+    fa => or_cases(B.in.eq(i, j), B.ins.has(t, j), Bool.or(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j)), fa,
+      fe => or_r_true(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j),
+        (%in_eq_eq(i, j, fe) : {B.done.has(B.done.put(done, i), _) == True{} : Bool}
+        done_put_self(done, i))),
+      fh => or_l_true(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j), ins_then(t, more, j, fh))),
+    fd => or_r_true(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j), done_mono(done, i, j, fd)))
+
+# the step: either branch keeps an instance in the worklist or done
+def cc_step(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>, +j: B.In,
+    eq: {c == B.done.has(done, i) : Bool},
+    hj: {Bool.or(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j)) == True{} : Bool},
+    he: {B.cp.ers(cgk(c, k, cx, o, i, t, rds, ers, done)) == Nil{} : List<&2, B.Er>},
+    ft: @hj2:{Bool.or(B.ins.has(t, j), B.done.has(done, j)) == True{} : Bool} ->
+      @he2:{B.cp.ers(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == Nil{} : List<&2, B.Er>} ->
+      {B.done.has(B.cp.done(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})), j) == True{} : Bool},
+    ff: @hj2:{Bool.or(B.ins.has(B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), j), B.done.has(B.cp.done(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), j)) == True{} : Bool} ->
+      @he2:{B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>} ->
+      {B.done.has(B.cp.done(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))), j) == True{} : Bool}) ->
+    {B.done.has(B.cp.done(cgk(c, k, cx, o, i, t, rds, ers, done)), j) == True{} : Bool}:
+  match c:
+    case True{}:
+      ft(cc_true(i, t, done, j, eq, hj), he)
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {B.done.has(B.cp.done(_), j) == True{} : Bool}
+      ff(
+        (%cpadd_done(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}) : {Bool.or(B.ins.has(B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), j), B.done.has(_, j)) == True{} : Bool}
+        cc_false(i, t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))), done, j, hj)),
+        (%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+        he))
+
+# by induction on the fuel: an instance in the worklist or done ends done,
+# where no error is reported
+def cc_go(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +j: B.In,
+    hj: {Bool.or(B.ins.has(todo, j), B.done.has(B.cp.done(c), j)) == True{} : Bool},
+    he: {B.cp.ers(B.copies.go(n, cx, o, todo, c)) == Nil{} : List<&2, B.Er>}) ->
+    {B.done.has(B.cp.done(B.copies.go(n, cx, o, todo, c)), j) == True{} : Bool}:
+  match n:
+    case 0n:
+      cc_short(todo, cx, o, c, j, hj, he)
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          hj
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              cc_step(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, j, {==}, hj, he,
+                hj2 => he2 => cc_go(k, cx, o, t, B.Cp{rds, ers, done}, j, hj2, he2),
+                hj2 => he2 => cc_go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), j, hj2, he2))
+
+def Laws.copies.complete(cx, o, i, hi, he):
+  cc_go(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)), B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, i,
+    or_l_true(B.ins.has(B.ins.finals(B.cx.map(cx, o)), i), B.done.has(B.cp.done(B.Cp{Nil{}, Nil{}, B.copies.room(cx)}), i), hi), he)
 
 def tok_refl(t: B.Tok) -> {B.tok.same(t, t) == True{} : Bool}:
   match t:
@@ -7381,10 +7608,20 @@ def cg_m(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rd
       %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cpm(_) == True{} : Bool}
       hf
 
+# past the fuel, the copies as they were, an error at most added
+def short_cpm(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, hc: {cpm(c) == True{} : Bool}) -> {cpm(B.cp.short(todo, cx, o, c)) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
 def copies_m(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +hc: {cpm(c) == True{} : Bool}) -> {cpm(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
   match n:
     case 0n:
-      hc
+      short_cpm(todo, cx, o, c, hc)
     case 1n+(+k):
       match todo:
         case Nil{}:
@@ -10264,12 +10501,22 @@ def cgi(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds
       %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cpil(_) == True{} : Bool}
       hf
 
+# past the fuel, the copies as they were, an error at most added
+def short_cpil(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, hc: {cpil(c) == True{} : Bool}) -> {cpil(B.cp.short(todo, cx, o, c)) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
 # the copies' loop: each instance named within a line, each copy within
 def copies_il(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}, +hd: {dsil(ds) == True{} : Bool},
     +htd: {insil(todo) == True{} : Bool}, +hc: {cpil(c) == True{} : Bool}) -> {cpil(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
   match n:
     case 0n:
-      hc
+      short_cpil(todo, cx, o, c, hc)
     case 1n+(+k):
       match todo:
         case Nil{}:
@@ -11680,10 +11927,20 @@ def cg_e(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rd
       %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cpe(_) == True{} : Bool}
       hf
 
+# past the fuel, the copies as they were, an error at most added
+def short_cpe(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, hc: {cpe(c) == True{} : Bool}) -> {cpe(B.cp.short(todo, cx, o, c)) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
 def copies_e(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +hc: {cpe(c) == True{} : Bool}) -> {cpe(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
   match n:
     case 0n:
-      hc
+      short_cpe(todo, cx, o, c, hc)
     case 1n+(+k):
       match todo:
         case Nil{}:

@@ -3992,12 +3992,20 @@ def rb.ins(b: Rb) -> List<&2, In>:
     case Rb{ls, es, more}:
       more
 
-# the worklist of copies: the finals, then each prior reached; fuel, the
-# file's definitions
+# past the fuel: with none left, the copies as they are; else an error,
+# so that no copy is ever dropped silently (law copies.complete)
+def cp.short(todo: List<&2, In>, +cx: Cx, +o: U32, c: Cp) -> Cp:
+  match todo c:
+    case Nil{} _:
+      c
+    case Con{i, t} Cp{rds, ers, done}:
+      Cp{rds, Con{Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " outran their fuel"}, ers}, done}
+
+# the worklist of copies: the finals, then each prior reached
 def copies.go(n: Nat, +cx: Cx, +o: U32, todo: List<&2, In>, +c: Cp) -> Cp:
   match n:
     case 0n:
-      c
+      cp.short(todo, cx, o, c)
     case 1n++k:
       match todo:
         case Nil{}:
@@ -4102,6 +4110,11 @@ def cp.ers(c: Cp) -> List<&2, Er>:
   match c:
     case Cp{rds, ers, done}:
       ers
+
+def cp.done(c: Cp) -> Ht<In>:
+  match c:
+    case Cp{rds, ers, done}:
+      done
 
 def cp.rds(c: Cp) -> List<&2, Rd>:
   match c:

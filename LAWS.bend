@@ -497,6 +497,21 @@ law nodes.copies:
   for +h: {B.objs.within(obs, ds) == True{} : Bool}
   {B.units.held(B.units(B.module.copies(obs, B.Cx{obs, ls, fs, als, paths, pss, nxs, B.mds.of(obs)})), ds) == True{} : Bool}
 
+# LAW: an object's copies leave none of its finals uncopied, whatever
+# module defines them, where they report no error: each instance the
+# copies' worklist takes ends in its set of instances done, copied there
+# or found there, and a worklist past its fuel reports an error rather
+# than drop the rest silently, as one did while its fuel was the root
+# file's definitions (`blend-scale.copies-fuel`).
+# Record: blend-adds-no-bend-logic
+law copies.complete:
+  for +cx: B.Cx
+  for +o: U32
+  for +i: B.In
+  for +hi: {B.ins.has(B.ins.finals(B.cx.map(cx, o)), i) == True{} : Bool}
+  for +he: {B.cp.ers(B.copies(cx, o)) == Nil{} : List<&2, B.Er>}
+  {B.done.has(B.cp.done(B.copies(cx, o)), i) == True{} : Bool}
+
 # LAW: every object's members, the made objects' included, are
 # definitions the modules' trees hold: an object's members its node's in
 # the tree, a made object's none or a mixin's.

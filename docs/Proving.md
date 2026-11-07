@@ -27,6 +27,12 @@ it alone taught. Add to this file what a new proof teaches.
   that a walk cut short reports an error; a proof that the fuel suffices
   is stronger, and often feasible by a potential (below). Try it before
   settling for the weaker law.
+- **Completeness where termination is out of reach**: a worklist whose
+  pushes no potential bounds (the copies', which reach priors through
+  bodies) runs on ample fuel and reports an error where it runs out with
+  work left, so that the law claims completeness where no error is
+  reported (`copies.complete`): the fuel's end refuted by the error's
+  constructor, and the fuel's sufficiency listed as the missing piece.
 - **Mutate the code after a proof passes**: break what the law is about
   in a copy, and see the proofs fail. A law that survives the mutation
   claims less than meant. Keep the mutations in a `MUTANTS.txt` beside

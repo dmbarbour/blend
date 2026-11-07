@@ -841,3 +841,43 @@ a law with no proof let pass, written beside the code to stop every run
 +++
     case False{} False{}:
       rest
+
+=== copies_short_silent copies.complete
+a worklist past its fuel drops the instances left silently, as the
+copies' did while their fuel was the root file's definitions
+--- blend.bend
+    case Con{i, t} Cp{rds, ers, done}:
+      Cp{rds, Con{Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " outran their fuel"}, ers}, done}
++++
+    case Con{i, t} Cp{rds, ers, done}:
+      Cp{rds, ers, done}
+
+=== copies_done_unput copies.complete
+an instance copied is not put in the set done
+--- blend.bend
+                  rd => +b => copies.go(k, cx, o, ins.then(t, rb.ins(b)), cp.add(rd, b, Cp{rds, ers, done.put(done, i)}))))
++++
+                  rd => +b => copies.go(k, cx, o, ins.then(t, rb.ins(b)), cp.add(rd, b, Cp{rds, ers, done}))))
+
+=== copies_then_drops copies.complete
+the priors a copy reaches replace the worklist's rest, which is lost
+--- blend.bend
+    case Con{x, r}:
+      List.append(&2, In, t, Con{x, r})
++++
+    case Con{x, r}:
+      Con{x, r}
+
+=== copies_skip_undone copies.complete
+an instance not yet done is skipped, as one done would be
+--- blend.bend
+              when(Cp, done.has(done, i), u => copies.go(k, cx, o, t, Cp{rds, ers, done}),
++++
+              when(Cp, Bool.not(done.has(done, i)), u => copies.go(k, cx, o, t, Cp{rds, ers, done}),
+
+=== copies_no_finals copies.complete
+the worklist starts empty, the finals never taken
+--- blend.bend
+  copies.go(copies.fuel(), cx, o, ins.finals(cx.map(cx, o)), Cp{Nil{}, Nil{}, copies.room(cx)})
++++
+  copies.go(copies.fuel(), cx, o, Nil{}, Cp{Nil{}, Nil{}, copies.room(cx)})
