@@ -7441,7 +7441,7 @@ def basename(path: String) -> String:
   base.k(until(List.reverse(&2, U32, codes(path)), 47))
 
 def usage() -> String:
-  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR; --alone those named alone\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [read|objects|resolve|NAME]  a stage, the objects by default, or what NAME resolves to\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
+  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] [--no-check|--verdict] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR, then check with bend those holding laws; --alone those named alone, --no-check none, --verdict by the kernel too\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [read|objects|resolve|NAME]  a stage, the objects by default, or what NAME resolves to\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
 
 # 1 read, 2 objects, 3 resolve, 4 emit
 def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
@@ -7815,47 +7815,390 @@ def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
         +ms => verify.deps(dt, List.append(&2, Ck, acc, dep.checks(run.mods(4, ms), d)), fs))
 
+# Checks (`blend-cli.checks`): the laws, proofs and witnesses written,
+# checked by Bend once written (its IO runs a process), each file
+# holding them with `--check-only`, or `--verdict` the kernel's recheck,
+# unless another so checked reaches it, Bend checking every definition
+# of each file a file imports (tried 2026-11-07); its failures relayed,
+# each excerpt's line of a written file followed by the `.blend` line it
+# comes from, the status 1. `--no-check` leaves them to the run that
+# loads them (`blend-command-mirrors-bend`).
+
+# a module written: its file, the module it is written from, and the
+# modules its tree holds besides
+type Wm is Data:
+  Wm{file: List<&2, U32>, src: List<&2, U32>, tree: List<&2, List<&2, U32>>}
+
+# the module at p written into the directory given, else beside it, its
+# file as emission names it
+def wm.of(+dir: Maybe<&2, List<&2, U32>>, +p: List<&2, U32>, +tree: List<&2, List<&2, U32>>) -> Wm:
+  Wm{path.join(dir.or(dir, p), root.file(p, codes(".bend"))), path.plain(p), tree}
+
+# a module written, read again for its lines
+type Wr is Data:
+  Wr{file: List<&2, U32>, src: List<&2, U32>, tree: List<&2, List<&2, U32>>, ls: List<&2, Ln>}
+
+def fos.find(fs: List<&2, Fo>, +p: List<&2, U32>) -> List<&2, U32>:
+  match fs:
+    case Nil{}:
+      Nil{}
+    case Con{f, +t}:
+      match f:
+        case Fo{+name, +bs}:
+          when(List<&2, U32>, same(name, p), u => bs, u => fos.find(t, p))
+
+def wrs.of(ws: List<&2, Wm>, +fs: List<&2, Fo>) -> List<&2, Wr>:
+  match ws:
+    case Nil{}:
+      Nil{}
+    case Con{w, t}:
+      match w:
+        case Wm{+file, src, tree}:
+          Con{Wr{file, src, tree, lines(fos.find(fs, file))}, wrs.of(t, fs)}
+
+# a header's name, up to its parameters or type
+def hd.name(xs: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{+h, +t}:
+      when(List<&2, U32>, U32.is_eq(h, 40) || U32.is_eq(h, 58) || U32.is_eq(h, 32) || U32.is_eq(h, 60), u => Nil{}, u => Con{h, hd.name(t)})
+
+# whether a name has a part LAW, the part so far kept reversed
+def name.law(xs: List<&2, U32>, +cur: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}:
+      same(cur, codes("WAL"))
+    case Con{+h, +t}:
+      when(Bool, U32.is_eq(h, 46), u => same(cur, codes("WAL")) || name.law(t, Nil{}), u => name.law(t, Con{h, cur}))
+
+# whether a file holds a law, or a definition named with a part LAW, a
+# proof or a witness (check.sh's test)
+def lns.laws(ls: List<&2, Ln>) -> Bool:
+  match ls:
+    case Nil{}:
+      False{}
+    case Con{l, t}:
+      match l:
+        case Ln{+no, +ind, +txt}:
+          (U32.is_eq(ind, 0) && (starts.s(txt, "law ") || (starts.s(txt, "def ") && name.law(hd.name(List.drop(&2, U32, txt, 4n)), Nil{})))) || lns.laws(t)
+
+def wr.laws(w: Wr) -> Bool:
+  match w:
+    case Wr{file, src, tree, ls}:
+      lns.laws(ls)
+
+def wr.reaches(w: Wr, +p: List<&2, U32>) -> Bool:
+  match w:
+    case Wr{file, src, tree, ls}:
+      names.has(tree, p)
+
+def wrs.reach(ws: List<&2, Wr>, +p: List<&2, U32>) -> Bool:
+  match ws:
+    case Nil{}:
+      False{}
+    case Con{w, t}:
+      wr.reaches(w, p) || wrs.reach(t, p)
+
+# the files to check: each holding laws that no other holding them
+# reaches
+def wrs.pick(ws: List<&2, Wr>, +all: List<&2, Wr>) -> List<&2, List<&2, U32>>:
+  match ws:
+    case Nil{}:
+      Nil{}
+    case Con{w, +t}:
+      match w:
+        case Wr{+file, +src, tree, ls}:
+          when(List<&2, List<&2, U32>>, wrs.reach(all, src), u => wrs.pick(t, all), u => Con{file, wrs.pick(t, all)})
+
+# a top-level line's definition, law or type, by name
+def hd.of(+xs: List<&2, U32>) -> Maybe<&2, List<&2, U32>>:
+  when(Maybe<&2, List<&2, U32>>, starts.s(xs, "def ") || starts.s(xs, "law "), u => Some{hd.name(List.drop(&2, U32, xs, 4n))},
+    u => when(Maybe<&2, List<&2, U32>>, starts.s(xs, "type "), v => Some{hd.name(List.drop(&2, U32, xs, 5n))}, v => None{}))
+
+# the name of the definition, law or type a line is in, from the lines
+# up to it, latest first
+def hd.above(ls: List<&2, Ln>) -> List<&2, U32>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, t}:
+      match l:
+        case Ln{+no, +ind, +txt}:
+          when(List<&2, U32>, U32.is_eq(ind, 0) && Maybe.is_some(&2, List<&2, U32>, hd.of(txt)),
+            u => on.maybe(List<&2, U32>, List<&2, U32>, hd.of(txt), v => Nil{}, n => n), u => hd.above(t))
+
+def digits.lead(xs: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{+h, +t}:
+      when(List<&2, U32>, U32.is_ge(h, 48) && U32.is_le(h, 57), u => Con{h, digits.lead(t)}, u => Nil{})
+
+def num.go(xs: List<&2, U32>, +acc: U32) -> U32:
+  match xs:
+    case Nil{}:
+      acc
+    case Con{+h, t}:
+      num.go(t, ((acc * 10 : U32) + (h - 48 : U32) : U32))
+
+# digits as a number, at most nine of them, none where there are none
+def num.of(+ds: List<&2, U32>) -> Maybe<&2, U32>:
+  when(Maybe<&2, U32>, Bool.not(List.is_empty(&2, U32, ds)) && Nat.is_le(List.length(&2, U32, ds), 9n),
+    u => Some{num.go(ds, 0)}, u => None{})
+
+# a marker's file and line, `# blend: FILE:LINE`, at its last colon
+type Mk is Data:
+  Mk{file: List<&2, U32>, +line: U32}
+
+def mk.at(r: List<&2, U32> & List<&2, U32>) -> Maybe<&2, Mk>:
+  (rn, rf) = r
+  on.maybe(U32, Maybe<&2, Mk>, num.of(List.reverse(&2, U32, rn)), u => None{}, +k => Some{Mk{List.reverse(&2, U32, rf), k}})
+
+def mk.of(+xs: List<&2, U32>) -> Maybe<&2, Mk>:
+  when(Maybe<&2, Mk>, starts.s(xs, "# blend: "), u => mk.at(until(List.reverse(&2, U32, List.drop(&2, U32, xs, 9n)), 58)), u => None{})
+
+def mk.src(m: Mk, +src: List<&2, U32>, +d: U32) -> List<&2, U32>:
+  match m:
+    case Mk{file, +k}:
+      List.append(&2, U32, path.from(src, file), Con{58, codes(U32.show((k + d : U32)))})
+
+# the .blend line a line of a written file comes from: the marker above
+# it, the lines after the marker its source's next (where.sh's rule),
+# the marker's file named from the module's
+def mk.above(ls: List<&2, Ln>, +no: U32, +src: List<&2, U32>) -> List<&2, U32>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, t}:
+      match l:
+        case Ln{+a, +ind, +txt}:
+          when(List<&2, U32>, U32.is_eq(ind, 0) && Maybe.is_some(&2, Mk, mk.of(txt)),
+            u => on.maybe(Mk, List<&2, U32>, mk.of(txt), v => Nil{}, m => mk.src(m, src, when(U32, U32.is_gt(no, a), w => (no - a - 1 : U32), w => 0))),
+            u => mk.above(t, no, src))
+
+# a written file's lines up to line no, latest first
+def wr.upto(ls: List<&2, Ln>, +no: U32) -> List<&2, Ln>:
+  List.reverse(&2, Ln, List.take(&2, Ln, ls, U32.to_nat(no)))
+
+def ln.no(l: Ln) -> U32:
+  match l:
+    case Ln{+no, +ind, txt}:
+      no
+
+# whether line no of a written file reads t, in the definition named
+# loc where Bend names one
+def wr.hit.at(+up: List<&2, Ln>, +no: U32, +t: List<&2, U32>, +loc: List<&2, U32>) -> Bool:
+  match up:
+    case Nil{}:
+      False{}
+    case Con{+h, r}:
+      U32.is_eq(ln.no(h), no) && same(ln.out(h), t) && (List.is_empty(&2, U32, loc) || same(hd.above(up), loc))
+
+def wr.hit(w: Wr, +no: U32, +t: List<&2, U32>, +loc: List<&2, U32>) -> Bool:
+  match w:
+    case Wr{file, src, tree, ls}:
+      wr.hit.at(wr.upto(ls, no), no, t, loc)
+
+def wr.src(w: Wr, +no: U32) -> List<&2, U32>:
+  match w:
+    case Wr{file, +src, tree, ls}:
+      mk.above(wr.upto(ls, no), no, src)
+
+def wrs.one(hs: List<&2, Wr>, +no: U32) -> List<&2, U32>:
+  match hs:
+    case Nil{}:
+      Nil{}
+    case Con{w, r}:
+      when(List<&2, U32>, List.is_empty(&2, Wr, r), u => wr.src(w, no), u => Nil{})
+
+def wrs.hits(ws: List<&2, Wr>, +no: U32, +t: List<&2, U32>, +loc: List<&2, U32>) -> List<&2, Wr>:
+  match ws:
+    case Nil{}:
+      Nil{}
+    case Con{+w, +r}:
+      when(List<&2, Wr>, wr.hit(w, no, t, loc), u => Con{w, wrs.hits(r, no, t, loc)}, u => wrs.hits(r, no, t, loc))
+
+# the source of an excerpt's line where one written file alone has it
+def wrs.src(+ws: List<&2, Wr>, +no: U32, +t: List<&2, U32>, +loc: List<&2, U32>) -> List<&2, U32>:
+  wrs.one(wrs.hits(ws, no, t, loc), no)
+
+# an excerpt's line, Bend's: its number and its text
+type Ex is Data:
+  Ex{+no: U32, txt: List<&2, U32>}
+
+# a line of an excerpt: `  N>| text` the error's, `  N | text` around
+# it, `     | ^^^` under it; what follows its spaces and digits
+def ex.line.k(+r: List<&2, U32>) -> Bool:
+  starts.s(r, ">|") || starts.s(r, " |") || starts.s(r, "|")
+
+def ex.line(+l: List<&2, U32>) -> Bool:
+  ex.line.k(List.drop(&2, U32, ltrim(l), List.length(&2, U32, digits.lead(ltrim(l)))))
+
+def ex.space(+xs: List<&2, U32>) -> List<&2, U32>:
+  when(List<&2, U32>, starts.s(xs, " "), u => List.drop(&2, U32, xs, 1n), u => xs)
+
+def ex.mark.k(+ds: List<&2, U32>, +r: List<&2, U32>) -> Maybe<&2, Ex>:
+  when(Maybe<&2, Ex>, starts.s(r, ">|"),
+    u => on.maybe(U32, Maybe<&2, Ex>, num.of(ds), v => None{}, +n => Some{Ex{n, ex.space(List.drop(&2, U32, r, 2n))}}),
+    u => None{})
+
+# the error's line of an excerpt
+def ex.mark(+l: List<&2, U32>) -> Maybe<&2, Ex>:
+  ex.mark.k(digits.lead(ltrim(l)), List.drop(&2, U32, ltrim(l), List.length(&2, U32, digits.lead(ltrim(l)))))
+
+def src.say(+p: List<&2, U32>) -> List<&2, List<&2, U32>>:
+  when(List<&2, List<&2, U32>>, List.is_empty(&2, U32, p), u => Nil{}, u => [List.append(&2, U32, codes("Source: "), p)])
+
+# the definition Bend names, `Location: NAME`, until another
+def loc.of(+l: List<&2, U32>, +loc: List<&2, U32>) -> List<&2, U32>:
+  when(List<&2, U32>, starts.s(l, "Location:"), u => trim(List.drop(&2, U32, l, 9n)), u => loc)
+
+def pend.or(+p: List<&2, U32>, +pend: List<&2, U32>) -> List<&2, U32>:
+  when(List<&2, U32>, List.is_empty(&2, U32, p), u => pend, u => p)
+
+def pend.of(m: Maybe<&2, Ex>, +ws: List<&2, Wr>, +loc: List<&2, U32>, +pend: List<&2, U32>) -> List<&2, U32>:
+  match m:
+    case None{}:
+      pend
+    case Some{x}:
+      match x:
+        case Ex{+no, +txt}:
+          pend.or(wrs.src(ws, no, txt, loc), pend)
+
+# Bend's lines, each excerpt of a written file's line followed by the
+# .blend line it comes from, as the launcher's are (`blend-cli.errors`),
+# the definition Bend names telling apart the files alike there
+def ck.map(ls: List<&2, List<&2, U32>>, +ws: List<&2, Wr>, +loc: List<&2, U32>, +pend: List<&2, U32>) -> List<&2, List<&2, U32>>:
+  match ls:
+    case Nil{}:
+      src.say(pend)
+    case Con{+l, t}:
+      List.append(&2, List<&2, U32>, when(List<&2, List<&2, U32>>, ex.line(l), u => Nil{}, u => src.say(pend)),
+        Con{l, ck.map(t, ws, loc.of(l, loc), pend.of(ex.mark(l), ws, loc.of(l, loc), when(List<&2, U32>, ex.line(l), u => pend, u => Nil{})))})
+
+def nl.join(ls: List<&2, List<&2, U32>>) -> List<&2, U32>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, t}:
+      match t:
+        case Nil{}:
+          l
+        case Con{h, r}:
+          List.append(&2, U32, l, Con{10, nl.join(Con{h, r})})
+
+# a text less its last newline
+def nl.last(+xs: List<&2, U32>) -> List<&2, U32>:
+  when(List<&2, U32>, ends(xs, [10]), u => List.take(&2, U32, xs, Nat.sub(List.length(&2, U32, xs), 1n)), u => xs)
+
+def ck.say(oe: String & String, +ws: List<&2, Wr>) -> IO(Bool):
+  (out, err) = oe
+  do IO<Bool>:
+    IO.print_err(text(nl.join(ck.map(nl.split(nl.last(codes(out ++ err))), ws, Nil{}, Nil{}))))
+    IO.pure(Bool, False{})
+
+def ck.out(v: U32 & (String & String), +ws: List<&2, Wr>) -> IO(Bool):
+  (st, oe) = v
+  when(IO(Bool), U32.is_eq(st, 0), u => IO.pure(Bool, True{}), u => ck.say(oe, ws))
+
+def ck.fail(e: U32 & String, +bend: String, +file: List<&2, U32>) -> IO(Bool):
+  (code, msg) = e
+  do IO<Bool>:
+    IO.print_err("blend: cannot run " ++ bend ++ " to check " ++ text(file) ++ ": " ++ msg)
+    IO.pure(Bool, False{})
+
+# a check passed, or its failure on standard error
+def ck.done(r: Result<&1, &1, U32 & String, U32 & (String & String)>, +bend: String, +file: List<&2, U32>, +ws: List<&2, Wr>) -> IO(Bool):
+  match r:
+    case Done{v}:
+      ck.out(v, ws)
+    case Fail{e}:
+      ck.fail(e, bend, file)
+
+def ck.flag(+mode: U32) -> String:
+  when(String, U32.is_eq(mode, 2), u => "--verdict", u => "--check-only")
+
+# a file checked: its output bounded, 16 MiB, and its time, an hour
+def ck.run(+bend: String, +mode: U32, +file: List<&2, U32>, +ws: List<&2, Wr>) -> IO(Bool):
+  IO.bind(Result<&1, &1, U32 & String, U32 & (String & String)>, Bool,
+    Process.run(bend, [text(file), ck.flag(mode)], "", 16777216, 3600000),
+    r => ck.done(r, bend, file, ws))
+
+def ck.all(fs: List<&2, List<&2, U32>>, +bend: String, +mode: U32, +ws: List<&2, Wr>, +ok: Bool) -> IO(Unit):
+  match fs:
+    case Nil{}:
+      when(IO(Unit), ok, u => IO.pure(Unit, Unit{}), u => IO.exit(1))
+    case Con{+f, t}:
+      IO.bind(Bool, Unit, ck.run(bend, mode, f, ws), +p => ck.all(t, bend, mode, ws, ok && p))
+
+# Bend as `BEND` names it, as Blend's scripts and the launcher do, else
+# on the path
+def ck.bend(r: Result<&1, &1, U32 & String, String>) -> String:
+  match r:
+    case Done{+p}:
+      when(String, String.is_empty(p), u => "bend", u => p)
+    case Fail{e}:
+      "bend"
+
+def checks.go(+bend: String, +mode: U32, +ws: List<&2, Wr>) -> IO(Unit):
+  ck.all(wrs.pick(List.filter(Wr, v => wr.laws(v), ws), List.filter(Wr, v => wr.laws(v), ws)), bend, mode, ws, True{})
+
+# the files written checked, unless mode 0
+def checks(+fs: List<&2, Fo>, +mode: U32, ws: List<&2, Wm>) -> IO(Unit):
+  when(IO(Unit), U32.is_eq(mode, 0), u => IO.pure(Unit, Unit{}),
+    u => IO.bind(Result<&1, &1, U32 & String, String>, Unit, IO.get_env("BEND"),
+      e => checks.go(ck.bend(e), mode, wrs.of(List.reverse(&2, Wm, ws), fs))))
+
 # the imports none names, each read with its own and emitted in turn,
 # into the directory given, else beside it (`blend-emit-verifies-imports`)
-def emit.deps(ds: List<&2, List<&2, U32>>, +dir: Maybe<&2, List<&2, U32>>, acc: Out) -> IO(Out):
+def emit.deps(ds: List<&2, List<&2, U32>>, +dir: Maybe<&2, List<&2, U32>>, acc: Out, ws: List<&2, Wm>) -> IO(Out & List<&2, Wm>):
   match ds:
     case Nil{}:
-      IO.pure(Out, acc)
+      IO.pure(Out & List<&2, Wm>, (acc, ws))
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Out, load.go(4096n, [Td{d, 0}], Nil{}),
-        +ms => emit.deps(dt, dir, out.join(acc, out.at(run.mods(4, ms), dir.or(dir, d)))))
+      IO.bind(List<&2, Md>, Out & List<&2, Wm>, load.go(4096n, [Td{d, 0}], Nil{}),
+        +ms => emit.deps(dt, dir, out.join(acc, out.at(run.mods(4, ms), dir.or(dir, d))),
+          Con{wm.of(dir, d, List.tail(&2, List<&2, U32>, mds.paths(ms))), ws}))
 
-def emit.write(o: Out) -> IO(Unit):
+# the files written, then checked
+def emit.write(o: Out, +mode: U32, ws: List<&2, Wm>) -> IO(Unit):
   match o:
     case Outs{+fs}:
-      write.all(fs)
+      IO.bind(Unit, Unit, write.all(fs), u => checks(fs, mode, ws))
     case Out{+ok, text}:
       main.out(Out{ok, text})
 
+def emit.dws(r: Out & List<&2, Wm>, fs: List<&2, Fo>, +mode: U32) -> IO(Unit):
+  (d, ws) = r
+  emit.write(out.once(out.join(d, Outs{fs})), mode, ws)
+
 # the modules named alone, or with the imports they reach, written
-# first; where the modules named have errors, those alone, nothing
-# written
-def emit.end(o: Out, +alone: Bool, +dir: Maybe<&2, List<&2, U32>>, ds: List<&2, List<&2, U32>>) -> IO(Unit):
+# first, then checked; where the modules named have errors, those
+# alone, nothing written
+def emit.end(o: Out, +alone: Bool, +dir: Maybe<&2, List<&2, U32>>, +mode: U32, ds: List<&2, List<&2, U32>>, ws: List<&2, Wm>) -> IO(Unit):
   match o:
     case Out{+ok, text}:
       main.out(Out{ok, text})
     case Outs{+fs}:
       match alone:
         case True{}:
-          emit.write(out.once(Outs{fs}))
+          emit.write(out.once(Outs{fs}), mode, ws)
         case False{}:
-          IO.bind(Out, Unit, emit.deps(ds, dir, Outs{Nil{}}), d => emit.write(out.once(out.join(d, Outs{fs}))))
+          IO.bind(Out & List<&2, Wm>, Unit, emit.deps(ds, dir, Outs{Nil{}}, ws), r => emit.dws(r, fs, mode))
 
 # each module emitted in turn, each read with its imports, into the
 # directory given, else its own; then, unless alone, the imports none
-# names emitted too, its tree; then every file written, or none
-def main.emit.go(ps: List<&2, String>, +dir: Maybe<&2, List<&2, U32>>, +alone: Bool, +named: List<&2, List<&2, U32>>, deps: List<&2, List<&2, U32>>, acc: Out) -> IO(Unit):
+# names emitted too, its tree; then every file written, or none; then,
+# by mode, the files holding laws checked
+def main.emit.go(ps: List<&2, String>, +dir: Maybe<&2, List<&2, U32>>, +alone: Bool, +mode: U32, +named: List<&2, List<&2, U32>>, deps: List<&2, List<&2, U32>>, ws: List<&2, Wm>, acc: Out) -> IO(Unit):
   match ps:
     case Nil{}:
-      emit.end(acc, alone, dir, deps.missed(deps, named, Nil{}))
+      emit.end(acc, alone, dir, mode, deps.missed(deps, named, Nil{}), ws)
     case Con{+p, t}:
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{codes(p), 0}], Nil{}),
-        +ms => main.emit.go(t, dir, alone, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
+        +ms => main.emit.go(t, dir, alone, mode, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
+          Con{wm.of(dir, codes(p), List.tail(&2, List<&2, U32>, mds.paths(ms))), ws},
           out.join(acc, out.at(run.mods(4, ms), dir.or(dir, codes(p))))))
 
 def args.data(xs: List<String>) -> List<&2, String>:
@@ -7879,21 +8222,35 @@ def args.dashed(xs: List<&2, String>) -> Bool:
     case Con{x, t}:
       starts(codes(x), [45]) || args.dashed(t)
 
-def main.emit.at(+alone: Bool, +srcs: List<&2, String>, +dir: Maybe<&2, List<&2, U32>>) -> IO(Unit):
-  main.emit.go(srcs, dir, alone, args.plain(srcs), Nil{}, Outs{Nil{}})
+def main.emit.at(+alone: Bool, +mode: U32, +srcs: List<&2, String>, +dir: Maybe<&2, List<&2, U32>>) -> IO(Unit):
+  main.emit.go(srcs, dir, alone, mode, args.plain(srcs), Nil{}, Nil{}, Outs{Nil{}})
 
-# the modules, and a last argument not one the directory
-def main.emit.k(+alone: Bool, +xs: List<&2, String>) -> IO(Unit):
+# the modules, and a last argument not one the directory, the modules
+# named alone written there: a tree's imports, written there each by
+# its name, would not be where the files importing them look
+def main.emit.k(+alone: Bool, +mode: U32, +xs: List<&2, String>) -> IO(Unit):
   on.maybe(String, IO(Unit), List.last(&2, String, xs), u => main.out(Out{False{}, usage()}),
     +l => when(IO(Unit), args.dashed(xs), v => main.out(Out{False{}, usage()}),
       v => when(IO(Unit), Bool.not(ends(codes(l), codes(".blend"))) && Nat.is_gt(List.length(&2, String, xs), 1n),
-        w => main.emit.at(alone, List.take(&2, String, xs, Nat.sub(List.length(&2, String, xs), 1n)), Some{codes(l)}),
-        w => main.emit.at(alone, xs, None{}))))
+        w => when(IO(Unit), alone, y => main.emit.at(alone, mode, List.take(&2, String, xs, Nat.sub(List.length(&2, String, xs), 1n)), Some{codes(l)}),
+          y => main.out(Out{False{}, "blend: a tree is written beside its modules, its imports' paths kept; into a directory, --alone writes the modules named"})),
+        w => main.emit.at(alone, mode, xs, None{}))))
 
-# `emit [--alone] FILE.blend... [DIR]`
+# the flags taken wherever they are: the mode 1 checks, 0 none
+# (`--no-check`), 2 verdicts (`--verdict`), 3 both asked, refused
+def main.emit.f(xs: List<&2, String>, +alone: Bool, +mode: U32, +rest: List<&2, String>) -> IO(Unit):
+  match xs:
+    case Nil{}:
+      when(IO(Unit), U32.is_eq(mode, 3), u => main.out(Out{False{}, usage()}), u => main.emit.k(alone, mode, List.reverse(&2, String, rest)))
+    case Con{+x, +t}:
+      when(IO(Unit), String.eq(x, "--alone"), u => main.emit.f(t, True{}, mode, rest),
+        u => when(IO(Unit), String.eq(x, "--no-check"), v => main.emit.f(t, alone, when(U32, U32.is_ge(mode, 2), w => 3, w => 0), rest),
+          v => when(IO(Unit), String.eq(x, "--verdict"), w => main.emit.f(t, alone, when(U32, U32.is_eq(mode, 0) || U32.is_eq(mode, 3), y => 3, y => 2), rest),
+            w => main.emit.f(t, alone, mode, Con{x, rest}))))
+
+# `emit [--alone] [--no-check|--verdict] FILE.blend... [DIR]`
 def main.emit(+xs: List<&2, String>) -> IO(Unit):
-  on.maybe(String, IO(Unit), List.head(&2, String, xs), u => main.out(Out{False{}, usage()}),
-    +h => when(IO(Unit), String.eq(h, "--alone"), v => main.emit.k(True{}, List.tail(&2, String, xs)), v => main.emit.k(False{}, xs)))
+  main.emit.f(xs, False{}, 1, Nil{})
 
 # Deps (`blend deps`, blend-command-mirrors-bend): the modules `emit`
 # would write, imports first, each current, stale, missing or refused, or

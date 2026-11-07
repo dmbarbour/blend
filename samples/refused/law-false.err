@@ -1,0 +1,12 @@
+SOME PROOFS FAIL
+Error:
+- expected : Nat.add(x, x)
+- observed : x
+Context:
+- x : Nat
+Location: Sum.LAW.same
+33 | def Sum.LAW.same(x):
+34>|   {==}
+   |   ^^^^
+35 | 
+Source: refused/law-false.blend:14

@@ -7,3 +7,4 @@ Location: Loose.LAW.S.as_declared
 12>| def Loose.LAW.S.as_declared() -> Data: Loose.S()
    |                                        ^^^^^^^
 13 | 
+Source: refused/declare-kind.blend:6

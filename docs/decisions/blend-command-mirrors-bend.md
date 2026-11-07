@@ -20,6 +20,11 @@ what a module reaches and a `deps` to list it, a dry run.
   `bend base NAME`), `guide`, `version`, `update` and `rebuild`. A first
   argument ending in `.blend` is a file, any other a word; flags may
   follow anywhere, `--` passing the rest to the program, as Bend's.
+- `emit` checks what it writes (the maintainer, 2026-11-05): Bend runs
+  on each file holding laws, proofs or witnesses, its failures reported
+  as a run's are and the status 1; a flag, `--no-check`, skips it; and
+  verdicts, the kernel's costlier recheck, are a mode of their own,
+  `--verdict`, as Bend keeps them apart.
 - Blend's errors take Bend's shape, `Error:` and `Location:` with the
   lines around it; Bend's errors on emitted code are mapped back to the
   `.blend` line they come from (`where.sh`'s rule, `README.md`), on any
@@ -57,6 +62,12 @@ what a module reaches and a `deps` to list it, a dry run.
   build stays cached, rebuilt when Bend or Blend changes.
 - Each form has samples of its output and status, as `emit` has.
 - `check_generated.sh` may become a `deps` per directory.
+- Bend checks every definition of each file a file imports (tried
+  2026-11-07), so `emit` checks a file holding laws only where no other
+  it checks reaches it; the run form emits unchecked, Bend checking as
+  it runs. A tree is written beside its modules only, a directory taking
+  the modules named `--alone` (`blend-cli.checks` found a tree's imports
+  written there flat, where no import looked), until `blend-cli.out`.
 - `blend FILE.blend` and its flags emit the module's tree, as `emit`
   does (the maintainer, 2026-11-06), beside its sources
   (`blend-cli.out`).

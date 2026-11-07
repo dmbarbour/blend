@@ -3,8 +3,9 @@
 # emits from its .blend (a generated file, checked current by
 # check_generated.sh), runs under Bend to print what its .out says; each
 # invalid sample fails, its errors exactly its .err; each refused sample
-# emits, and Bend refuses its file, its output exactly its .err (its
-# laws, proofs and witnesses there, `blend-laws-in-module`).
+# emits, and Bend, checking it as emit does, refuses its file, emit's
+# errors exactly its .err (its laws, proofs and witnesses there,
+# `blend-laws-in-module`; `blend-cli.checks`).
 # Run by Blend's gate (check.sh).
 #
 #   samples/check.sh
@@ -13,6 +14,8 @@ cd "$(dirname "$0")" || exit 1
 BLEND_ROOT=$(cd .. && pwd)
 . "$BLEND_ROOT/tools.sh"
 BEND=${BEND:-$(command -v bend || echo "$HOME/.bend/bin/bend")}
+# emit checks with it (blend-cli.checks)
+export BEND
 CAPPED=$TOOLS/capped.sh
 # Blend's executable, built once for each version of its sources
 BLEND=$(BEND=$BEND ../build.sh) || { echo "blend: no executable to check with"; exit 1; }
@@ -41,7 +44,7 @@ for src in invalid/*.blend; do
   m=$((m + 1))
   err=${src%.blend}.err
   [ -f "$err" ] || { echo "blend: $src has no .err"; status=1; continue; }
-  if got=$("$CAPPED" 500 30 "$BLEND" emit "$src" "$out" 2>&1); then
+  if got=$("$CAPPED" 500 30 "$BLEND" emit --alone "$src" "$out" 2>&1); then
     echo "blend: $src emits, where it must fail with $(cat "$err")"
     status=1
   elif [ "$got" != "$(cat "$err")" ]; then
@@ -57,17 +60,48 @@ for src in refused/*.blend; do
   base=${src#refused/}
   base=${base%.blend}
   [ -f "refused/$base.err" ] || { echo "blend: $src has no .err"; status=1; continue; }
-  if ! "$CAPPED" 500 30 "$BLEND" emit --alone "$src" "$r" >/dev/null; then
-    echo "blend: $src does not emit, where Bend must refuse it"
+  if got=$("$CAPPED" 1000 60 "$BLEND" emit --alone "$src" "$r" 2>&1 >"$r/$base.wrote"); then
+    echo "blend: $src emits and passes its check, where Bend must refuse it"
     status=1
-  elif got=$(cd "$r" && "$CAPPED" 1000 60 "$BEND" "${base}.bend" --check-only 2>&1); then
-    echo "blend: Bend accepts ${base}.bend, where it must refuse it"
+  elif [ "$(cat "$r/$base.wrote")" != "$r/$base.bend" ]; then
+    echo "blend: $src writes '$(cat "$r/$base.wrote")', not $r/$base.bend"
     status=1
   elif [ "$got" != "$(cat "refused/$base.err")" ]; then
-    echo "blend: Bend gives '$got' on ${base}.bend, not '$(cat "refused/$base.err")'"
+    echo "blend: emit of $src gives '$got', not '$(cat "refused/$base.err")'"
     status=1
   fi
 done
+# `--no-check` leaves the check to the run; `--verdict` asks the
+# kernel's too, refused with it; the files checked, by a bend that logs
+# them: a tree's root holding laws alone, its check covering what it
+# imports, an import holding them where its root does not
+"$CAPPED" 500 30 "$BLEND" emit --alone --no-check refused/law-false.blend "$r" >/dev/null 2>&1 ||
+  { echo "blend: emit --no-check checks"; status=1; }
+if "$CAPPED" 500 30 "$BLEND" emit --no-check --verdict laws.blend "$r" >/dev/null 2>&1; then
+  echo "blend: emit takes --no-check with --verdict"
+  status=1
+fi
+c=$(cd .. && pwd)/results/checks
+mkdir -p "$c/lib" || exit 1
+printf '#!/bin/sh\necho "$*" >> "%s"\n' "$c/bend.log" > "$c/bend" && chmod +x "$c/bend" || exit 1
+cp refused/law-false.blend "$c/lib/" || exit 1
+printf 'import Base\nimport ./lib/law-false.blend as F\n\nlaw two:\n  {Nat.add(1n, 1n) == 2n : Nat}\nproof two():\n  {==}\n' > "$c/root.blend" || exit 1
+printf 'import Base\nimport ./lib/law-false.blend as F\n\ndef one() -> Nat:\n  1n\n' > "$c/plain.blend" || exit 1
+: > "$c/bend.log"
+(cd "$c" && BEND=$c/bend "$CAPPED" 500 30 "$BLEND" emit root.blend >/dev/null && BEND=$c/bend "$CAPPED" 500 30 "$BLEND" emit --verdict plain.blend >/dev/null &&
+  BEND=$c/bend "$CAPPED" 500 30 "$BLEND" emit --alone --no-check root.blend >/dev/null) || { echo "blend: emit with a logging bend fails"; status=1; }
+want="./root.bend --check-only
+lib/law-false.bend --verdict"
+[ "$(cat "$c/bend.log")" = "$want" ] || { echo "blend: emit checks '$(cat "$c/bend.log")', not '$want'"; status=1; }
+# the import's false law through its root's check: once, its source line
+# named from where blend runs
+if got=$(cd "$c" && "$CAPPED" 1000 60 "$BLEND" emit root.blend 2>&1 >/dev/null); then
+  echo "blend: a false law in an import passes its root's check"
+  status=1
+elif [ "$(echo "$got" | grep -c "^SOME PROOFS FAIL$")" != 1 ] || ! echo "$got" | grep -qx "Source: lib/law-false.blend:14"; then
+  echo "blend: a false law in an import gives '$got'"
+  status=1
+fi
 # `emit` writes a module's tree, the imports none names written too, a
 # stale one made current; `--alone` writes the modules named, a stale
 # import left as it is; a module named by its absolute path finds its
@@ -122,7 +156,7 @@ elif [ "$got" != "refused law-unproven.blend" ]; then
   status=1
 fi
 mkdir -p ../results/absolute || exit 1
-"$CAPPED" 500 30 "$BLEND" emit "$PWD/imports.blend" ../results/absolute >/dev/null ||
+"$CAPPED" 500 30 "$BLEND" emit --alone "$PWD/imports.blend" ../results/absolute >/dev/null ||
   { echo "blend: a module named by its absolute path fails"; status=1; }
 # `show`: what a name resolves to, its kind, the objects giving it, the
 # final first, where it is written and its lines; a name of no
@@ -137,6 +171,15 @@ if got=$("$CAPPED" 500 30 "$BLEND" show laws.blend Nope.x 2>&1); then
   status=1
 elif [ "$got" != "blend: no definition Nope.x" ]; then
   echo "blend: show of no definition says '$got'"
+  status=1
+fi
+# a tree into a directory: refused, its imports' paths kept
+want="blend: a tree is written beside its modules, its imports' paths kept; into a directory, --alone writes the modules named"
+if got=$("$CAPPED" 500 30 "$BLEND" emit imports.blend ../results/absolute 2>&1); then
+  echo "blend: a tree into a directory is written"
+  status=1
+elif [ "$got" != "$want" ]; then
+  echo "blend: a tree into a directory gives '$got', not '$want'"
   status=1
 fi
 # a path holding a newline would break the markers naming it: refused

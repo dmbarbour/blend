@@ -23,7 +23,8 @@ blend_check() {
   out=$root/results/generated/$dir
   again="(cd $dir && $(echo "$dir" | sed 's#[^/][^/]*#..#g')/run.sh emit --alone $*)"
   mkdir -p "$out" || return 1
-  if ! wrote=$(cd "$dir" && "$root/run.sh" emit --alone "$@" "$out"); then
+  # unchecked: samples/check.sh runs each under Bend (blend-cli.checks)
+  if ! wrote=$(cd "$dir" && "$root/run.sh" emit --alone --no-check "$@" "$out"); then
     echo "$dir: blend emit $* fails"
     return 1
   fi

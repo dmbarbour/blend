@@ -12,8 +12,8 @@
 #   blend rebuild    the tool built again
 #   blend update     how to take a later Blend
 #   blend FILE.blend [args]|-o OUT|--check-only|--verdict
-#                    the module's tree emitted, then `bend FILE.bend` with
-#                    the same arguments, the program's input, output and
+#                    the module's tree emitted, unchecked, then `bend
+#                    FILE.bend`, which checks it, with the same arguments, the program's input, output and
 #                    status its own; each error Bend reports on a line of
 #                    a file of the module's tree followed by the .blend
 #                    line it comes from, `Source: FILE.blend:LINE`
@@ -28,6 +28,9 @@ read -r kind src < "$cfg"
 [ -f "$src/blend.bend" ] || { echo "blend: no blend.bend in $src, the checkout $cfg names" >&2; exit 1; }
 bend=$(command -v bend 2>/dev/null || echo "$home/bin/bend")
 [ -x "$bend" ] || { echo "blend: no bend (install Bend: curl -fsSL https://bend-lang.com/install.sh | sh)" >&2; exit 1; }
+# the tool checks what it emits with the same bend (blend-cli.checks)
+BEND=$bend
+export BEND
 # a native build wants clang, which Bend's builds call from the path
 native=1
 [ "${BLEND_NATIVE:-1}" = 0 ] && native=0
@@ -93,7 +96,7 @@ case ${1:-} in
   *.blend)
     file=$1
     shift
-    tree=$(tool emit "$file") || exit 1
+    tree=$(tool emit --no-check "$file") || exit 1
     bf=${file%.blend}.bend
     exec 3>&1
     st=$({ { "$bend" "$bf" "$@" 2>&1 1>&3 3>&- 4>&-; echo $? >&4; } | awk -v list="$tree" "$map" >&2 3>&- 4>&-; } 4>&1)
