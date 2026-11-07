@@ -13,7 +13,7 @@ first wrote a module's laws and proofs into files apart, `X_LAWS.bend`
 and `X_PROOF.bend` (the maintainer, 2026-11-04), which no one importing
 the module's code ever checks, a package's least of all; bend-mathlib
 keeps each law with its proof, so whoever loads a lemma checks it. Defs
-no `main` reaches are not compiled: the kernel given four second
+no `main` reaches are not compiled: glam-in-bend's kernel given four second
 callers no main reaches compiles to the same C, byte for byte. Checking
 a module's proofs at each load costs seconds: Blend's code 0.8 s alone,
 3.6 s with its proofs; the kernel 3.7 s, 5.8 s (2026-11-06).

@@ -48,9 +48,8 @@ section laws
 python3 -I "$TOOLS/check_laws.py" || status=1
 
 section proofs
-# Lean as glam-in-bend's scripts/dev-setup.sh installs it, last on the
-# path: its toolchain carries a clang of its own, which native builds
-# must not find first
+# Lean in ~/.lean (AGENTS.md, Setup), last on the path: its toolchain
+# carries a clang of its own, which native builds must not find first
 PATH="$PATH:$HOME/.lean/bin"
 command -v lean >/dev/null 2>&1 || { echo "no lean for --verdict"; status=1; }
 for laws in $(files '*LAWS.bend'); do
