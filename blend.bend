@@ -3222,7 +3222,9 @@ def cx.has(+c: Cx, +id: U32, +n: List<&2, U32>) -> Bool:
 
 # an object's hosts, innermost first, the module last: `^name` names the
 # host's scope, the module's at the top, though the module is no object
-# (`blend-module-is-bend`); the module has none
+# (`blend-module-is-bend`); the module has none. Fuel: a turn for each
+# number from id down, each host numbered below the object it holds
+# (`er.hosts`, law hosts.fuel)
 def hosts.go(n: Nat, +obs: List<&2, Ob>, +id: U32) -> List<&2, U32>:
   match n:
     case 0n:
@@ -3232,7 +3234,21 @@ def hosts.go(n: Nat, +obs: List<&2, Ob>, +id: U32) -> List<&2, U32>:
         u => Con{ob.host(ob.at(obs, id)), hosts.go(k, obs, ob.host(ob.at(obs, id)))})
 
 def hosts(+obs: List<&2, Ob>, +id: U32) -> List<&2, U32>:
-  hosts.go(1n+List.length(&2, Ob, obs), obs, id)
+  hosts.go(1n+U32.to_nat(id), obs, id)
+
+def er.host(+o: Ob) -> Er:
+  Er{ob.no(o), ob.name.of(ob.path(o)) ++ ": its host comes after it, a fault of Blend's"}
+
+# each object's host itself or an object before it, numbered no higher
+# than the object's place i; else a fault of Blend's, its hosts' walk
+# cut short (law hosts.fuel), reported at its line
+# (`blend-no-silent-failures`)
+def er.hosts(obs: List<&2, Ob>, +i: Nat) -> List<&2, Er>:
+  match obs:
+    case Nil{}:
+      Nil{}
+    case Con{+o, +t}:
+      when(List<&2, Er>, Nat.is_le(U32.to_nat(ob.host(o)), i), u => er.hosts(t, 1n+i), u => Con{er.host(o), er.hosts(t, 1n+i)})
 
 def cx.ls(c: Cx) -> List<&2, Maybe<&2, Lz>>:
   match c:
@@ -7564,9 +7580,9 @@ def objects.ers(+als: List<&2, Al>, +cx: Cx) -> List<&2, Er>:
   +ls = cx.ls(cx)
   +obs = cx.obs(cx)
   +fs = cx.fs(cx)
-  List.append(&2, Er, er.endless(pss, obs), List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss),
+  List.append(&2, Er, er.hosts(obs, 0n), List.append(&2, Er, er.endless(pss, obs), List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss),
     List.append(&2, Er, er.obs(obs, als, obs), List.append(&2, Er, er.made.parents(obs, als, obs, ls),
-    List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs)))))))
+    List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs))))))))
 
 # the objects stage's context: the rounds that make the nested objects
 # from obs0, their linearizations and folds (`cx.of`); the laws over

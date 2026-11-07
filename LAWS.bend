@@ -1273,3 +1273,15 @@ law obs.fuel:
   for +k: Nat
   {B.obs.go(Nat.add(k, B.wf.turns(st)), st, next, out) == B.obs.from(st, next, out) : List<&2, B.Ob>}
 
+# LAW: and an object's hosts take a turn for each number from its own
+# down, where each object's host is itself or numbered no higher than
+# its place (`er.hosts`, among the objects stage's errors), so that
+# more fuel changes nothing (`hosts`), no host dropped for want of it.
+# Record: blend-no-silent-failures
+law hosts.fuel:
+  for +obs: List<&2, B.Ob>
+  for +id: U32
+  for +k: Nat
+  for +h: {B.er.hosts(obs, 0n) == Nil{} : List<&2, B.Er>}
+  {B.hosts.go(Nat.add(k, 1n+U32.to_nat(id)), obs, id) == B.hosts(obs, id) : List<&2, U32>}
+
