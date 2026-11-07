@@ -65,7 +65,7 @@ That puts `blend` beside `bend`, in `~/.bend/bin`. Then, in
 `blend/samples/`:
 
     blend family.blend        write family.bend, then run it with bend
-    blend emit monoid.blend   write monoid.bend, and have bend check its laws
+    blend emit monoid.blend   write monoid.bend if stale, and have bend check its laws
     blend guide               the language, what Blend writes, the command
                               (GUIDE.md)
     blend --help

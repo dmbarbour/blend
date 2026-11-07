@@ -33,9 +33,10 @@ got=$(BEND_HOME=$h "$b" --help 2>&1) || fail "--help fails"
 BEND_HOME=$h "$b" update | grep -q "runs the checkout at $root" || fail "update names no checkout"
 [ "$(BEND_HOME=$h "$b" guide | head -n 1)" = "# The Blend guide" ] || fail "guide prints no guide"
 cp samples/choice.blend "$o/native/" && cp samples/choice.blend "$o/bend/" || exit 1
-(cd "$o/native" && BEND_HOME=$h "$b" emit --alone choice.blend > /dev/null) || fail "a native emit fails"
+# forced, so that a file an earlier run left proves nothing
+(cd "$o/native" && BEND_HOME=$h "$b" emit --alone --force choice.blend > /dev/null) || fail "a native emit fails"
 cmp -s "$o/native/choice.bend" samples/choice.bend || fail "a native emit differs from samples/choice.bend"
-(cd "$o/bend" && BLEND_NATIVE=0 BEND_HOME=$h "$b" emit --alone choice.blend > /dev/null) || fail "an emit through bend fails"
+(cd "$o/bend" && BLEND_NATIVE=0 BEND_HOME=$h "$b" emit --alone --force choice.blend > /dev/null) || fail "an emit through bend fails"
 cmp -s "$o/bend/choice.bend" samples/choice.bend || fail "an emit through bend differs from samples/choice.bend"
 BEND_HOME=$root/results/launcher/none "$b" version > /dev/null 2>&1 && fail "runs where it is not installed"
 # a file first: the module run as `bend` runs it, its output and status

@@ -364,7 +364,7 @@ hub, its `.bend` files only for now (`blend-imports-local`).
 - After the header, a stamp, `# blend stamp: FORMAT HASH`: the format of
   what Blend writes, and a hash of the module and every `.blend` it
   imports. A file whose stamp is what its sources give is current;
-  `deps` reads the stamp, and `emit` leaves a current import as it is
+  `deps` reads the stamp, and `emit` leaves a current file as it is
   (`blend-stamps`).
 
 ## The command
@@ -372,12 +372,13 @@ hub, its `.bend` files only for now (`blend-imports-local`).
     blend FILE.blend [args]   write the module and its imports, then run it
                               with bend; -o OUT, --check-only and --verdict
                               as bend's
-    blend emit [--alone] [--no-check|--verdict] FILE.blend...
+    blend emit [--alone] [--force] [--no-check|--verdict] FILE.blend...
                               write each module's .bend and its imports'
                               beside them (--alone: only those named),
-                              each import current by its stamp left as is;
-                              then check with bend those holding laws
-                              (--verdict: the kernel's too)
+                              each current by its stamp left as it is
+                              (--force: written all the same); then check
+                              with bend those holding laws (--verdict: the
+                              kernel's too)
     blend deps [--make] FILE.blend...
                               each module emit would write: current by its
                               stamp, stale, missing or refused; --make as

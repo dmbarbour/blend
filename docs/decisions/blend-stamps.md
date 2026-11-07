@@ -25,10 +25,13 @@ The rest is the agent's:
   reads the stamp, emitting in memory only where a file is not current,
   to tell stale from refused; `deps --bytes` emits each and compares the
   bytes too, finding a file stamped current but other.
-- `emit` writes the modules named; an import current by its stamp it
-  leaves as it is, but lists after the files written, and checks with
-  the rest of the tree, so that a failing law in a current import is
-  still found and mapped.
+- `emit` leaves a module current by its stamp as it is, a module named
+  no different from an import, and `--force` writes every one all the
+  same (the maintainer, 2026-11-07). It lists a current file after those
+  written, and checks it with the rest of the tree, so that a failing
+  law in it is still found and mapped. `deps --make`'s recipe forces
+  the write, so that make finds the target's time moved; the gate's
+  "regenerate it" too, a file edited under its stamp being current.
 - The gate (`check_generated.sh`) runs `deps --bytes` over the samples,
   and fails a generated file that changed while its stamp stayed as
   HEAD has it: Blend's output changed under one format. `blend

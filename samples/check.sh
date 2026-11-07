@@ -129,10 +129,10 @@ current imports.blend"
 got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps imports.blend 2>&1) || { echo "blend: deps of a current tree fails"; status=1; }
 [ "$got" = "$want" ] || { echo "blend: deps of a current tree says '$got', not '$want'"; status=1; }
 want="lib/shapes.bend: lib/shapes.blend
-	blend emit --alone lib/shapes.blend
+	blend emit --alone --force lib/shapes.blend
 
 imports.bend: imports.blend lib/shapes.blend
-	blend emit --alone imports.blend"
+	blend emit --alone --force imports.blend"
 got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps --make imports.blend 2>&1) || { echo "blend: deps --make fails"; status=1; }
 [ "$got" = "$want" ] || { echo "blend: deps --make says '$got', not '$want'"; status=1; }
 # stamps (blend-stamps): an import its stamp finds current is left as
@@ -145,6 +145,14 @@ lib/shapes.bend"
 got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" emit --no-check imports.blend 2>&1) || { echo "blend: emit of a current tree fails: $got"; status=1; }
 [ "$got" = "$want" ] || { echo "blend: emit of a current tree says '$got', not '$want'"; status=1; }
 [ "$(tail -n 1 "$v/lib/shapes.bend")" = "# edited" ] || { echo "blend: emit wrote an import its stamp finds current"; status=1; }
+# a module named is no different: current, left as it is; `--force`
+# writes every module, current or not
+echo "# edited" >> "$v/imports.bend" || exit 1
+(cd "$v" && "$CAPPED" 500 30 "$BLEND" emit --no-check imports.blend >/dev/null) || { echo "blend: emit of a current module fails"; status=1; }
+[ "$(tail -n 1 "$v/imports.bend")" = "# edited" ] || { echo "blend: emit wrote a module named its stamp finds current"; status=1; }
+(cd "$v" && "$CAPPED" 500 30 "$BLEND" emit --force --no-check imports.blend >/dev/null) || { echo "blend: emit --force fails"; status=1; }
+cmp -s "$v/imports.bend" imports.bend && cmp -s "$v/lib/shapes.bend" lib/shapes.bend || { echo "blend: emit --force leaves a module unwritten"; status=1; }
+echo "# edited" >> "$v/lib/shapes.bend" || exit 1
 want="current lib/shapes.blend
 current imports.blend"
 got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" deps imports.blend 2>&1) || { echo "blend: deps of a stamped tree fails: $got"; status=1; }

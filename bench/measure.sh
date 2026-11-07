@@ -31,7 +31,7 @@ for k in "$n" $((2 * n)) $((4 * n)); do
   mod=$out/$shape$k.blend
   "$gen" "$shape" "$k" > "$mod" || exit 1
   start=$(date +%s.%N)
-  "$TOOLS/capped.sh" "$mb" "$secs" "$TOOLS/count.sh" "$blend" emit --alone --no-check "$mod" > /dev/null 2> "$out/run.err"
+  "$TOOLS/capped.sh" "$mb" "$secs" "$TOOLS/count.sh" "$blend" emit --alone --force --no-check "$mod" > /dev/null 2> "$out/run.err"
   ok=$?
   t=$(awk -v a="$start" -v b="$(date +%s.%N)" 'BEGIN { printf "%.2f", b - a }')
   ins=$(sed -n 's/^count.sh: \([0-9]*\) instructions.*/\1/p' "$out/run.err")
