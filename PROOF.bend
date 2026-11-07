@@ -6262,8 +6262,8 @@ def copies_ok(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +ds: L
                   cpadd_held(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}, ds, rd_held(cx, o, i, ds, hx), hc)))
 
 def copies_held(+cx: B.Cx, +o: U32, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}) -> {cph(B.copies(cx, o), ds) == True{} : Bool}:
-  copies_ok(1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))), cx, o, B.ins.finals(B.cx.map(cx, o)),
-    B.Cp{Nil{}, Nil{}, B.ht.for(B.In, 1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))))}, ds, hx, {==})
+  copies_ok(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)),
+    B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, ds, hx, {==})
 
 def ocsh(os: List<&2, B.Oc>, +ds: List<&2, B.Node>) -> Bool:
   match os:
@@ -7414,8 +7414,8 @@ def mc_m(c1: Bool, abs: Bool, +id: U32, +t: List<&2, B.Ob>, +cx: B.Cx, +ih: {ocs
       ih
     case False{} False{}:
       and_intro(cpm(B.copies(cx, id)), ocsm(B.module.copies(t, cx)),
-        copies_m(1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))), cx, id, B.ins.finals(B.cx.map(cx, id)),
-          B.Cp{Nil{}, Nil{}, B.ht.for(B.In, 1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))))}, {==}), ih)
+        copies_m(B.copies.fuel(), cx, id, B.ins.finals(B.cx.map(cx, id)),
+          B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, {==}), ih)
 
 def mcopies_m(os: List<&2, B.Ob>, +cx: B.Cx) -> {ocsm(B.module.copies(os, cx)) == True{} : Bool}:
   match os:
@@ -10345,8 +10345,8 @@ def mci(c1: Bool, abs: Bool, +id: U32, +t: List<&2, B.Ob>, +cx: B.Cx, +ds: List<
       ih
     case False{} False{}:
       and_intro(cpil(B.copies(cx, id)), ocsil(B.module.copies(t, cx)),
-        copies_il(1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))), cx, id, B.ins.finals(B.cx.map(cx, id)),
-          B.Cp{Nil{}, Nil{}, B.ht.for(B.In, 1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))))}, ds, hx, hd, finals_il(B.cx.map(cx, id), map_il(cx, id, hf)), {==}), ih)
+        copies_il(B.copies.fuel(), cx, id, B.ins.finals(B.cx.map(cx, id)),
+          B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, ds, hx, hd, finals_il(B.cx.map(cx, id), map_il(cx, id, hf)), {==}), ih)
 
 def mcopies_il(os: List<&2, B.Ob>, +cx: B.Cx, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}, +hd: {dsil(ds) == True{} : Bool}, +hf: {cxf(cx) == True{} : Bool}) ->
     {ocsil(B.module.copies(os, cx)) == True{} : Bool}:
@@ -11713,8 +11713,8 @@ def mc_e(c1: Bool, abs: Bool, +id: U32, +t: List<&2, B.Ob>, +cx: B.Cx, +ih: {ocs
       ih
     case False{} False{}:
       and_intro(cpe(B.copies(cx, id)), ocse(B.module.copies(t, cx)),
-        copies_e(1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))), cx, id, B.ins.finals(B.cx.map(cx, id)),
-          B.Cp{Nil{}, Nil{}, B.ht.for(B.In, 1n+B.count(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))))}, {==}), ih)
+        copies_e(B.copies.fuel(), cx, id, B.ins.finals(B.cx.map(cx, id)),
+          B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, {==}), ih)
 
 def mcopies_e(os: List<&2, B.Ob>, +cx: B.Cx) -> {ocse(B.module.copies(os, cx)) == True{} : Bool}:
   match os:

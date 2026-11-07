@@ -1,0 +1,22 @@
+# A library's object wider than the module extending it (the sample
+# `wide`): its copies there outnumber that module's own definitions.
+import Base
+
+abstract object Wide with
+  declare base
+  def w1(+x: U32) -> U32:
+    (base(x) + 1 : U32)
+  def w2(+x: U32) -> U32:
+    (w1(x) + 1 : U32)
+  def w3(+x: U32) -> U32:
+    (w2(x) + 1 : U32)
+  def w4(+x: U32) -> U32:
+    (w3(x) + 1 : U32)
+  def w5(+x: U32) -> U32:
+    (w4(x) + 1 : U32)
+  def w6(+x: U32) -> U32:
+    (w5(x) + 1 : U32)
+  def w7(+x: U32) -> U32:
+    (w6(x) + 1 : U32)
+  def w8(+x: U32) -> U32:
+    (w7(x) + 1 : U32)

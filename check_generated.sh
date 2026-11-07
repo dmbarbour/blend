@@ -41,5 +41,5 @@ blend_check() {
   done
 }
 
-blend_check samples family.blend nested.blend override.blend prior.blend sharing.blend choice.blend types.blend imports.blend family-nested.blend nested-reach.blend laws.blend laws-imported.blend declares.blend templates.blend monoid.blend namespaces.blend lib/shapes.blend lib/adds.blend lib/dims.blend
+blend_check samples family.blend nested.blend override.blend prior.blend sharing.blend choice.blend types.blend imports.blend family-nested.blend nested-reach.blend laws.blend laws-imported.blend declares.blend templates.blend monoid.blend namespaces.blend wide.blend lib/shapes.blend lib/adds.blend lib/dims.blend lib/wide.blend
 exit "$status"

@@ -4018,10 +4018,31 @@ def ins.finals(es: List<&2, En>) -> List<&2, In>:
         case En{name, chain, +no, +what}:
           Con{In{name, en.head(chain), False{}}, ins.finals(t)}
 
+# every module's definitions, the root's and its imports' (each module's
+# own object), for the copies' table
+def mods.count(os: List<&2, Ob>) -> Nat:
+  match os:
+    case Nil{}:
+      0n
+    case Con{o, +t}:
+      match o:
+        case Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+          when(Nat, U32.is_eq(id, host), u => Nat.add(count(mems), mods.count(t)), u => mods.count(t))
+
+# the copies' fuel: past any worklist, which ends of itself, each
+# instance copied once and its repeats skipped. It was the root file's
+# definitions, and an object inheriting more from an import lost the rest
+# of its copies, silently (found moving glam's kernel, 2026-11-07)
+def copies.fuel() -> Nat:
+  4294967295n
+
+# the copies' table, sized for every module's definitions
+def copies.room(+cx: Cx) -> Ht<In>:
+  ht.for(In, 1n+mods.count(cx.obs(cx)))
+
 # a concrete object's copies: its finals, then each prior they reach
 def copies(+cx: Cx, +o: U32) -> Cp:
-  copies.go(1n+count(ob.mems(ob.at(cx.obs(cx), 0))), cx, o, ins.finals(cx.map(cx, o)),
-    Cp{Nil{}, Nil{}, ht.for(In, 1n+count(ob.mems(ob.at(cx.obs(cx), 0))))})
+  copies.go(copies.fuel(), cx, o, ins.finals(cx.map(cx, o)), Cp{Nil{}, Nil{}, copies.room(cx)})
 
 # The copies, printed
 # -------------------
