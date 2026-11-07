@@ -8,7 +8,8 @@
 # module as `bend` runs a .bend; the rest go to the tool.
 #
 #   blend guide      the guide, GUIDE.md
-#   blend version    where it runs from, Blend's source hash, Bend's
+#   blend version    where it runs from, Blend's source hash and the
+#                    format of what it writes (blend-stamps), Bend's
 #                    version, and whether natively or through Bend
 #   blend rebuild    the tool built again
 #   blend update     how to take a later Blend
@@ -44,7 +45,9 @@ case ${1:-} in
     at=$(git -C "$src" rev-parse --short HEAD 2>/dev/null) &&
       { [ -z "$(git -C "$src" status --porcelain -- blend.bend 2>/dev/null)" ] || at="$at, blend.bend changed"; }
     how="natively"; [ "$native" = 1 ] || how="through bend (no native build)"
-    echo "blend from the checkout $src${at:+ ($at)}, blend.bend $(hash "$src/blend.bend"); $("$bend" version), $how"
+    # the format, read from the source rather than the tool, which may want a build
+    fmt=$(awk '/^def blend\.format\(\)/ { getline; if (match($0, /"[^"]*"/)) print substr($0, RSTART + 1, RLENGTH - 2); exit }' "$src/blend.bend")
+    echo "blend from the checkout $src${at:+ ($at)}, blend.bend $(hash "$src/blend.bend"), format ${fmt:-unknown}; $("$bend" version), $how"
     exit 0 ;;
   rebuild)
     [ "$native" = 1 ] || { echo "blend: no native build to make (no clang, or BLEND_NATIVE=0): blend runs through bend" >&2; exit 1; }

@@ -24,8 +24,8 @@ The mode that wrote the modules named and verified the rest goes:
 
 **Consequences.**
 - A package's verification, and `deps`, cost each module's emission
-  again; a stamp of the sources' hash in each emitted header may make it
-  cheaper (`blend-cli.stamps`).
+  again; since `blend-stamps`, a stamp in each written file's header
+  makes it a line read.
 - `bend blend.bend -- emit --alone ...` under Bend, whose CLI takes a
   dashed argument as its own; the built tool takes it directly.
 - `blend deps` lists what `emit` would reach and whether each is

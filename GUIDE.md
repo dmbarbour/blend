@@ -361,6 +361,11 @@ hub, its `.bend` files only for now (`blend-imports-local`).
 - Before each definition, a marker naming its source, `# blend:
   FILE:LINE`; the lines below it follow the source from LINE.
 - The laws, proofs and witnesses after the code.
+- After the header, a stamp, `# blend stamp: FORMAT HASH`: the format of
+  what Blend writes, and a hash of the module and every `.blend` it
+  imports. A file whose stamp is what its sources give is current;
+  `deps` reads the stamp, and `emit` leaves a current import as it is
+  (`blend-stamps`).
 
 ## The command
 
@@ -369,12 +374,14 @@ hub, its `.bend` files only for now (`blend-imports-local`).
                               as bend's
     blend emit [--alone] [--no-check|--verdict] FILE.blend...
                               write each module's .bend and its imports'
-                              beside them (--alone: only those named);
+                              beside them (--alone: only those named),
+                              each import current by its stamp left as is;
                               then check with bend those holding laws
                               (--verdict: the kernel's too)
     blend deps [--make] FILE.blend...
-                              each module emit would write: current, stale,
-                              missing or refused; --make as makefile rules
+                              each module emit would write: current by its
+                              stamp, stale, missing or refused; --make as
+                              makefile rules
     blend show FILE.blend [--read|--objects|--resolve] [NAME]
                               the objects, a stage, or what NAME resolves to
     blend guide|version|rebuild|update|--help

@@ -3,8 +3,8 @@ Error:
 - expected : Data
 - observed : Type
 Location: Loose.LAW.S.as_declared
-11 | # blend: declare-kind.blend:6
-12>| def Loose.LAW.S.as_declared() -> Data: Loose.S()
+12 | # blend: declare-kind.blend:6
+13>| def Loose.LAW.S.as_declared() -> Data: Loose.S()
    |                                        ^^^^^^^
-13 | 
+14 | 
 Source: declare-kind.blend:6

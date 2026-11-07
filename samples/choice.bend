@@ -1,4 +1,5 @@
 # Written by Blend from choice.blend; do not edit.
+# blend stamp: 1 74aacaf019d5f6b0
 import Base
 
 # blend: choice.blend:20

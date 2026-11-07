@@ -36,9 +36,9 @@ what a module reaches and a `deps` to list it, a dry run.
   and exits 1 where any is not current, as `make -q` does; `--make`
   prints them as a makefile's rules, each `.bend` from its `.blend` and
   every `.blend` it reaches, `blend emit --alone` the recipe, the status
-  1 only where a module has errors (rules being no report of state). It learns staleness as import
-  verification does, by emitting in memory, until a stamp in each
-  emitted header makes it a line read.
+  1 only where a module has errors (rules being no report of state). It learns staleness from each
+  file's stamp (`blend-stamps`), emitting in memory only where a file
+  is not current.
 - `blend` lives beside `bend`, in `$BEND_HOME/bin` (`~/.bend/bin`) by
   default; Bend's installer replaces only its own files there.
 - The launcher, a shell script, runs the tool built natively, cached and
