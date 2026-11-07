@@ -66,7 +66,10 @@ a module's proofs at each load costs seconds: Blend's code 0.8 s alone,
   name in a body can spell; messages name it `proof name`.
 - `scripts/check_laws.py` reads `law` members in `.blend` files as it
   reads `LAWS.bend`, each named by the objects it sits in: changing one
-  on main needs its `Law:` trailer. An invalid sample's laws are none.
+  on main needs its `Law:` trailer. A sample's laws are none: samples
+  are fixtures, held to what they print or the errors they raise, and
+  only the product's laws, Blend's and glam's, ask the maintainer's
+  approval (the maintainer, 2026-11-07).
 - `--verdict` rechecks every def a file loads, Base's aside, reached
   from `main` or not, and refuses one relying on `@unsafe` or foreign
   code: a module with laws keeps such code in a module of its own, as
