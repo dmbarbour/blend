@@ -16,17 +16,21 @@ contents to be discussed first.
   why, one example, how to install and run.
 - Both pare away the unnecessary, aggressively and concisely; examples
   demonstrate, the samples keeping the fuller cases.
-- A fenced `blend` block in either is a whole module that the gate
-  emits and checks; a fragment goes in an indented block.
+- A fenced `blend` block in either is a sample, whole, and the output
+  shown after it the sample's: the examples are a curated subset of the
+  samples, run and checked as every sample is (2026-11-07, after the
+  first cut checked them only by emitting); a fragment goes in an
+  indented block.
 - The guide is `GUIDE.md` at Blend's root, which `blend guide` prints.
 
 **Consequences.**
 - The records' rules live in the guide's sections now, not the README's.
 - Open questions and known issues live in the plan's steps, a limit the
   user meets in the guide's Limits.
-- `examples_check.sh` (a gate section) writes each block at the path
-  its fence names (```` ```blend lib/x.blend ````) and emits them all
-  beside, as a user would: the section list and this convention are
+- `examples_check.sh` (a gate section) compares each block with the
+  sample its fence names (```` ```blend samples/override.blend ````), and
+  each run shown, an indented `$ blend NAME.blend` and the lines below,
+  with the sample's `.out`: the section list and this convention are
   the agent's.
 
 **Rule lives in:** `GUIDE.md`; `README.md`; `examples_check.sh`.

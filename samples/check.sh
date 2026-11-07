@@ -36,15 +36,16 @@ for src in *.blend; do
   fi
 done
 m=0
-# an invalid sample that emits writes into results/ (out of git), never
-# beside the sample
+# each invalid and refused sample emitted from a copy in results/ (out of
+# git, overwritten each run), so that one emitting by mistake writes
+# nothing beside the samples
 out=../results/invalid
-mkdir -p "$out" || exit 1
+mkdir -p "$out" && cp invalid/*.blend "$out/" || exit 1
 for src in invalid/*.blend; do
   m=$((m + 1))
   err=${src%.blend}.err
   [ -f "$err" ] || { echo "blend: $src has no .err"; status=1; continue; }
-  if got=$("$CAPPED" 500 30 "$BLEND" emit --alone "$src" "$out" 2>&1); then
+  if got=$(cd "$out" && "$CAPPED" 500 30 "$BLEND" emit --alone "${src#invalid/}" 2>&1); then
     echo "blend: $src emits, where it must fail with $(cat "$err")"
     status=1
   elif [ "$got" != "$(cat "$err")" ]; then
@@ -54,17 +55,17 @@ for src in invalid/*.blend; do
 done
 k=0
 r=../results/refused
-mkdir -p "$r" || exit 1
+mkdir -p "$r" && cp refused/*.blend "$r/" || exit 1
 for src in refused/*.blend; do
   k=$((k + 1))
   base=${src#refused/}
   base=${base%.blend}
   [ -f "refused/$base.err" ] || { echo "blend: $src has no .err"; status=1; continue; }
-  if got=$("$CAPPED" 1000 60 "$BLEND" emit --alone "$src" "$r" 2>&1 >"$r/$base.wrote"); then
+  if got=$(cd "$r" && "$CAPPED" 1000 60 "$BLEND" emit --alone "$base.blend" 2>&1 >"$base.wrote"); then
     echo "blend: $src emits and passes its check, where Bend must refuse it"
     status=1
-  elif [ "$(cat "$r/$base.wrote")" != "$r/$base.bend" ]; then
-    echo "blend: $src writes '$(cat "$r/$base.wrote")', not $r/$base.bend"
+  elif [ "$(cat "$r/$base.wrote")" != "./$base.bend" ]; then
+    echo "blend: $src writes '$(cat "$r/$base.wrote")', not ./$base.bend"
     status=1
   elif [ "$got" != "$(cat "refused/$base.err")" ]; then
     echo "blend: emit of $src gives '$got', not '$(cat "refused/$base.err")'"
@@ -75,9 +76,9 @@ done
 # kernel's too, refused with it; the files checked, by a bend that logs
 # them: a tree's root holding laws alone, its check covering what it
 # imports, an import holding them where its root does not
-"$CAPPED" 500 30 "$BLEND" emit --alone --no-check refused/law-false.blend "$r" >/dev/null 2>&1 ||
+(cd "$r" && "$CAPPED" 500 30 "$BLEND" emit --alone --no-check law-false.blend >/dev/null 2>&1) ||
   { echo "blend: emit --no-check checks"; status=1; }
-if "$CAPPED" 500 30 "$BLEND" emit --no-check --verdict laws.blend "$r" >/dev/null 2>&1; then
+if (cd "$r" && "$CAPPED" 500 30 "$BLEND" emit --no-check --verdict law-false.blend >/dev/null 2>&1); then
   echo "blend: emit takes --no-check with --verdict"
   status=1
 fi
@@ -155,8 +156,7 @@ elif [ "$got" != "refused law-unproven.blend" ]; then
   echo "blend: deps of a module with errors says '$got'"
   status=1
 fi
-mkdir -p ../results/absolute || exit 1
-"$CAPPED" 500 30 "$BLEND" emit --alone "$PWD/imports.blend" ../results/absolute >/dev/null ||
+"$CAPPED" 500 30 "$BLEND" emit --alone "$(cd "$v" && pwd)/imports.blend" >/dev/null ||
   { echo "blend: a module named by its absolute path fails"; status=1; }
 # `show`: what a name resolves to, its kind, the objects giving it, the
 # final first, where it is written and its lines; a name of no
@@ -191,15 +191,17 @@ got=$("$CAPPED" 500 30 "$BLEND" show laws.blend AnyOf --objects 2>&1) || { echo 
 want="blend: --read shows the whole module, and takes no name"
 got=$("$CAPPED" 500 30 "$BLEND" show laws.blend --read AnyOf 2>&1) && { echo "blend: show --read takes a name"; status=1; }
 [ "$got" = "$want" ] || { echo "blend: show --read with a name says '$got', not '$want'"; status=1; }
-# a tree into a directory: refused, its imports' paths kept
-want="blend: a tree is written beside its modules, its imports' paths kept; into a directory, --alone writes the modules named"
-if got=$("$CAPPED" 500 30 "$BLEND" emit imports.blend ../results/absolute 2>&1); then
-  echo "blend: a tree into a directory is written"
+# emit writes each module beside it, and takes nothing else; the stage
+# words, retired for show's flags, are no command
+want="blend: emit takes .blend files, each written beside it: elsewhere"
+if got=$(cd "$v" && "$CAPPED" 500 30 "$BLEND" emit imports.blend elsewhere 2>&1); then
+  echo "blend: emit takes a directory"
   status=1
 elif [ "$got" != "$want" ]; then
-  echo "blend: a tree into a directory gives '$got', not '$want'"
+  echo "blend: emit given a directory says '$got', not '$want'"
   status=1
 fi
+"$CAPPED" 500 30 "$BLEND" resolve laws.blend >/dev/null 2>&1 && { echo "blend: resolve is still a command"; status=1; }
 # a path holding a newline would break the markers naming it: refused
 nl="imports
 .blend"

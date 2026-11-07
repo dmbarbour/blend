@@ -25,8 +25,8 @@ Contingent:
 
 ## Layout
 
-- `README.md` why Blend, for a user; `GUIDE.md` the guide, its examples
-  and the README's whole modules the gate emits (`blend-guide`)
+- `README.md` why Blend, for a user; `GUIDE.md` the guide; their
+  examples are samples, whole, their outputs the samples' (`blend-guide`)
 - `blend.bend` the tool; `LAWS.bend` what must hold of it, `PROOF.bend`
   the proofs, `MUTANTS.txt` the mutations each law must fail
 - `samples/` executable specifications: each valid `.blend` beside the

@@ -8,7 +8,7 @@
 #   build.sh          the executable's path, built first if stale
 #   build.sh --force  the same, built again whatever the key (`blend
 #                     rebuild`)
-#   run.sh ARGS...    the executable run (run.sh resolve F.blend)
+#   run.sh ARGS...    the executable run (run.sh show --resolve F.blend)
 set -u
 force=0
 [ "${1:-}" = --force ] && force=1

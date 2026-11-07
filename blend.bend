@@ -7461,9 +7461,10 @@ def basename(path: String) -> String:
   base.k(until(List.reverse(&2, U32, codes(path)), 47))
 
 def usage() -> String:
-  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] [--no-check|--verdict] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR, then check with bend those holding laws; --alone those named alone, --no-check none, --verdict by the kernel too\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [--read|--objects|--resolve] [NAME]  a stage, the objects by default; what NAME resolves to, or with --objects that object\n  blend guide|version|rebuild|update        the launcher's own: the guide, where blend runs from, a build again, a later Blend\n  blend --help                              this"
+  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] [--no-check|--verdict] FILE.blend...  write each module's .bend and its imports' beside them, then check with bend those holding laws; --alone those named alone, --no-check none, --verdict by the kernel too\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [--read|--objects|--resolve] [NAME]  a stage, the objects by default; what NAME resolves to, or with --objects that object\n  blend guide|version|rebuild|update        the launcher's own: the guide, where blend runs from, a build again, a later Blend\n  blend --help                              this"
 
-# 1 read, 2 objects, 3 resolve, 4 emit
+# 1 read, 2 objects (with a name, what it resolves to), 3 resolve, 4
+# emit, 5 an object alone
 def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
   match cmd:
     case 1:
@@ -7745,13 +7746,6 @@ def main.show(+xs: List<&2, String>) -> IO(Unit):
 def dir.of(+p: List<&2, U32>) -> List<&2, U32>:
   when(List<&2, U32>, holds(p, [47]), u => slashes(path.dir(p)), u => codes("."))
 
-def dir.or(m: Maybe<&2, List<&2, U32>>, +p: List<&2, U32>) -> List<&2, U32>:
-  match m:
-    case None{}:
-      dir.of(p)
-    case Some{d}:
-      d
-
 # Imports not named
 # ------------------
 #
@@ -7870,8 +7864,8 @@ type Wm is Data:
 
 # the module at p written into the directory given, else beside it, its
 # file as emission names it
-def wm.of(+dir: Maybe<&2, List<&2, U32>>, +p: List<&2, U32>, +tree: List<&2, List<&2, U32>>) -> Wm:
-  Wm{path.join(dir.or(dir, p), root.file(p, codes(".bend"))), path.plain(p), tree}
+def wm.of(+p: List<&2, U32>, +tree: List<&2, List<&2, U32>>) -> Wm:
+  Wm{path.join(dir.of(p), root.file(p, codes(".bend"))), path.plain(p), tree}
 
 # a module written, read again for its lines
 type Wr is Data:
@@ -8191,14 +8185,14 @@ def checks(+fs: List<&2, Fo>, +mode: U32, ws: List<&2, Wm>) -> IO(Unit):
 
 # the imports none names, each read with its own and emitted in turn,
 # into the directory given, else beside it (`blend-emit-verifies-imports`)
-def emit.deps(ds: List<&2, List<&2, U32>>, +dir: Maybe<&2, List<&2, U32>>, acc: Out, ws: List<&2, Wm>) -> IO(Out & List<&2, Wm>):
+def emit.deps(ds: List<&2, List<&2, U32>>, acc: Out, ws: List<&2, Wm>) -> IO(Out & List<&2, Wm>):
   match ds:
     case Nil{}:
       IO.pure(Out & List<&2, Wm>, (acc, ws))
     case Con{+d, dt}:
       IO.bind(List<&2, Md>, Out & List<&2, Wm>, load.go(4096n, [Td{d, 0}], Nil{}),
-        +ms => emit.deps(dt, dir, out.join(acc, out.at(run.mods(4, ms), dir.or(dir, d))),
-          Con{wm.of(dir, d, List.tail(&2, List<&2, U32>, mds.paths(ms))), ws}))
+        +ms => emit.deps(dt, out.join(acc, out.at(run.mods(4, ms), dir.of(d))),
+          Con{wm.of(d, List.tail(&2, List<&2, U32>, mds.paths(ms))), ws}))
 
 # the files written, then checked
 def emit.write(o: Out, +mode: U32, ws: List<&2, Wm>) -> IO(Unit):
@@ -8215,7 +8209,7 @@ def emit.dws(r: Out & List<&2, Wm>, fs: List<&2, Fo>, +mode: U32) -> IO(Unit):
 # the modules named alone, or with the imports they reach, written
 # first, then checked; where the modules named have errors, those
 # alone, nothing written
-def emit.end(o: Out, +alone: Bool, +dir: Maybe<&2, List<&2, U32>>, +mode: U32, ds: List<&2, List<&2, U32>>, ws: List<&2, Wm>) -> IO(Unit):
+def emit.end(o: Out, +alone: Bool, +mode: U32, ds: List<&2, List<&2, U32>>, ws: List<&2, Wm>) -> IO(Unit):
   match o:
     case Out{+ok, text}:
       main.out(Out{ok, text})
@@ -8224,21 +8218,21 @@ def emit.end(o: Out, +alone: Bool, +dir: Maybe<&2, List<&2, U32>>, +mode: U32, d
         case True{}:
           emit.write(out.once(Outs{fs}), mode, ws)
         case False{}:
-          IO.bind(Out & List<&2, Wm>, Unit, emit.deps(ds, dir, Outs{Nil{}}, ws), r => emit.dws(r, fs, mode))
+          IO.bind(Out & List<&2, Wm>, Unit, emit.deps(ds, Outs{Nil{}}, ws), r => emit.dws(r, fs, mode))
 
 # each module emitted in turn, each read with its imports, into the
 # directory given, else its own; then, unless alone, the imports none
 # names emitted too, its tree; then every file written, or none; then,
 # by mode, the files holding laws checked
-def main.emit.go(ps: List<&2, String>, +dir: Maybe<&2, List<&2, U32>>, +alone: Bool, +mode: U32, +named: List<&2, List<&2, U32>>, deps: List<&2, List<&2, U32>>, ws: List<&2, Wm>, acc: Out) -> IO(Unit):
+def main.emit.go(ps: List<&2, String>, +alone: Bool, +mode: U32, +named: List<&2, List<&2, U32>>, deps: List<&2, List<&2, U32>>, ws: List<&2, Wm>, acc: Out) -> IO(Unit):
   match ps:
     case Nil{}:
-      emit.end(acc, alone, dir, mode, deps.missed(deps, named, Nil{}), ws)
+      emit.end(acc, alone, mode, deps.missed(deps, named, Nil{}), ws)
     case Con{+p, t}:
       IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{codes(p), 0}], Nil{}),
-        +ms => main.emit.go(t, dir, alone, mode, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
-          Con{wm.of(dir, codes(p), List.tail(&2, List<&2, U32>, mds.paths(ms))), ws},
-          out.join(acc, out.at(run.mods(4, ms), dir.or(dir, codes(p))))))
+        +ms => main.emit.go(t, alone, mode, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
+          Con{wm.of(codes(p), List.tail(&2, List<&2, U32>, mds.paths(ms))), ws},
+          out.join(acc, out.at(run.mods(4, ms), dir.of(codes(p))))))
 
 def args.data(xs: List<String>) -> List<&2, String>:
   match xs:
@@ -8261,19 +8255,24 @@ def args.dashed(xs: List<&2, String>) -> Bool:
     case Con{x, t}:
       starts(codes(x), [45]) || args.dashed(t)
 
-def main.emit.at(+alone: Bool, +mode: U32, +srcs: List<&2, String>, +dir: Maybe<&2, List<&2, U32>>) -> IO(Unit):
-  main.emit.go(srcs, dir, alone, mode, args.plain(srcs), Nil{}, Nil{}, Outs{Nil{}})
+def main.emit.at(+alone: Bool, +mode: U32, +srcs: List<&2, String>) -> IO(Unit):
+  main.emit.go(srcs, alone, mode, args.plain(srcs), Nil{}, Nil{}, Outs{Nil{}})
 
-# the modules, and a last argument not one the directory, the modules
-# named alone written there: a tree's imports, written there each by
-# its name, would not be where the files importing them look
+# an argument not a .blend file, the first
+def args.unblend(xs: List<&2, String>) -> Maybe<&2, String>:
+  match xs:
+    case Nil{}:
+      None{}
+    case Con{+x, t}:
+      when(Maybe<&2, String>, ends(codes(x), codes(".blend")), u => args.unblend(t), u => Some{x})
+
+# the modules, each written beside its source, its imports' paths kept
+# (the maintainer, 2026-11-07: no directory to write into, the imports
+# local, a package's emitted before it is published)
 def main.emit.k(+alone: Bool, +mode: U32, +xs: List<&2, String>) -> IO(Unit):
-  on.maybe(String, IO(Unit), List.last(&2, String, xs), u => main.out(Out{False{}, usage()}),
-    +l => when(IO(Unit), args.dashed(xs), v => main.out(Out{False{}, usage()}),
-      v => when(IO(Unit), Bool.not(ends(codes(l), codes(".blend"))) && Nat.is_gt(List.length(&2, String, xs), 1n),
-        w => when(IO(Unit), alone, y => main.emit.at(alone, mode, List.take(&2, String, xs, Nat.sub(List.length(&2, String, xs), 1n)), Some{codes(l)}),
-          y => main.out(Out{False{}, "blend: a tree is written beside its modules, its imports' paths kept; into a directory, --alone writes the modules named"})),
-        w => main.emit.at(alone, mode, xs, None{}))))
+  when(IO(Unit), List.is_empty(&2, String, xs) || args.dashed(xs), u => main.out(Out{False{}, usage()}),
+    u => on.maybe(String, IO(Unit), args.unblend(xs), v => main.emit.at(alone, mode, xs),
+      x => main.out(Out{False{}, "blend: emit takes .blend files, each written beside it: " ++ x})))
 
 # the flags taken wherever they are: the mode 1 checks, 0 none
 # (`--no-check`), 2 verdicts (`--verdict`), 3 both asked, refused
@@ -8287,7 +8286,7 @@ def main.emit.f(xs: List<&2, String>, +alone: Bool, +mode: U32, +rest: List<&2, 
           v => when(IO(Unit), String.eq(x, "--verdict"), w => main.emit.f(t, alone, when(U32, U32.is_eq(mode, 0) || U32.is_eq(mode, 3), y => 3, y => 2), rest),
             w => main.emit.f(t, alone, mode, Con{x, rest}))))
 
-# `emit [--alone] [--no-check|--verdict] FILE.blend... [DIR]`
+# `emit [--alone] [--no-check|--verdict] FILE.blend...`
 def main.emit(+xs: List<&2, String>) -> IO(Unit):
   main.emit.f(xs, False{}, 1, Nil{})
 
@@ -8395,8 +8394,6 @@ def main.deps(+xs: List<&2, String>) -> IO(Unit):
 
 def main.cmd(+cmd: U32, +xs: List<&2, String>) -> IO(Unit):
   match cmd:
-    case 0:
-      main.out(Out{False{}, usage()})
     case 4:
       main.emit(xs)
     case 5:
@@ -8404,31 +8401,17 @@ def main.cmd(+cmd: U32, +xs: List<&2, String>) -> IO(Unit):
     case 6:
       main.show(xs)
     case _:
-      match xs:
-        case Con{+path, r}:
-          match r:
-            case Nil{}:
-              main.file(cmd, path)
-            case Con{d, t}:
-              main.out(Out{False{}, usage()})
-        case Nil{}:
-          main.out(Out{False{}, usage()})
+      main.out(Out{False{}, usage()})
 
-def cmd.of(+rd: Bool, +ob: Bool, +rs: Bool, +em: Bool, +dp: Bool, +sh: Bool) -> U32:
-  match rd ob rs em dp sh:
-    case True{} _ _ _ _ _:
-      1
-    case False{} True{} _ _ _ _:
-      2
-    case False{} False{} True{} _ _ _:
-      3
-    case False{} False{} False{} True{} _ _:
+def cmd.of(+em: Bool, +dp: Bool, +sh: Bool) -> U32:
+  match em dp sh:
+    case True{} _ _:
       4
-    case False{} False{} False{} False{} True{} _:
+    case False{} True{} _:
       5
-    case False{} False{} False{} False{} False{} True{}:
+    case False{} False{} True{}:
       6
-    case False{} False{} False{} False{} False{} False{}:
+    case False{} False{} False{}:
       0
 
 # whether an argument holds a newline: a path that would break each line
@@ -8442,7 +8425,7 @@ def args.nl(xs: List<&2, String>) -> Bool:
 
 def main.args.r(+flag: String, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), args.nl(xs), v => main.out(Out{False{}, "blend: a path holding a newline would break the lines naming it: refused"}),
-    v => main.cmd(cmd.of(String.eq(flag, "read"), String.eq(flag, "objects"), String.eq(flag, "resolve"), String.eq(flag, "emit"), String.eq(flag, "deps"), String.eq(flag, "show")), xs))
+    v => main.cmd(cmd.of(String.eq(flag, "emit"), String.eq(flag, "deps"), String.eq(flag, "show")), xs))
 
 def main.args.k(+flag: String, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), String.eq(flag, "--help") || String.eq(flag, "-h"), u => main.out(Out{True{}, usage()}),
