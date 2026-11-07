@@ -1,1 +1,5 @@
-law-unproven-top.blend:7: law two_is_two has no proof: a concrete object proves each law it has, and a module its own; a law not yet proven belongs in an abstract object
+Error: law two_is_two has no proof: a concrete object proves each law it has, and a module its own; a law not yet proven belongs in an abstract object
+Location: law-unproven-top.blend:7
+6 | 
+7>| law two_is_two:
+8 |   {two() == 2n : Nat}

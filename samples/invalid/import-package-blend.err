@@ -1,1 +1,5 @@
-import-package-blend.blend:5: import shapes@1.0.0.0/shapes.blend: importing a package's Blend files is not supported yet
+Error: import shapes@1.0.0.0/shapes.blend: importing a package's Blend files is not supported yet
+Location: import-package-blend.blend:5
+4 | import Base
+5>| import shapes@1.0.0.0/shapes.blend as S
+6 | 

@@ -22,7 +22,8 @@ what a module reaches and a `deps` to list it, a dry run.
   follow anywhere, `--` passing the rest to the program, as Bend's.
 - Blend's errors take Bend's shape, `Error:` and `Location:` with the
   lines around it; Bend's errors on emitted code are mapped back to the
-  `.blend` line they come from (`where.sh`'s rule, `README.md`).
+  `.blend` line they come from (`where.sh`'s rule, `README.md`), on any
+  file of the module's tree whose line it is, and no other's.
 - `deps` lists the modules `emit --tree` would reach, in the order it
   writes them, each current, stale, missing, refused or a package's,
   and exits 1 where any is not current, as `make -q` does; `--make`

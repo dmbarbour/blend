@@ -1,1 +1,5 @@
-import-bend-up.blend:4: import ../units.bend: an import path is local, plain names (letters, digits, _ and -) led by ./ at most, never ../ or /, or a package's on Bend's hub
+Error: import ../units.bend: an import path is local, plain names (letters, digits, _ and -) led by ./ at most, never ../ or /, or a package's on Bend's hub
+Location: import-bend-up.blend:4
+3 | import Base
+4>| import ../units.bend as U
+5 | 

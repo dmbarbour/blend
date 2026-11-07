@@ -17,8 +17,10 @@ natively, built again when Blend or Bend changes, else run through Bend
 `blend-command-mirrors-bend`). `blend FILE.blend [args]`, `-o OUT`,
 `--check-only` or `--verdict` emits the module's tree, then runs
 `bend FILE.bend` with the same arguments, each error Bend reports on a
-line of the module's file followed by the `.blend` line it comes from
-(`Source: FILE.blend:LINE`). `blend emit [--alone] FILE.blend...
+line of a file of the module's tree followed by the `.blend` line it
+comes from (`Source: FILE.blend:LINE`). Blend's own errors take Bend's
+shape: `Error:` and the message, `Location: FILE:LINE`, and the
+source's lines around it, its own marked `>|`. `blend emit [--alone] FILE.blend...
 [DIR]` (or `run.sh emit ...`, the checkout's tool without installing) writes, for each module named, the `.bend` it makes, every
 concrete object's definitions, then its laws and their proofs where it
 has any, beside the module or into DIR, printing each path; or, writing nothing at all, the errors of

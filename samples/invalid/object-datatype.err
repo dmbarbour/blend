@@ -1,1 +1,5 @@
-object-datatype.blend:6: a datatype belongs to the module; an object's types are members, `type S = ...`
+Error: a datatype belongs to the module; an object's types are members, `type S = ...`
+Location: object-datatype.blend:6
+5 | object Tally with
+6>|   type Box<-A: Data> is Data:
+7 |     Box{+x: A}

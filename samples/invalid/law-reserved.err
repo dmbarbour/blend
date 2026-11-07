@@ -1,1 +1,5 @@
-law-reserved.blend:6: Pair.LAW.first: a name with a part LAW is Blend's, for laws
+Error: Pair.LAW.first: a name with a part LAW is Blend's, for laws
+Location: law-reserved.blend:6
+5 | object Pair with
+6>|   def LAW.first() -> Nat:
+7 |     1n

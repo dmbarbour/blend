@@ -1,1 +1,5 @@
-declare-twice.blend:10: declare push: Narrow has a declaration of push already, from Stack: a declaration is fixed where it is first made, the families varying by their types
+Error: declare push: Narrow has a declaration of push already, from Stack: a declaration is fixed where it is first made, the families varying by their types
+Location: declare-twice.blend:10
+ 9 | abstract object Narrow extends Stack with
+10>|   declare def push(st: S(), x: U32) -> S()
+11 | 

@@ -15,9 +15,9 @@
 #                    the module's tree emitted, then `bend FILE.bend` with
 #                    the same arguments, the program's input, output and
 #                    status its own; each error Bend reports on a line of
-#                    the module's file followed by the .blend line it
-#                    comes from, `Source: FILE.blend:LINE` (where.sh's
-#                    rule)
+#                    a file of the module's tree followed by the .blend
+#                    line it comes from, `Source: FILE.blend:LINE`
+#                    (where.sh's rule)
 #   blend ARGS...    the tool (blend --help)
 set -u
 home=${BEND_HOME:-$HOME/.bend}
@@ -56,22 +56,36 @@ tool() {
   if [ "$native" = 1 ]; then "$exe" "$@"; else "$bend" "$src/blend.bend" -- "$@"; fi
 }
 # Bend's standard error, each line as it comes; after an error's excerpt
-# whose marked line (` N>| `) is line N of the module's file, the .blend
-# line it comes from: the nearest marker above, `# blend: FILE:LINE`, and
-# the lines after it the source's next (where.sh)
+# whose marked line (` N>| `) is line N of one file of the module's tree
+# and of no other, the .blend line it comes from: the nearest marker
+# above, `# blend: FILE:LINE`, and the lines after it the source's next
+# (where.sh); a marker names its file from the emitted file's directory,
+# which the line names it from where blend runs
 map='
-  FNR == NR {
-    line[FNR] = $0; n = FNR
-    if ($0 ~ /^# blend: /) { m = substr($0, 10); i = match(m, /:[0-9]+$/); mf[FNR] = substr(m, 1, i - 1); ms[FNR] = substr(m, i + 1) }
-    next
+  BEGIN {
+    nf = split(list, fl, "\n")
+    for (i = 1; i <= nf; i++) {
+      f = fl[i]; if (f == "") continue; k = 0
+      while ((getline l < f) > 0) {
+        k++; line[f, k] = l
+        if (l ~ /^# blend: /) { m = substr(l, 10); j = match(m, /:[0-9]+$/); mf[f, k] = substr(m, 1, j - 1); ms[f, k] = substr(m, j + 1) }
+      }
+      close(f); n[f] = k
+    }
   }
   pend != "" && $0 !~ /^ *[0-9]*[ >]\| / && $0 !~ /^ +\|/ { print "Source: " pend; pend = "" }
   { print; fflush() }
   /^ *[0-9]+>\| / {
     k = $0; sub(/^ */, "", k); num = k; sub(/>.*/, "", num); txt = k; sub(/^[0-9]+>\| /, "", txt); num += 0
-    if (num <= n && line[num] == txt) {
-      for (a = num; a > 0 && !(a in mf); a--) ;
-      if (a > 0) { d = num - a - 1; if (d < 0) d = 0; pend = mf[a] ":" (ms[a] + d) }
+    hits = 0
+    for (i = 1; i <= nf; i++) { f = fl[i]; if (f != "" && num <= n[f] && line[f, num] == txt) { hits++; hit = f } }
+    if (hits == 1) {
+      for (a = num; a > 0 && !((hit, a) in mf); a--) ;
+      if (a > 0) {
+        d = num - a - 1; if (d < 0) d = 0
+        dir = hit; sub(/[^\/]*$/, "", dir); if (dir == "./") dir = ""
+        pend = dir mf[hit, a] ":" (ms[hit, a] + d)
+      }
     }
   }
   END { if (pend != "") print "Source: " pend }'
@@ -79,10 +93,10 @@ case ${1:-} in
   *.blend)
     file=$1
     shift
-    tool emit "$file" > /dev/null || exit 1
+    tree=$(tool emit "$file") || exit 1
     bf=${file%.blend}.bend
     exec 3>&1
-    st=$({ { "$bend" "$bf" "$@" 2>&1 1>&3 3>&- 4>&-; echo $? >&4; } | awk "$map" "$bf" - >&2 3>&- 4>&-; } 4>&1)
+    st=$({ { "$bend" "$bf" "$@" 2>&1 1>&3 3>&- 4>&-; echo $? >&4; } | awk -v list="$tree" "$map" >&2 3>&- 4>&-; } 4>&1)
     exec 3>&-
     exit "$st" ;;
 esac

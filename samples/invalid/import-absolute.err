@@ -1,1 +1,5 @@
-import-absolute.blend:4: import /lib/shapes.blend: an import path is local, plain names (letters, digits, _ and -) led by ./ at most, never ../ or /, or a package's on Bend's hub
+Error: import /lib/shapes.blend: an import path is local, plain names (letters, digits, _ and -) led by ./ at most, never ../ or /, or a package's on Bend's hub
+Location: import-absolute.blend:4
+3 | import Base
+4>| import /lib/shapes.blend as S
+5 | 

@@ -1,1 +1,5 @@
-nested-diamond.blend:17: Z has a from both Outer3.Inner and Outer2.Inner, each introducing it with def
+Error: Z has a from both Outer3.Inner and Outer2.Inner, each introducing it with def
+Location: nested-diamond.blend:17
+16 | 
+17>| object Z extends Outer2.Inner, Outer3.Inner
+18 | 

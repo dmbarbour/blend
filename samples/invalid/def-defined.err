@@ -1,1 +1,5 @@
-def-defined.blend:9: def greet: Loud has greet already, from Greeter (update it with upd)
+Error: def greet: Loud has greet already, from Greeter (update it with upd)
+Location: def-defined.blend:9
+ 8 | object Loud extends Greeter with
+ 9>|   def greet() -> String:
+10 |     "HELLO"

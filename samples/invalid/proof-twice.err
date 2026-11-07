@@ -1,1 +1,5 @@
-proof-twice.blend:16: proof same: One has a proof of same already, from Sized (update it with upd proof)
+Error: proof same: One has a proof of same already, from Sized (update it with upd proof)
+Location: proof-twice.blend:16
+15 |     1n
+16>|   proof same(n):
+17 |     {==}

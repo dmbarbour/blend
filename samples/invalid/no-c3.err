@@ -1,1 +1,5 @@
-no-c3.blend:16: C has no C3 linearization: A puts X before Y, and B puts Y before X
+Error: C has no C3 linearization: A puts X before Y, and B puts Y before X
+Location: no-c3.blend:16
+15 | 
+16>| object C extends A, B with
+17 | 

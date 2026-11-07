@@ -1,1 +1,5 @@
-upd-law.blend:14: a law is stated once, never updated: state a new law, or update its proof (upd proof)
+Error: a law is stated once, never updated: state a new law, or update its proof (upd proof)
+Location: upd-law.blend:14
+13 |     1n
+14>|   upd law small:
+15 |     for +n: Nat

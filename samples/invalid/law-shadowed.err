@@ -1,1 +1,5 @@
-law-shadowed.blend:16: def small: B has law small already, from Sized: a law is stated once, so name this member anew
+Error: def small: B has law small already, from Sized: a law is stated once, so name this member anew
+Location: law-shadowed.blend:16
+15 |     1n
+16>|   def small(+n: Nat) -> Nat:
+17 |     n

@@ -1,1 +1,5 @@
-undeclared-type.blend:10: Sum defines no S, which Tally declares (or mark Sum abstract)
+Error: Sum defines no S, which Tally declares (or mark Sum abstract)
+Location: undeclared-type.blend:10
+ 9 | 
+10>| object Sum extends Tally
+11 | 

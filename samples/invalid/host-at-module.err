@@ -1,1 +1,5 @@
-host-at-module.blend:6: ^name steps out of the module, which has no host
+Error: ^name steps out of the module, which has no host
+Location: host-at-module.blend:6
+5 | def greet() -> String:
+6>|   ^name()
+7 | 

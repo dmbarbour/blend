@@ -1,1 +1,5 @@
-affine-twice.blend:6: Arith.inc is affine and has 2 uses, in Arith.twice (line 9, twice): mark it shared or copied
+Error: Arith.inc is affine and has 2 uses, in Arith.twice (line 9, twice): mark it shared or copied
+Location: affine-twice.blend:6
+5 | object Arith with
+6>|   def inc(+n: U32) -> U32:
+7 |     (n + 1 : U32)
