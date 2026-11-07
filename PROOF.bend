@@ -89,6 +89,11 @@
 #   mirrors (`rd_inst`); a lookup after a put, the put or before
 #   (`ins_split`); an empty trie's leaves (`empty_leaf`); the copies'
 #   reversal keeping them (`rev_xs`).
+# - The copies defined (`copies.defined`): a guard made an error (a member
+#   not found), the law claiming where none is reported; errors only
+#   growing through the worklist (`ers_back`), so the result's none
+#   brings each copy's own none; a lookup returning only definitions of
+#   the name sought (`mem_find_def`, its `when` mirrored in `mfd_k`).
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -6195,7 +6200,7 @@ def cn_held(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node, +ds: List<&2, B.Node>, +hm:
 
 # copy.of's lookup mirrored
 def ocm(+mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool) -> B.Rd & B.Rb:
-  B.on.maybe(B.Node, B.Rd & B.Rb, mb, u => (B.Rd{B.In{n, q, prior}, B.NBad{Nil{}, 0}, Nil{}, Nil{}}, B.Rb{Nil{}, Nil{}, Nil{}}),
+  B.on.maybe(B.Node, B.Rd & B.Rb, mb, u => (B.Rd{B.In{n, q, prior}, B.NBad{Nil{}, 0}, Nil{}, Nil{}}, B.Rb{Nil{}, [B.Er{B.ob.no(B.ob.at(B.cx.obs(cx), o)), "the copies of " ++ B.ob.name(B.cx.obs(cx), o) ++ " found no definition " ++ B.text(n) ++ " in " ++ B.ob.name(B.cx.obs(cx), q)}], Nil{}}),
     nd => B.copy.node(cx, o, B.In{n, q, prior}, nd))
 
 def oc_k(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, +ds: List<&2, B.Node>, +hm: {mheld(mb, ds) == True{} : Bool}) ->
@@ -6833,6 +6838,277 @@ def room_none(+cx: B.Cx, +j: B.In, h: {B.done.has(B.copies.room(cx), j) == True{
 def Laws.copies.embodied(cx, o, i, hd):
   prd_rds(B.copies(cx, o), i,
     cm_go(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)), B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, i, h => room_none(cx, i, h), hd))
+
+# The copies defined (`copies.defined`)
+# -------------------------------------
+#
+# Where the copies report no error, each holds a definition named as its
+# instance: a member table finds only definitions of the name sought
+# (`mem_find_def`), and a member not found is an error, which errors only
+# growing through the worklist (`ers_back`) brings to the result.
+
+# a lookup's result: none, or a definition of the name
+def mdef(m: Maybe<&2, B.Node>, +n: List<&2, U32>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{+nd}:
+      Bool.and(B.node.def(nd), B.same(B.node.name(nd), n))
+
+def mfd_k(c: Bool, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: U32, +ind: U32, +what: U32,
+    t: List<&2, B.Node>, +n: List<&2, U32>, eq: {c == B.same(name, n) : Bool}, ih: {mdef(B.mem.find(t, n), n) == True{} : Bool}) ->
+    {mdef(B.when(Maybe<&2, B.Node>, c, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(t, n)), n) == True{} : Bool}:
+  match c:
+    case True{}:
+      Equal.sym(Bool, True{}, B.same(name, n), eq)
+    case False{}:
+      ih
+
+def mem_find_def(ns: List<&2, B.Node>, +n: List<&2, U32>) -> {mdef(B.mem.find(ns, n), n) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          mfd_k(B.same(name, n), share, upd, name, rest, params, body, no, ind, what, t, n, {==}, mem_find_def(t, n))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          mem_find_def(t, n)
+        case B.NImport{+txt, +no}:
+          mem_find_def(t, n)
+        case B.NDecl{+names, +no}:
+          mem_find_def(t, n)
+        case B.NBad{+txt, +no}:
+          mem_find_def(t, n)
+        case B.NErr{+msg, +no}:
+          mem_find_def(t, n)
+        case B.NBend{+lines, +no}:
+          mem_find_def(t, n)
+
+def cxmem_def(cx: B.Cx, +q: U32, +n: List<&2, U32>) -> {mdef(B.cx.mem(cx, q, n), n) == True{} : Bool}:
+  match cx:
+    case B.Cx{obs, ls, fs, als, paths, pss, nxs, +mds}:
+      mem_find_def(B.ht.leaf(B.Node, B.md.or(List.get(&2, B.Ht<B.Node>, mds, U32.to_nat(q))), U32.and(B.hash.name(n), 1), B.hash.name(n)), n)
+
+# a copy's errors
+def rbe(b: B.Rb) -> List<&2, B.Er>:
+  match b:
+    case B.Rb{ls, es, more}:
+      es
+
+def ck_def(+i: B.In, +nd: B.Node, h: B.Rb, b: B.Rb, sh: List<&2, B.Er>, +rds: List<&2, B.Rd>,
+    hd: {B.rd.def(i, nd) == True{} : Bool}, hr: {B.rds.defs(rds) == True{} : Bool}) ->
+    {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, B.copy.k(i, nd, h, b, sh)), rds}) == True{} : Bool}:
+  match h b:
+    case B.Rb{hl, he, hi} B.Rb{ls, es, more}:
+      and_intro(B.rd.def(i, nd), B.rds.defs(rds), hd, hr)
+
+def cn_def(+cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, nd: B.Node, +rds: List<&2, B.Rd>,
+    hm: {mdef(Some{nd}, n) == True{} : Bool}, hr: {B.rds.defs(rds) == True{} : Bool}) ->
+    {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, B.copy.node(cx, o, B.In{n, q, prior}, nd)), rds}) == True{} : Bool}:
+  match nd:
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      ck_def(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
+        B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
+        B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+        B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
+          u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
+            B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
+        rds, hm, hr)
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NObj{abs, ext, name, parents, kids, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NImport{+txt, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NImport{txt, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NDecl{+names, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NDecl{names, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NBad{+txt, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NBad{txt, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NErr{+msg, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NErr{msg, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NBend{+lines, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NBend{lines, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+
+def oc_def(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, +rds: List<&2, B.Rd>,
+    hm: {mdef(mb, n) == True{} : Bool}, he: {rbe(Pair.snd(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior))) == Nil{} : List<&2, B.Er>},
+    hr: {B.rds.defs(rds) == True{} : Bool}) ->
+    {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior)), rds}) == True{} : Bool}:
+  match mb:
+    case None{}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NBad{Nil{}, 0}, Nil{}, Nil{}}, rds}) == True{} : Bool},
+        (%Equal.sym(List<&2, B.Er>, rbe(Pair.snd(B.Rd, B.Rb, ocm(None{}, cx, o, n, q, prior))), Nil{}, he) : nil_disc(B.Er, _)
+        Unit{}))
+    case Some{nd}:
+      cn_def(cx, o, n, q, prior, nd, rds, hm, hr)
+
+# a copy made where its own errors are none: a definition of its name
+def fst_def(+cx: B.Cx, +o: U32, i: B.In, +rds: List<&2, B.Rd>,
+    he: {rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))) == Nil{} : List<&2, B.Er>}, hr: {B.rds.defs(rds) == True{} : Bool}) ->
+    {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds}) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      oc_def(B.cx.mem(cx, q, n), cx, o, n, q, prior, rds, cxmem_def(cx, q, n), he, hr)
+
+# errors through a copy added: the copies' and then the copy's
+def cpadd_ers(+rd: B.Rd, b: B.Rb, c: B.Cp) -> {List.append(&2, B.Er, B.cp.ers(c), rbe(b)) == B.cp.ers(B.cp.add(rd, b, c)) : List<&2, B.Er>}:
+  match b:
+    case B.Rb{ls, es, more}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          {==}
+
+def cpe_nil_l(xs: List<&2, B.Er>, ys: List<&2, B.Er>, h: {List.append(&2, B.Er, xs, ys) == Nil{} : List<&2, B.Er>}) -> {xs == Nil{} : List<&2, B.Er>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>},
+        (%Equal.sym(List<&2, B.Er>, Con{x, List.append(&2, B.Er, t, ys)}, Nil{}, h) : nil_disc(B.Er, _)
+        Unit{}))
+
+def cpe_nil_r(xs: List<&2, B.Er>, ys: List<&2, B.Er>, h: {List.append(&2, B.Er, xs, ys) == Nil{} : List<&2, B.Er>}) -> {ys == Nil{} : List<&2, B.Er>}:
+  match xs:
+    case Nil{}:
+      h
+    case Con{x, t}:
+      Empty.absurd({ys == Nil{} : List<&2, B.Er>},
+        (%Equal.sym(List<&2, B.Er>, Con{x, List.append(&2, B.Er, t, ys)}, Nil{}, h) : nil_disc(B.Er, _)
+        Unit{}))
+
+# errors only grow through the worklist: where its result has none, the
+# state it started from had none
+def eb_step(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    h: {B.cp.ers(cgk(c, k, cx, o, i, t, rds, ers, done)) == Nil{} : List<&2, B.Er>},
+    ft: @h2:{B.cp.ers(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == Nil{} : List<&2, B.Er>} -> {ers == Nil{} : List<&2, B.Er>},
+    ff: @h2:{B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>} -> {ers == Nil{} : List<&2, B.Er>}) ->
+    {ers == Nil{} : List<&2, B.Er>}:
+  match c:
+    case True{}:
+      ft(h)
+    case False{}:
+      ff((%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+        h))
+
+def ers_back(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, h: {B.cp.ers(B.copies.go(n, cx, o, todo, c)) == Nil{} : List<&2, B.Er>}) ->
+    {B.cp.ers(c) == Nil{} : List<&2, B.Er>}:
+  match n:
+    case 0n:
+      match todo:
+        case Nil{}:
+          h
+        case Con{i, t}:
+          match c:
+            case B.Cp{rds, ers, done}:
+              Empty.absurd({ers == Nil{} : List<&2, B.Er>},
+                (%Equal.sym(List<&2, B.Er>, B.cp.ers(B.cp.short(Con{i, t}, cx, o, B.Cp{rds, ers, done})), Nil{}, h) : nil_disc(B.Er, _)
+                Unit{}))
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          h
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              eb_step(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, h,
+                h2 => ers_back(k, cx, o, t, B.Cp{rds, ers, done}, h2),
+                h2 => cpe_nil_l(ers, rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))),
+                  (%Equal.sym(List<&2, B.Er>, List.append(&2, B.Er, B.cp.ers(B.Cp{rds, ers, B.done.put(done, i)}), rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.ers(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})),
+                      cpadd_ers(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) : {_ == Nil{} : List<&2, B.Er>}
+                  ers_back(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), h2))))
+
+# the copies' predicate: every copy made a definition
+def pdef(c: B.Cp) -> Bool:
+  match c:
+    case B.Cp{rds, ers, done}:
+      B.rds.defs(rds)
+
+def short_pdef(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, hc: {pdef(c) == True{} : Bool}) -> {pdef(B.cp.short(todo, cx, o, c)) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
+def cpadd_pdef(rd: B.Rd, b: B.Rb, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +d: B.Ht<B.In>) ->
+    {B.rds.defs(Con{rd, rds}) == pdef(B.cp.add(rd, b, B.Cp{rds, ers, d})) : Bool}:
+  match b:
+    case B.Rb{ls, es, more}:
+      {==}
+
+# a copy added where the result reports no error: its own errors none, so
+# a definition of its name
+def dg_add(+k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    hc: {B.rds.defs(rds) == True{} : Bool},
+    he: {B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>}) ->
+    {pdef(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) == True{} : Bool}:
+  %cpadd_pdef(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds, ers, B.done.put(done, i)) : {_ == True{} : Bool}
+  fst_def(cx, o, i, rds,
+    cpe_nil_r(ers, rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))),
+      (%Equal.sym(List<&2, B.Er>, List.append(&2, B.Er, B.cp.ers(B.Cp{rds, ers, B.done.put(done, i)}), rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.ers(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})),
+          cpadd_ers(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) : {_ == Nil{} : List<&2, B.Er>}
+      ers_back(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), he))),
+    hc)
+
+def dg_step(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    hc: {B.rds.defs(rds) == True{} : Bool},
+    +he: {B.cp.ers(cgk(c, k, cx, o, i, t, rds, ers, done)) == Nil{} : List<&2, B.Er>},
+    ft: @hc2:{B.rds.defs(rds) == True{} : Bool} -> @he2:{B.cp.ers(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == Nil{} : List<&2, B.Er>} ->
+      {pdef(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == True{} : Bool},
+    ff: @hc2:{pdef(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) == True{} : Bool} ->
+      @he2:{B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>} ->
+      {pdef(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == True{} : Bool}) ->
+    {pdef(cgk(c, k, cx, o, i, t, rds, ers, done)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ft(hc, he)
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {pdef(_) == True{} : Bool}
+      ff(dg_add(k, cx, o, i, t, rds, ers, done, hc,
+          (%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+          he)),
+        (%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+        he))
+
+# by induction on the fuel: where the result reports no error, every copy
+# a definition, as every one before it was
+def dg_go(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp,
+    hc: {pdef(c) == True{} : Bool}, he: {B.cp.ers(B.copies.go(n, cx, o, todo, c)) == Nil{} : List<&2, B.Er>}) ->
+    {pdef(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
+  match n:
+    case 0n:
+      short_pdef(todo, cx, o, c, hc)
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          hc
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              dg_step(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, hc, he,
+                hc2 => he2 => dg_go(k, cx, o, t, B.Cp{rds, ers, done}, hc2, he2),
+                hc2 => he2 => dg_go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), hc2, he2))
+
+# the copies read reversed: still every one a definition
+def rev_defs(xs: List<&2, B.Rd>, +acc: List<&2, B.Rd>, +hx: {B.rds.defs(xs) == True{} : Bool}, ha: {B.rds.defs(acc) == True{} : Bool}) ->
+    {B.rds.defs(List.reverse.go(&2, B.Rd, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{x, +t}:
+      match x:
+        case B.Rd{+inst, +nd, +hd, +ls}:
+          rev_defs(t, Con{B.Rd{inst, nd, hd, ls}, acc}, MB.eq_true_of_and_right(B.rd.def(inst, nd), B.rds.defs(t), hx),
+            and_intro(B.rd.def(inst, nd), B.rds.defs(acc), MB.eq_true_of_and_left(B.rd.def(inst, nd), B.rds.defs(t), hx), ha))
+
+def pdef_rds(c: B.Cp, h: {pdef(c) == True{} : Bool}) -> {B.rds.defs(B.cp.rds(c)) == True{} : Bool}:
+  match c:
+    case B.Cp{rds, ers, done}:
+      rev_defs(rds, Nil{}, h, {==})
+
+def Laws.copies.defined(cx, o, he):
+  pdef_rds(B.copies(cx, o),
+    dg_go(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)), B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, {==}, he))
 
 def tok_refl(t: B.Tok) -> {B.tok.same(t, t) == True{} : Bool}:
   match t:

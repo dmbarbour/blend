@@ -32,6 +32,13 @@ it alone taught. Add to this file what a new proof teaches.
   each step building the next state's from the last's, which it uses
   once, and the recursion taking it as an argument (`cm_go`,
   `copies.embodied`); an empty start gives it by refutation.
+- **A silent fallback made an error, its law claimed where none is
+  reported**: `copy.of`'s placeholder for a member not found became an
+  error, so that "every copy a definition" holds where the copies report
+  none (`copies.defined`); errors only grow through the walk (`ers_back`,
+  an induction mirroring it), so the result's none brings each step's.
+  Proving the fallback never fires is a law of its own, the expensive
+  half (`blend-laws2.copies-found`).
 - **Completeness where termination is out of reach**: a worklist whose
   pushes no potential bounds (the copies', which reach priors through
   bodies) runs on ample fuel and reports an error where it runs out with

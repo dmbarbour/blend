@@ -524,6 +524,18 @@ law copies.embodied:
   for +hd: {B.done.has(B.cp.done(B.copies(cx, o)), i) == True{} : Bool}
   {B.rds.has(B.cp.rds(B.copies(cx, o)), i) == True{} : Bool}
 
+# LAW: and where the copies report no error, every copy holds a
+# definition named as its instance, never the placeholder a member not
+# found would get: the member tables find only definitions of the name
+# sought, and a member not found is an error (with `copies.embodied`,
+# every instance done is a definition copied).
+# Record: blend-adds-no-bend-logic
+law copies.defined:
+  for +cx: B.Cx
+  for +o: U32
+  for +he: {B.cp.ers(B.copies(cx, o)) == Nil{} : List<&2, B.Er>}
+  {B.rds.defs(B.cp.rds(B.copies(cx, o))) == True{} : Bool}
+
 # LAW: every object's members, the made objects' included, are
 # definitions the modules' trees hold: an object's members its node's in
 # the tree, a made object's none or a mixin's.

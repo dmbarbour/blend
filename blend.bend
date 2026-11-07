@@ -3941,7 +3941,7 @@ def copy.of(+cx: Cx, +o: U32, +i: In) -> Rd & Rb:
   match i:
     case In{+n, +q, +prior}:
       on.maybe(Node, Rd & Rb, cx.mem(cx, q, n),
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
         nd => copy.node(cx, o, i, nd))
 
 def in.eq(a: In, b: In) -> Bool:
@@ -4115,6 +4115,22 @@ def cp.done(c: Cp) -> Ht<In>:
   match c:
     case Cp{rds, ers, done}:
       done
+
+# whether a copy holds a definition named as its instance
+def rd.def(i: In, +nd: Node) -> Bool:
+  match i:
+    case In{n, +q, +p}:
+      node.def(nd) && same(node.name(nd), n)
+
+# whether every copy among rs holds a definition (law copies.defined)
+def rds.defs(rs: List<&2, Rd>) -> Bool:
+  match rs:
+    case Nil{}:
+      True{}
+    case Con{r, t}:
+      match r:
+        case Rd{inst, node, hd, ls}:
+          rd.def(inst, node) && rds.defs(t)
 
 # whether a copy of instance i is among rs (law copies.embodied)
 def rds.has(rs: List<&2, Rd>, +i: In) -> Bool:
