@@ -1451,8 +1451,32 @@ def count(ns: List<&2, Node>) -> Nat:
         case _:
           1n+count(t)
 
+# the turns obs.go takes over a member list: one for each node and one
+# for the list's end, and an object's members' too (law obs.fuel)
+def obs.turns(ns: List<&2, Node>) -> Nat:
+  match ns:
+    case Nil{}:
+      1n
+    case Con{nd, t}:
+      match nd:
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          1n+Nat.add(obs.turns(kids), obs.turns(t))
+        case _:
+          1n+obs.turns(t)
+
+# the turns over the member lists of a stack, each list's
+def wf.turns(st: List<&2, Wf>) -> Nat:
+  match st:
+    case Nil{}:
+      0n
+    case Con{f, rest}:
+      match f:
+        case Wf{+host, +path, nodes}:
+          Nat.add(obs.turns(nodes), wf.turns(rest))
+
 # the objects in source order, an object entered as it is met; fuel: a
-# node or a finished member list a step
+# node or a finished member list a step, the turns the stack holds
+# (`obs.from`)
 def obs.go(n: Nat, st: List<&2, Wf>, +next: U32, out: List<&2, Ob>) -> List<&2, Ob>:
   match n:
     case 0n:
@@ -1478,8 +1502,13 @@ def obs.go(n: Nat, st: List<&2, Wf>, +next: U32, out: List<&2, Ob>) -> List<&2, 
 # a module's objects after those before it, reversed: its root, numbered
 # next, its own host (the module is no object, `blend-module-is-bend`),
 # then its objects
+# the objects of a stack's member lists, on the fuel they take (law
+# obs.fuel)
+def obs.from(+st: List<&2, Wf>, +next: U32, out: List<&2, Ob>) -> List<&2, Ob>:
+  obs.go(wf.turns(st), st, next, out)
+
 def obs.mod(+tree: List<&2, Node>, +k: U32, +out: List<&2, Ob>) -> List<&2, Ob>:
-  obs.go(Nat.add(Nat.add(count(tree), count(tree)), 2n), [Wf{U32.from_nat(List.length(&2, Ob, out)), Nil{}, tree}],
+  obs.from([Wf{U32.from_nat(List.length(&2, Ob, out)), Nil{}, tree}],
     (U32.from_nat(List.length(&2, Ob, out)) + 1 : U32),
     Con{Ob{U32.from_nat(List.length(&2, Ob, out)), U32.from_nat(List.length(&2, Ob, out)), Nil{}, False{}, Nil{}, tree, loc.top(k), 0,
       U32.from_nat(List.length(&2, Ob, out))}, out})
