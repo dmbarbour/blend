@@ -1,0 +1,13 @@
+# An object extending a wider one from another module gets every
+# definition it inherits, though they outnumber this module's own. Found
+# moving glam's kernel: the copies' worklist ran on this module's count,
+# and dropped the rest, silently.
+import Base
+import ./lib/wide.blend as L
+
+object Narrow extends L.Wide with
+  def base(+x: U32) -> U32:
+    x
+
+def main() -> IO(Unit):
+  IO.print(U32.show(Narrow.w8(0)))
