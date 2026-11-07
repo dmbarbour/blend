@@ -1121,3 +1121,26 @@ the objects made on a fuel one short of the turns
   obs.go(wf.turns(st), st, next, out)
 +++
   obs.go(Nat.sub(wf.turns(st), 1n), st, next, out)
+
+=== hosts_fuel_short hosts.fuel
+an object's hosts walked on a turn fewer than the numbers from its own
+down, its outermost host dropped
+--- blend.bend
+  hosts.go(1n+U32.to_nat(id), obs, id)
++++
+  hosts.go(Nat.sub(U32.to_nat(id), 1n), obs, id)
+
+=== hosts_check_next hosts.fuel
+a host numbered as the place after its object's passed, so that two
+objects may host each other, their walk endless
+--- blend.bend
+      when(List<&2, Er>, Nat.is_le(U32.to_nat(ob.host(o)), i), u => er.hosts(t, 1n+i), u => Con{er.host(o), er.hosts(t, 1n+i)})
++++
+      when(List<&2, Er>, Nat.is_le(U32.to_nat(ob.host(o)), 1n+i), u => er.hosts(t, 1n+i), u => Con{er.host(o), er.hosts(t, 1n+i)})
+
+=== hosts_check_first hosts.fuel
+the first object's host checked alone, the rest passed unseen
+--- blend.bend
+      when(List<&2, Er>, Nat.is_le(U32.to_nat(ob.host(o)), i), u => er.hosts(t, 1n+i), u => Con{er.host(o), er.hosts(t, 1n+i)})
++++
+      when(List<&2, Er>, Nat.is_le(U32.to_nat(ob.host(o)), i), u => Nil{}, u => Con{er.host(o), er.hosts(t, 1n+i)})

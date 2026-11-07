@@ -79,7 +79,10 @@ it alone taught. Add to this file what a new proof teaches.
   the proof file (`X_MUTANTS.txt` beside `X_PROOF.bend`), each naming the
   laws it should fail: the gate tries each against them
   (`scripts/one_law.py`, below), its pass kept while its inputs are
-  unchanged.
+  unchanged. A mutation the law survives may be equivalent, not a gap:
+  a walk whose end on fuel returns what its natural end does (`hosts.go`,
+  `Nil{}` either way) runs as well on one turn fewer, so cut two, or
+  break the check its premise names, to make the law false.
 
 ## Shaping the code a law follows
 
@@ -323,6 +326,11 @@ it alone taught. Add to this file what a new proof teaches.
   `to_nat` mod 2^32, split on `Nat.is_lt(1+n, m)`; below the modulus the
   sum is itself, else it is the modulus, its remainder 0, and `n` not 0
   (`u32_succ_ne`).
+- **One `U32` numbered below another**: `u32_is_eq_to_nat` turns
+  `U32.is_eq` false into `Nat.is_eq` false; `Nat.is_le` and `Nat.is_eq`
+  are both `Nat.cmp` read, so a match on the `Cmp` gives `Nat.is_lt`
+  (`cmp_lt`), the hub's `is_lt_eq_succ_le` then `le(1+a, b)`, and
+  `le_trans` to `1+m` the potential's step by computation (`host_lt`).
 - **Templates prove as code does**: a proof def may take `~p`, and
   template parameters come first.
 - **A traversal's effect on one projection**: where a writer threads

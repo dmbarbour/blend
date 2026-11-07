@@ -16646,3 +16646,119 @@ def Laws.obs.fuel(st, next, out, k):
       Equal.trans(List<&2, B.Ob>, B.obs.go(1n+Nat.add(j, B.wf.turns(st)), st, next, out), B.obs.go(Nat.add(j, B.wf.turns(st)), st, next, out), B.obs.from(st, next, out),
         obs_more(Nat.add(j, B.wf.turns(st)), st, next, out, le_add_l(j, B.wf.turns(st))), Laws.obs.fuel(st, next, out, j))
 
+# Hosts' turns
+# ------------
+
+# law hosts.fuel: where er.hosts reports none, each object's host is
+# numbered no higher than its place (`hosted_get`, an object past the
+# list's end hosted by 0), so that a host other than the object itself
+# is numbered lower (`host_lt`, through `u32_is_eq_to_nat` and Nat.cmp),
+# and the walk past id's number takes one more turn for nothing
+
+# a comparison at most and not equal is less
+def cmp_lt(c: Cmp, hle: {Cmp.is_le(c) == True{} : Bool}, ne: {Cmp.is_eq(c) == False{} : Bool}) -> {Cmp.is_lt(c) == True{} : Bool}:
+  match c:
+    case LT{}:
+      {==}
+    case EQ{}:
+      Empty.absurd({Cmp.is_lt(EQ{}) == True{} : Bool}, MB.true_ne_false()(ne))
+    case GT{}:
+      Empty.absurd({Cmp.is_lt(GT{}) == True{} : Bool}, MB.false_ne_true()(hle))
+
+def lt_from(+a: Nat, +b: Nat, hle: MNat.le(a, b), ne: {Nat.is_eq(a, b) == False{} : Bool}) -> MNat.le(1n+a, b):
+  Equal.trans(Bool, Nat.is_le(1n+a, b), Nat.is_lt(a, b), True{}, Equal.sym(Bool, Nat.is_lt(a, b), Nat.is_le(1n+a, b), MNat.is_lt_eq_succ_le(a, b)),
+    cmp_lt(Nat.cmp(a, b), hle, ne))
+
+# er.hosts reporting none of an object and the rest: the object's host
+# numbered no higher than its place, and none of the rest
+def eh_head(c: Bool, +o: B.Ob, +t: List<&2, B.Ob>, +i: Nat, e: {Nat.is_le(U32.to_nat(B.ob.host(o)), i) == c : Bool},
+    h: {B.when(List<&2, B.Er>, c, u => B.er.hosts(t, 1n+i), u => Con{B.er.host(o), B.er.hosts(t, 1n+i)}) == Nil{} : List<&2, B.Er>}) ->
+    MNat.le(U32.to_nat(B.ob.host(o)), i):
+  match c:
+    case True{}:
+      e
+    case False{}:
+      Empty.absurd(MNat.le(U32.to_nat(B.ob.host(o)), i), er_cons(B.er.host(o), B.er.hosts(t, 1n+i), h))
+
+def eh_tail(c: Bool, +o: B.Ob, +t: List<&2, B.Ob>, +i: Nat,
+    h: {B.when(List<&2, B.Er>, c, u => B.er.hosts(t, 1n+i), u => Con{B.er.host(o), B.er.hosts(t, 1n+i)}) == Nil{} : List<&2, B.Er>}) ->
+    {B.er.hosts(t, 1n+i) == Nil{} : List<&2, B.Er>}:
+  match c:
+    case True{}:
+      h
+    case False{}:
+      Empty.absurd({B.er.hosts(t, 1n+i) == Nil{} : List<&2, B.Er>}, er_cons(B.er.host(o), B.er.hosts(t, 1n+i), h))
+
+# where er.hosts from place i reports none, the object j places on has
+# its host numbered i + j at most; past the list's end, host 0
+def hosted_get(xs: List<&2, B.Ob>, +i: Nat, j: Nat, +h: {B.er.hosts(xs, i) == Nil{} : List<&2, B.Er>}) ->
+    MNat.le(U32.to_nat(B.ob.host(B.ob.or(List.get(&2, B.Ob, xs, j)))), Nat.add(j, i)):
+  match xs:
+    case Nil{}:
+      MNat.zero_le(Nat.add(j, i))
+    case Con{+o, +t}:
+      match j:
+        case 0n:
+          eh_head(Nat.is_le(U32.to_nat(B.ob.host(o)), i), o, t, i, {==}, h)
+        case 1n+(+p):
+          %MNat.add_succ(p, i) : {Nat.is_le(U32.to_nat(B.ob.host(B.ob.or(List.get(&2, B.Ob, t, p)))), _) == True{} : Bool}
+          hosted_get(t, 1n+i, p, eh_tail(Nat.is_le(U32.to_nat(B.ob.host(o)), i), o, t, i, h))
+
+def hosted_at(+obs: List<&2, B.Ob>, +id: U32, +hc: {B.er.hosts(obs, 0n) == Nil{} : List<&2, B.Er>}) ->
+    MNat.le(U32.to_nat(B.ob.host(B.ob.at(obs, id))), U32.to_nat(id)):
+  %MNat.add_zero(U32.to_nat(id)) : {Nat.is_le(U32.to_nat(B.ob.host(B.ob.at(obs, id))), _) == True{} : Bool}
+  hosted_get(obs, 0n, U32.to_nat(id), hc)
+
+# a host other than the object itself numbered lower
+def host_lt(+obs: List<&2, B.Ob>, +id: U32, +hc: {B.er.hosts(obs, 0n) == Nil{} : List<&2, B.Er>}, e: {B.is.root(obs, id) == False{} : Bool}) ->
+    MNat.le(1n+U32.to_nat(B.ob.host(B.ob.at(obs, id))), U32.to_nat(id)):
+  lt_from(U32.to_nat(B.ob.host(B.ob.at(obs, id))), U32.to_nat(id), hosted_at(obs, id, hc),
+    Equal.trans(Bool, Nat.is_eq(U32.to_nat(B.ob.host(B.ob.at(obs, id))), U32.to_nat(id)), U32.is_eq(B.ob.host(B.ob.at(obs, id)), id), False{},
+      Equal.sym(Bool, U32.is_eq(B.ob.host(B.ob.at(obs, id)), id), Nat.is_eq(U32.to_nat(B.ob.host(B.ob.at(obs, id))), U32.to_nat(id)),
+        MU.u32_is_eq_to_nat(B.ob.host(B.ob.at(obs, id)), id)), e))
+
+# no turn left: id is numbered 0, a module's root
+def hm_0(c: Bool, +obs: List<&2, B.Ob>, +id: U32, +hc: {B.er.hosts(obs, 0n) == Nil{} : List<&2, B.Er>}, e: {B.is.root(obs, id) == c : Bool},
+    h: MNat.le(U32.to_nat(id), 0n)) ->
+    {B.when(List<&2, U32>, c, u => Nil{}, u => Con{B.ob.host(B.ob.at(obs, id)), B.hosts.go(0n, obs, B.ob.host(B.ob.at(obs, id)))}) == Nil{} : List<&2, U32>}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({Con{B.ob.host(B.ob.at(obs, id)), B.hosts.go(0n, obs, B.ob.host(B.ob.at(obs, id)))} == Nil{} : List<&2, U32>},
+        MB.false_ne_true()(MNat.le_trans(1n+U32.to_nat(B.ob.host(B.ob.at(obs, id))), U32.to_nat(id), 0n, host_lt(obs, id, hc, e), h)))
+
+# a turn: a root ends the walk; else its host, numbered lower, one turn
+# fewer
+def hm_k(c: Bool, +m: Nat, +obs: List<&2, B.Ob>, +id: U32, +hc: {B.er.hosts(obs, 0n) == Nil{} : List<&2, B.Er>}, e: {B.is.root(obs, id) == c : Bool},
+    h: MNat.le(U32.to_nat(id), 1n+m),
+    ih: @x:U32 -> @hx:MNat.le(U32.to_nat(x), m) -> {B.hosts.go(1n+m, obs, x) == B.hosts.go(m, obs, x) : List<&2, U32>}) ->
+    {B.when(List<&2, U32>, c, u => Nil{}, u => Con{B.ob.host(B.ob.at(obs, id)), B.hosts.go(1n+m, obs, B.ob.host(B.ob.at(obs, id)))}) ==
+      B.when(List<&2, U32>, c, u => Nil{}, u => Con{B.ob.host(B.ob.at(obs, id)), B.hosts.go(m, obs, B.ob.host(B.ob.at(obs, id)))}) : List<&2, U32>}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      Equal.cong(List<&2, U32>, List<&2, U32>, xs => Con{B.ob.host(B.ob.at(obs, id)), xs},
+        B.hosts.go(1n+m, obs, B.ob.host(B.ob.at(obs, id))), B.hosts.go(m, obs, B.ob.host(B.ob.at(obs, id))),
+        ih(B.ob.host(B.ob.at(obs, id)), MNat.le_trans(1n+U32.to_nat(B.ob.host(B.ob.at(obs, id))), U32.to_nat(id), 1n+m, host_lt(obs, id, hc, e), h)))
+
+# hosts.go past id's number: one more turn changes nothing
+def hosts_more(n: Nat, +obs: List<&2, B.Ob>, +id: U32, +hc: {B.er.hosts(obs, 0n) == Nil{} : List<&2, B.Er>}, h: MNat.le(U32.to_nat(id), n)) ->
+    {B.hosts.go(1n+n, obs, id) == B.hosts.go(n, obs, id) : List<&2, U32>}:
+  match n:
+    case 0n:
+      hm_0(B.is.root(obs, id), obs, id, hc, {==}, h)
+    case 1n+(+m):
+      hm_k(B.is.root(obs, id), m, obs, id, hc, {==}, h, x => hx => hosts_more(m, obs, x, hc, hx))
+
+def Laws.hosts.fuel(obs, id, k, h):
+  match k:
+    case 0n:
+      {==}
+    case 1n+(+j):
+      Equal.trans(List<&2, U32>, B.hosts.go(1n+Nat.add(j, 1n+U32.to_nat(id)), obs, id), B.hosts.go(Nat.add(j, 1n+U32.to_nat(id)), obs, id), B.hosts(obs, id),
+        hosts_more(Nat.add(j, 1n+U32.to_nat(id)), obs, id, h,
+          MNat.le_trans(U32.to_nat(id), 1n+U32.to_nat(id), Nat.add(j, 1n+U32.to_nat(id)), MNat.le_succ(U32.to_nat(id)), le_add_l(j, 1n+U32.to_nat(id)))),
+        Laws.hosts.fuel(obs, id, j, h))
+
