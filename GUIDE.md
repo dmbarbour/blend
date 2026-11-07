@@ -361,9 +361,9 @@ hub, its `.bend` files only for now (`blend-imports-local`).
 - Before each definition, a marker naming its source, `# blend:
   FILE:LINE`; the lines below it follow the source from LINE.
 - The laws, proofs and witnesses after the code.
-- After the header, a stamp, `# blend stamp: FORMAT HASH`: the format of
-  what Blend writes, which every change to Blend moves, and a hash of the module and every `.blend` it
-  imports. A file whose stamp is what its sources give is current;
+- After the header, a stamp, `# blend stamp: VERSION HASH`: Blend's
+  version stamp, which every change to Blend moves, and a hash of the
+  module and every `.blend` it imports. A file whose stamp is what its sources give is current;
   `deps` reads the stamp, and `emit` leaves a current file as it is
   (`blend-stamps`).
 

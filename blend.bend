@@ -7968,17 +7968,17 @@ def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>
         +ms => verify.deps(dt, List.append(&2, Ck, acc, dep.checks(run.mods(4, ms), d)), fs))
 
 # Stamps (`blend-cli.stamps`, `blend-stamps`): each file Blend writes
-# holds, as its second line, `# blend stamp: FORMAT HASH`: the format of
-# what Blend writes, and a hash of the module's tree as read, each
+# holds, as its second line, `# blend stamp: VERSION HASH`: Blend's
+# version stamp, and a hash of the module's tree as read, each
 # module's path from the module's own directory and its bytes. A file
 # whose stamp is what its sources give now is current, known without
 # emitting it again; `emit` leaves an import so stamped as it is, and
 # `deps` reads the line.
 
-# the format of what Blend writes: blend.bend's hash (blend_stamp.sh,
-# which the pre-commit hook runs), so that every change to Blend leaves stale
-# what it wrote (`blend-stamps`)
-def blend.format() -> List<&2, U32>:
+# Blend's version stamp: blend.bend's hash (blend_stamp.sh, which the
+# pre-commit hook runs), so that every change to Blend leaves stale what
+# it wrote (`blend-stamps`)
+def blend.version() -> List<&2, U32>:
   codes(Stamp.hash())
 
 # FNV-1a, its multiplier given, a value at a time
@@ -8022,8 +8022,8 @@ def stamp.in(ms: List<&2, Md>, +dir: List<&2, U32>) -> List<&2, U32>:
 
 # the stamp of the module at p, its tree as read
 def stamp.of(+p: List<&2, U32>, ms: List<&2, Md>) -> List<&2, U32>:
-  List.append(&2, U32, codes("# blend stamp: "), List.append(&2, U32, blend.format(), Con{32,
-    hash.hex(List.append(&2, U32, blend.format(), Con{256, stamp.in(ms, dir.of(path.plain(p)))}))}))
+  List.append(&2, U32, codes("# blend stamp: "), List.append(&2, U32, blend.version(), Con{32,
+    hash.hex(List.append(&2, U32, blend.version(), Con{256, stamp.in(ms, dir.of(path.plain(p)))}))}))
 
 def stamp.put.k(r: List<&2, U32> & List<&2, U32>, +line: List<&2, U32>) -> List<&2, U32>:
   (h, rest) = r
@@ -8569,7 +8569,7 @@ def main.emit(+xs: List<&2, String>) -> IO(Unit):
 # is current by its stamp (`blend-stamps`), emitted in memory only where
 # it is not, to tell stale from refused; `--bytes` emits each and
 # compares its bytes too, so that a file stamped current but not what
-# Blend writes, its output changed under one format, is found (4)
+# Blend writes, edited since, is found (4)
 
 # a file's state against what emission would write: 0 current, 1 stale
 # (other, or written no longer), 2 missing
@@ -8643,7 +8643,7 @@ def dep.say.k(+make: Bool, +st: U32, +d: List<&2, U32>, ms: List<&2, Md>) -> IO(
 
 def dep.say(+make: Bool, +st: U32, +d: List<&2, U32>, +ms: List<&2, Md>) -> IO(Unit):
   when(IO(Unit), U32.is_eq(st, 4),
-    u => IO.bind(Unit, Unit, IO.print_err("blend: " ++ text(bend.of(d)) ++ " has the stamp its sources give, but not the bytes Blend writes: its output changed under format " ++ text(blend.format()) ++ " (bump blend.format), or the file was edited"),
+    u => IO.bind(Unit, Unit, IO.print_err("blend: " ++ text(bend.of(d)) ++ " has the stamp its sources give, but not the bytes Blend writes: it was edited since"),
       v => dep.say.k(make, st, d, ms)),
     u => dep.say.k(make, st, d, ms))
 
@@ -8735,7 +8735,7 @@ def main.args.r(+flag: String, +xs: List<&2, String>) -> IO(Unit):
 
 def main.args.k(+flag: String, +xs: List<&2, String>) -> IO(Unit):
   when(IO(Unit), String.eq(flag, "--help") || String.eq(flag, "-h"), u => main.out(Out{True{}, usage()}),
-    u => when(IO(Unit), String.eq(flag, "--format"), v => main.out(Out{True{}, text(blend.format())}),
+    u => when(IO(Unit), String.eq(flag, "--version-stamp"), v => main.out(Out{True{}, text(blend.version())}),
       v => main.args.r(flag, xs)))
 
 def main.args(xs: List<String>) -> IO(Unit):

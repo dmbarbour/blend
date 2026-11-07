@@ -1,6 +1,6 @@
 # A stamp in each written file says whether it is current
 
-`blend-stamps` · maintainer · rev 732938e
+`blend-stamps` · maintainer · rev 766d76c
 
 **Context.** Knowing whether a written `.bend` is current cost its
 emission again, in memory, compared byte for byte: `deps` did so for
@@ -8,20 +8,24 @@ every module, and `emit` wrote a module's whole tree every time. The
 plan asked for a stamp in each emitted header, a hash of its sources
 and of Blend, read in its place (`blend-cli.stamps`).
 
-**Decision.** The maintainer (2026-11-07): the stamp records of Blend a
-format, and the format is blend.bend's hash, written into
-`blend_stamp.bend` by `blend_stamp.sh`, which the pre-commit hook runs
-on blend.bend as staged.
+**Decision.** The maintainer (2026-11-07): the stamp records Blend's
+version stamp, blend.bend's hash, written into `blend_stamp.bend` by
+`blend_stamp.sh`, which the pre-commit hook runs on blend.bend as staged.
 Every change to blend.bend moves it, erring toward too many updates: a
 format bumped by hand was missed when a fix changed what Blend writes
 for inputs no sample showed (`blend-scale.copies-fuel`), and the files
-the Blend before wrote stayed current. A stamp resting on more than
-the tool's source may come later. `blend version` reports the format.
+the Blend before wrote stayed current. The script never overwrites a
+change to the file it did not make: it refuses, the gate with it, so
+that the change is reviewed. Named for a version stamp, not a format,
+which reads as an auto-formatter's. A stamp resting on more than the
+tool's source may come later. `blend version` reports the version
+stamp.
 
 The rest is the agent's:
-- The stamp is a written file's second line, `# blend stamp: FORMAT
-  HASH`, after the header: the format, and 64 bits of hash (two 32-bit
-  FNV-1a lanes, their multipliers differing) over the format and the
+- The stamp is a written file's second line, `# blend stamp: VERSION
+  HASH`, after the header: the version stamp, and 64 bits of hash (two
+  32-bit FNV-1a lanes, their multipliers differing) over the version
+  stamp and the
   module's tree as read, each module's path from the module's own
   directory and its bytes. A plain Bend import is not read, and is no
   part of it.
@@ -39,7 +43,7 @@ The rest is the agent's:
 - The gate (`check_generated.sh`) checks `blend_stamp.bend` against
   blend.bend and runs `deps --bytes` over the samples, so that every
   change to blend.bend writes them again in the same commit. `blend
-  --format` prints the tool's format.
+  --version-stamp` prints the tool's.
 
 **Consequences.**
 - Updating Blend leaves every file it wrote stale: each is written again
@@ -52,5 +56,5 @@ The rest is the agent's:
   pointer records.
 - Packages can be told stale by their stamps (`blend-packages`).
 
-**Rule lives in:** `blend.bend`, Stamps (`blend.format`); `blend_stamp.sh`;
+**Rule lives in:** `blend.bend`, Stamps (`blend.version`); `blend_stamp.sh`;
 `GUIDE.md`, What Blend writes.
