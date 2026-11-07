@@ -1285,3 +1285,22 @@ law hosts.fuel:
   for +h: {B.er.hosts(obs, 0n) == Nil{} : List<&2, B.Er>}
   {B.hosts.go(Nat.add(k, 1n+U32.to_nat(id)), obs, id) == B.hosts(obs, id) : List<&2, U32>}
 
+# LAW: and each of the objects stage's checks among its errors
+# (`objects.ers`): where the stage reports none, none of its checks
+# does, an object's host after it among them (`hosts.fuel`'s premise),
+# so that no check drops out of the stage unseen
+# (`blend-laws2.errors-reach`).
+# Record: blend-no-silent-failures
+law objects.checked:
+  for +als: List<&2, B.Al>
+  for +cx: B.Cx
+  for +h: {B.objects.ers(als, cx) == Nil{} : List<&2, B.Er>}
+  {Bool.and(List.is_empty(&2, B.Er, B.er.hosts(B.cx.obs(cx), 0n)),
+    Bool.and(List.is_empty(&2, B.Er, B.er.endless(B.cx.pss(cx), B.cx.obs(cx))),
+    Bool.and(List.is_empty(&2, B.Er, B.er.cycles(als, als)),
+    Bool.and(List.is_empty(&2, B.Er, B.chains(B.cx.obs(cx), B.cx.obs(cx), B.cx.pss(cx))),
+    Bool.and(List.is_empty(&2, B.Er, B.er.obs(B.cx.obs(cx), als, B.cx.obs(cx))),
+    Bool.and(List.is_empty(&2, B.Er, B.er.made.parents(B.cx.obs(cx), als, B.cx.obs(cx), B.cx.ls(cx))),
+    Bool.and(List.is_empty(&2, B.Er, B.er.lins(B.cx.pss(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.ls(cx))),
+    List.is_empty(&2, B.Er, B.er.defs(B.cx.pss(cx), B.cx.fs(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.fs(cx)))))))))) == True{} : Bool}
+
