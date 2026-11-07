@@ -23,7 +23,7 @@ checker and adds no Bend logic of its own (`blend-adds-no-bend-logic`).
    `def Listed.LAW.S.as_declared() -> Data: Listed.S()`, its marker
    naming the declaration, in the module's own file with its laws
    (`blend-laws-in-module`): a witness no `main` reaches is not
-   compiled, and makes no second caller (the kernel, 2026-11-06).
+   compiled, and makes no second caller (glam-in-bend's kernel, 2026-11-06).
    `--verdict` accepts a witness as any total def (tried 2026-11-05).
 
 4. The maintainer (2026-11-05): the name `f.as_declared` is accepted,

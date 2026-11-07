@@ -5,8 +5,8 @@
 # executable (build.sh) under perf (count.sh), each run capped
 # (capped.sh); its instructions and seconds printed, and recorded in the
 # analysis store (results.py; these three tools found by tools.sh). A run
-# of tool `bench/measure.sh` (in glam-in-bend's store,
-# `blend/bench/measure.sh`), its shape and N its parameters; each size a
+# of tool `bench/measure.sh` (before the split, in glam-in-bend's store
+# as `blend/bench/measure.sh`), its shape and N its parameters; each size a
 # row of `counts` (build `blend`, the shape its workload, the size its k,
 # no interactions) and its seconds a metric (`<shape> <size> s`). The
 # modules and what Blend writes go to results/bench (out of git).

@@ -1,6 +1,7 @@
 # Blend's own proofs, of the laws LAWS.bend states.
 #
-# Lessons, for the next proof (docs/BendIssues.md has Bend's side):
+# Lessons, for the next proof (glam-in-bend's docs/BendIssues.md has
+# Bend's side):
 # - A byte's match (`case 46:` ... `case _:`) leaves a proof stuck, a
 #   U32 being a word of bits: code a law follows tests its bytes
 #   (`U32.is_eq(h, 46)`) and branches on the Bool, in `when` or in a

@@ -116,12 +116,19 @@ generated check.
 
 ## Setup
 
-Bend 2.0.39 (`bend version`), Lean v4.34.0 for `--verdict` and `perf` for
-`count.sh`, as glam-in-bend's `scripts/dev-setup.sh` installs them;
-`scripts/cgroup-delegate.sh` at each container start, so that
-`capped.sh` caps memory in the kernel. Enable the hooks once per clone:
-`git config core.hooksPath .githooks`. `install.sh` puts `blend` on the
-path, running this checkout (glam-in-bend's `dev-setup.sh` runs it).
+- Bend 2.0.39 (`bend version`), from Bend's installer
+  (`curl -fsSL https://bend-lang.com/install.sh | sh`), and clang for
+  native builds.
+- Lean v4.34.0 for `--verdict`, its release unpacked into `~/.lean`,
+  which the gate puts last on the path (its toolchain carries a clang
+  of its own, which native builds must not find first).
+- `perf` for `count.sh` (Debian's `linux-perf`).
+- `scripts/cgroup-delegate.sh` at each container start, so that
+  `capped.sh` caps memory in the kernel.
+- The hooks, once per clone: `git config core.hooksPath .githooks`.
+- `sh install.sh` puts `blend` on the path, running this checkout.
+
+In glam-in-bend, its `scripts/dev-setup.sh` does all of this.
 
 ## Used by glam-in-bend
 
