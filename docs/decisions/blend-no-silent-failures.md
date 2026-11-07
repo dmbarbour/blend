@@ -1,6 +1,6 @@
 # A failure no law prevents is reported, never silent
 
-`blend-no-silent-failures` · maintainer · rev f269354
+`blend-no-silent-failures` · maintainer · rev 08ca4fe
 
 **Context.** Two of the copies' fallbacks were silent: a worklist past
 its fuel dropped the copies it had not made, which lost an object's
@@ -13,13 +13,17 @@ what the laws were to claim.
 **Decision.** The maintainer (2026-11-07): where no law prevents a
 failure, Blend reports it as an error, never handles it silently by
 dropping work or writing a placeholder. So a worklist past its fuel
-(`cp.short`) and a member not found (`copy.of`) are errors. A law
-may then claim its property where no error is reported, the guard's
-shape (`copies.complete`, `copies.defined`), cheap to prove; a law
-that rules the failure out where Blend meets it (`copies.found`, in
-the context emission builds) leaves the report in place, and the
-guarded law is kept for every other context (the maintainer,
-2026-11-07: keep `copies.defined`).
+(`cp.short`) and a member not found (`copy.of`) are errors, and a law
+may claim its property where none is reported, the guard's shape
+(`copies.complete`, `copies.defined`), cheap to prove. Where a law
+proves that the failure's condition never occurs wherever the code
+runs, the report may go; the laws stated over the report stay, vacuous
+where the condition cannot arise.
+
+`copies.found` proves this of a member not found, emission being the
+copies' only caller. Its report stays for now: `copies.defined`, kept
+(the maintainer, 2026-11-07), claims every context, not emission's
+alone, and outside emission's the report is what makes its claim true.
 
 **Consequences.**
 - A silent fallback is a bug unless a law shows it unreachable.

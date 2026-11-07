@@ -38,7 +38,8 @@ it alone taught. Add to this file what a new proof teaches.
   none (`copies.defined`); errors only grow through the walk (`ers_back`,
   an induction mirroring it), so the result's none brings each step's.
   Proving the fallback never fires is a law of its own, the expensive
-  half (`blend-laws2.copies-found`).
+  half (`copies.found`), after which the report may go
+  (`blend-no-silent-failures`).
 - **An invariant of a list kept beside its index**: where a step reads
   what it builds on from an index (the fold's `ix`) and writes the list
   (its map), the invariant holds of both (`fdok`), the trie's laws
