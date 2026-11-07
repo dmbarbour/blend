@@ -1004,9 +1004,9 @@ law sharing.emitted:
   for +roots: List<&2, U32>
   for +acc: List<&2, U32>
   for +y: U32
-  for +hy: {B.has(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), y) == True{} : Bool}
+  for +hy: {B.has(B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y) == True{} : Bool}
   for +hc: {B.mult.share(y, B.pt.of(B.Un, us)) == 2 : U32}
-  {B.ctr.at(B.tb.ctrs(B.module.table(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), acc)), y) == U32.add(1, B.mu.m(B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y))) : U32}
+  {B.ctr.at(B.tb.ctrs(B.module.table(B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), acc)), y) == U32.add(1, B.mu.m(B.ec.mu(B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y))) : U32}
 
 # LAW: a unit shared, or a module's definition (shared as Bend's), keeps
 # its disposition through every unit's turn: its own leaves it as it is,
@@ -1053,7 +1053,7 @@ law shared.emitted:
   for +roots: List<&2, U32>
   for +y: U32
   for +hs: {B.mult.share(y, B.pt.of(B.Un, us)) == 1 : U32}
-  {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.Mu{0, 0} : B.Mu}
+  {B.ec.mu(B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y) == B.Mu{0, 0} : B.Mu}
 
 # LAW: and every call to it names it: its counter of numbered calls ends
 # where it starts, no numbered copy of it called (`sharing.plain`).
@@ -1071,7 +1071,7 @@ law plain.emitted:
   for +acc: List<&2, U32>
   for +y: U32
   for +hs: {B.mult.share(y, B.pt.of(B.Un, us)) == 1 : U32}
-  {B.ctr.at(B.tb.ctrs(B.module.table(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), acc)), y) == 1 : U32}
+  {B.ctr.at(B.tb.ctrs(B.module.table(B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), acc)), y) == 1 : U32}
 
 # LAW: where the laws' check reports no error, every law among the units
 # has its proof: written beside the code (`blend-laws-in-module`), no law
@@ -1124,8 +1124,8 @@ law unique.emitted:
   for +all: List<&2, B.Un>
   for +lwe: List<&2, B.Er>
   for +pfe: List<&2, B.Er>
-  for +h: {B.emit.ers(dse, mse, all, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), lwe, pfe) == Nil{} : List<&2, B.Er>}
-  {B.nms.distinct(B.defs.names(B.defs.of(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))))) == True{} : Bool}
+  for +h: {B.emit.ers(dse, mse, all, B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), lwe, pfe) == Nil{} : List<&2, B.Er>}
+  {B.nms.distinct(B.defs.names(B.defs.of(List.reverse(&2, U32, B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots))), B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots))), B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)))) == True{} : Bool}
 
 # LAW: in the code's file as emitted, each copied unit of the walk's
 # order has the copies its uses by the units written ask for, as the
@@ -1143,9 +1143,9 @@ law final.emitted:
   for +ux: B.Ht<B.Xe>
   for +roots: List<&2, U32>
   for +y: U32
-  for +hy: {B.has(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), y) == True{} : Bool}
+  for +hy: {B.has(B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y) == True{} : Bool}
   for +hc: {B.mult.share(y, B.pt.of(B.Un, us)) == 2 : U32}
-  {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.Mu{B.uses.m(B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y), B.ec.ut(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)))), B.ec.ms(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))))), 1} : B.Mu}
+  {B.ec.mu(B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y) == B.Mu{B.uses.m(B.uses.of.e(List.reverse(&2, U32, B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots))), B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y), B.ec.ut(B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots))), B.ec.ms(B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)))), 1} : B.Mu}
 
 # LAW: and where the dispositions report no error, each affine unit of
 # the walk's order is used once at most by the units written, as the
@@ -1162,10 +1162,10 @@ law once.emitted:
   for +ux: B.Ht<B.Xe>
   for +roots: List<&2, U32>
   for +y: U32
-  for +hy: {B.has(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), y) == True{} : Bool}
+  for +hy: {B.has(B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y) == True{} : Bool}
   for +ha: {B.mult.share(y, B.pt.of(B.Un, us)) == 0 : U32}
-  for +he: {B.ms.ers(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us)) == Nil{} : List<&2, B.Er>}
-  {Nat.is_le(List.length(&2, B.Ru, B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y)), 1n) == True{} : Bool}
+  for +he: {B.ce.mers(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)) == Nil{} : List<&2, B.Er>}
+  {Nat.is_le(List.length(&2, B.Ru, B.uses.of.e(List.reverse(&2, U32, B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots))), B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y)), 1n) == True{} : Bool}
 
 # LAW: and an affine unit of the walk's order used once by the units
 # written, as the writer reads their uses, ends with its user's copies,
@@ -1183,10 +1183,10 @@ law affine.emitted:
   for +ux: B.Ht<B.Xe>
   for +roots: List<&2, U32>
   for +y: U32
-  for +hy: {B.has(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), y) == True{} : Bool}
+  for +hy: {B.has(B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y) == True{} : Bool}
   for +ha: {B.mult.share(y, B.pt.of(B.Un, us)) == 0 : U32}
-  for +hl: {List.length(&2, B.Ru, B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y)) == 1n : Nat}
-  {B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y) == B.mu.after(B.mu.m(B.ec.mu(B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), B.ru.user(B.uses.of.e(List.reverse(&2, U32, B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us))), B.emit.ec(files, obs, us, als, own, res, paths, ux, B.pt.of(B.Un, us), B.ms.ms(B.emit.ms(B.ds.order(B.emit.walk(roots, B.refss(us, ux, 0), obs, us)), B.refss(us, ux, 0), B.pt.of(B.Un, us), obs, us))), y)))), B.Mu{0, 0}) : B.Mu}
+  for +hl: {List.length(&2, B.Ru, B.uses.of.e(List.reverse(&2, U32, B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots))), B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y)) == 1n : Nat}
+  {B.ec.mu(B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y) == B.mu.after(B.mu.m(B.ec.mu(B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), B.ru.user(B.uses.of.e(List.reverse(&2, U32, B.ce.order(B.emit.code(files, obs, us, als, own, res, paths, ux, roots))), B.ce.e(B.emit.code(files, obs, us, als, own, res, paths, ux, roots)), y)))), B.Mu{0, 0}) : B.Mu}
 
 # LAW: errors reach the output, stage by stage (`blend-no-silent-failures`):
 # a command over the modules read succeeds only where reading them

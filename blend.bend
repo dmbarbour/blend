@@ -7114,23 +7114,55 @@ def proof.parts(+mode: U32, +files: List<&2, List<&2, U32>>, +cx: Cx, +all: List
 # references, then emission.
 
 # the emitted module, or its errors
+# emission's code part: the walk's order and errors, the dispositions'
+# errors, and the context the writer reads (the laws `*.emitted` name it,
+# `blend-laws2.named-builds.emission`); each value taken as `emitted`
+# reads it, so that none is used once more than it was
+type Ce is Data:
+  Ce{order: List<&2, U32>, wers: List<&2, Er>, mers: List<&2, Er>, e: Ec}
+
+def emit.code(files: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>, als: List<&2, Al>, own: List<&2, Ci>, res: List<&2, List<&2, U32>>,
+    paths: List<&2, List<&2, U32>>, +ux: Ht<Xe>, roots: List<&2, U32>) -> Ce:
+  +ut = pt.of(Un, us)
+  +rss = refss(us, ux, 0)
+  +d = emit.walk(roots, rss, obs, us)
+  +order = ds.order(d)
+  +ms = emit.ms(order, rss, ut, obs, us)
+  Ce{order, ds.ers(d), ms.ers(ms), emit.ec(files, obs, us, als, own, res, paths, ux, ut, ms.ms(ms))}
+
+def ce.order(c: Ce) -> List<&2, U32>:
+  match c:
+    case Ce{order, wers, mers, e}:
+      order
+
+def ce.mers(c: Ce) -> List<&2, Er>:
+  match c:
+    case Ce{order, wers, mers, e}:
+      mers
+
+def ce.e(c: Ce) -> Ec:
+  match c:
+    case Ce{order, wers, mers, e}:
+      e
+
+# the module emitted from its code part taken apart: its file, or its
+# errors and the laws' and proofs' parts'
+def emitted.k(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx: Cx, +all: List<&2, Un>, +res: List<&2, List<&2, U32>>, ce: Ce) -> Out:
+  match ce:
+    case Ce{+order, wers, mers, +e}:
+      +lw = proof.parts(1, files, cx, all, res)
+      +pf = proof.parts(2, files, cx, all, res)
+      emit.out(files, srcs, e, order, ob.mems(ob.at(cx.obs(cx), 0)), res.lines(path.at(cx.paths(cx), 0), res, 1), lw, pf,
+        emit.ers(wers, mers, all, order, e, pf.ers(lw), List.append(&2, Er, pf.ers(pf), er.reserved(names.all(List.reverse(&2, U32, order), e)))))
+
 def emitted(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx: Cx, +os: List<&2, Oc>) -> Out:
   +obs = cx.obs(cx)
   +all = units(os)
   +us = units.of(all, False{})
   +ux = ux.of(us)
-  +ut = pt.of(Un, us)
-  +rss = refss(us, ux, 0)
-  +d = emit.walk(roots.all(cx, ux), rss, obs, us)
-  +order = ds.order(d)
-  +ms = emit.ms(order, rss, ut, obs, us)
   +own = emit.own(cx)
   +res = need.uniq(need.us(List.append(&2, Un, us, units.of(all, True{})), obs, cx.paths(cx)), own, Nil{})
-  +e = emit.ec(files, obs, us, cx.als(cx), own, res, cx.paths(cx), ux, ut, ms.ms(ms))
-  +lw = proof.parts(1, files, cx, all, res)
-  +pf = proof.parts(2, files, cx, all, res)
-  emit.out(files, srcs, e, order, ob.mems(ob.at(obs, 0)), res.lines(path.at(cx.paths(cx), 0), res, 1), lw, pf,
-    emit.ers(ds.ers(d), ms.ers(ms), all, order, e, pf.ers(lw), List.append(&2, Er, pf.ers(pf), er.reserved(names.all(List.reverse(&2, U32, order), e)))))
+  emitted.k(files, srcs, cx, all, res, emit.code(files, obs, us, cx.als(cx), own, res, cx.paths(cx), ux, roots.all(cx, ux)))
 
 # The laws and the proofs
 # -----------------------

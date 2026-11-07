@@ -1,5 +1,5 @@
 # Written by Blend from namespaces.blend; do not edit.
-# blend stamp: 3428828f8605 3556969d4a10ce95
+# blend stamp: ca201a0f0453 c25b308b999b73db
 import Base
 import ./lib/dims.bend as D
 import ./lib/units.bend as Blend_1
