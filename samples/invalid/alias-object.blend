@@ -1,0 +1,10 @@
+# An object named as an import's alias: a name of the module bound
+# twice.
+import ./cycle.blend as M
+
+object M with
+  def g() -> U32:
+    2
+
+def main() -> U32:
+  M.g()

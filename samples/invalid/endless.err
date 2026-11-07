@@ -1,0 +1,5 @@
+Error: A.B.B.B.B.B.B.B.B: its nested objects never end: a nested object inherits from an object holding it, so that each copy holds another
+Location: endless.blend:5
+4 | 
+5>| object A with
+6 |   def a() -> U32:

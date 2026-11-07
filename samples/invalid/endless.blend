@@ -1,0 +1,13 @@
+# A nested object inheriting from the object holding it: each copy holds
+# another, without end.
+import Base
+
+object A with
+  def a() -> U32:
+    1
+  object B extends A with
+    def b() -> U32:
+      2
+
+def main() -> U32:
+  A.B.b()

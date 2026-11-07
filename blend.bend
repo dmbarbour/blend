@@ -2190,6 +2190,17 @@ def c3.er.k(+obs: List<&2, Ob>, +id: U32, +ps: List<&2, U32>, m: Maybe<&2, Maybe
 
 # the linearization errors: an object its parents lead back to, and one
 # whose sound parents have no merge
+# the rounds out of fuel with objects made that no round linearized
+# (`syn.go`): a family of nested objects without end, each copy of a
+# nested object holding another, as where it inherits from an object
+# holding it; reported, never cut short silently, at the line of the
+# object whose family it is (`blend-no-silent-failures`)
+def er.endless(+pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>) -> List<&2, Er>:
+  +id = U32.from_nat(List.length(&2, List<&2, U32>, pss))
+  when(List<&2, Er>, U32.is_lt(id, U32.from_nat(List.length(&2, Ob, obs))),
+    u => [Er{ob.no(ob.at(obs, id)), ob.name(obs, id) ++ ": its nested objects never end: a nested object inherits from an object holding it, so that each copy holds another"}],
+    u => Nil{})
+
 def er.lins(ps: List<&2, List<&2, U32>>, ls: List<&2, Maybe<&2, Lz>>, +id: U32, +obs: List<&2, Ob>, +all: List<&2, Maybe<&2, Lz>>) -> List<&2, Er>:
   match ps ls:
     case Con{+p, +pt} Con{l, +lt}:
@@ -3148,6 +3159,16 @@ def hosts.go(n: Nat, +obs: List<&2, Ob>, +id: U32) -> List<&2, U32>:
 
 def hosts(+obs: List<&2, Ob>, +id: U32) -> List<&2, U32>:
   hosts.go(1n+List.length(&2, Ob, obs), obs, id)
+
+def cx.ls(c: Cx) -> List<&2, Maybe<&2, Lz>>:
+  match c:
+    case Cx{obs, ls, fs, als, paths, pss, nxs, mds}:
+      ls
+
+def cx.fs(c: Cx) -> List<&2, Maybe<&2, Fd>>:
+  match c:
+    case Cx{obs, ls, fs, als, paths, pss, nxs, mds}:
+      fs
 
 def cx.pss(c: Cx) -> List<&2, List<&2, U32>>:
   match c:
@@ -6968,7 +6989,7 @@ def units.lawful(us: List<&2, Un>) -> Bool:
     case Nil{}:
       False{}
     case Con{u, t}:
-      U32.is_gt(node.what(un.node(u)), 0) || units.lawful(t)
+      Bool.not(U32.is_eq(node.what(un.node(u)), 0)) || units.lawful(t)
 
 def er.laws.if(+c: Bool, +all: List<&2, Un>) -> List<&2, Er>:
   match c:
@@ -7046,20 +7067,26 @@ def resolved.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, Li
       when(Out, Maybe.is_some(&2, Er, List.head(&2, Er, ocs.ers(os))), u => resolved(files, srcs, cx.obs(cx), os),
         u => emitted(files, srcs, cx, os))
 
-def objects.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +als: List<&2, Al>, +paths: List<&2, List<&2, U32>>, +pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>) -> Out:
+# a context of the objects, their linearizations and folds, with the
+# tables made of them, each object's names (`nxs.of`) and members
+# (`mds.of`): the laws over the copies name it (`blend-laws2.named-builds`)
+def cx.of(+obs: List<&2, Ob>, ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>, als: List<&2, Al>, paths: List<&2, List<&2, U32>>, pss: List<&2, List<&2, U32>>) -> Cx:
+  Cx{obs, ls, fs, als, paths, pss, nxs.of(fs), mds.of(obs)}
+
+def objects.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +cx: Cx) -> Out:
   match cmd:
     case 2:
-      when(Out, List.is_empty(&2, U32, q), u => Out{True{}, show.obs(obs, ls, fs, obs)}, u => show.query(obs, fs, files, srcs, q))
+      when(Out, List.is_empty(&2, U32, q), u => Out{True{}, show.obs(cx.obs(cx), cx.ls(cx), cx.fs(cx), cx.obs(cx))},
+        u => show.query(cx.obs(cx), cx.fs(cx), files, srcs, q))
     case 5:
-      show.obs.k(show.obs.q(obs, ls, fs, obs, q), q)
+      show.obs.k(show.obs.q(cx.obs(cx), cx.ls(cx), cx.fs(cx), cx.obs(cx), q), q)
     case _:
-      +cx = {Cx{obs, ls, fs, als, paths, pss, nxs.of(fs), mds.of(obs)} : Cx}
-      resolved.next(cmd, files, srcs, cx, module.copies(obs, cx))
+      resolved.next(cmd, files, srcs, cx, module.copies(cx.obs(cx), cx))
 
-def objects.out(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +als: List<&2, Al>, +paths: List<&2, List<&2, U32>>, +pss: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +ls: List<&2, Maybe<&2, Lz>>, +fs: List<&2, Maybe<&2, Fd>>, es: List<&2, Er>) -> Out:
+def objects.out(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +cx: Cx, es: List<&2, Er>) -> Out:
   match es:
     case Nil{}:
-      objects.next(cmd, files, srcs, q, als, paths, pss, obs, ls, fs)
+      objects.next(cmd, files, srcs, q, cx)
     case Con{e, t}:
       ers.out(files, srcs, Con{e, t})
 
@@ -7407,18 +7434,28 @@ def syn.of(+als: List<&2, Al>, +obs0: List<&2, Ob>) -> Sy:
 def obs.made(+sy: Sy) -> List<&2, Ob>:
   made.abs(sy.obs(sy), sy.obs(sy), sy.pss(sy))
 
+# the objects stage's context: the rounds that make the nested objects
+# from obs0, their linearizations and folds (`cx.of`); the laws over
+# emission name it (`blend-laws2.named-builds`)
+def objects.cx(+als: List<&2, Al>, paths: List<&2, List<&2, U32>>, obs0: List<&2, Ob>) -> Cx:
+  +sy = syn.of(als, obs0)
+  +obs = obs.made(sy)
+  +pss = sy.pss(sy)
+  +ls = sy.ls(sy)
+  cx.of(obs, ls, folds(ls, obs, chains.bad(obs, obs, pss)), als, paths, pss)
+
 def objects(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
   +obs0 = obs(trees)
   +als = als.all(trees, 0, paths, obs0)
-  +sy = syn.of(als, obs0)
-  +pss = sy.pss(sy)
-  +ls = sy.ls(sy)
-  +obs = obs.made(sy)
-  +fs = folds(ls, obs, chains.bad(obs, obs, pss))
-  objects.out(cmd, files, srcs, q, als, paths, pss, obs, ls, fs,
-    List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss), 
+  +cx = objects.cx(als, paths, obs0)
+  +pss = cx.pss(cx)
+  +ls = cx.ls(cx)
+  +obs = cx.obs(cx)
+  +fs = cx.fs(cx)
+  objects.out(cmd, files, srcs, q, cx,
+    List.append(&2, Er, er.endless(pss, obs), List.append(&2, Er, er.cycles(als, als), List.append(&2, Er, chains(obs, obs, pss), 
       List.append(&2, Er, er.obs(obs, als, obs), List.append(&2, Er, er.made.parents(obs, als, obs, ls),
-      List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs)))))))
+      List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs))))))))
 
 # Nested objects
 # --------------
@@ -7601,17 +7638,108 @@ def ims.plain.ers(xs: List<&2, Im>) -> List<&2, Er>:
       List.append(&2, Er, im.plain.ers(i), ims.plain.ers(t))
 
 # each module's Blend imports whose paths Bend would refuse
+# a module's names bound once each, as Bend has them ("a fresh alias",
+# "a fresh name"): an import's alias names no earlier import, nor an
+# object's or a definition's first part (`blend-no-shadowing`, at a
+# module's scope)
+def ims.alias(xs: List<&2, Im>, +a: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}:
+      False{}
+    case Con{i, t}:
+      match i:
+        case Im{path, alias, +blend, +no}:
+          same(alias, a) || ims.alias(t, a)
+
+# the line of a module's object or definition whose name's first part is a
+def nodes.named(ns: List<&2, Node>, +a: List<&2, U32>) -> Maybe<&2, U32>:
+  match ns:
+    case Nil{}:
+      None{}
+    case Con{nd, t}:
+      match nd:
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          when(Maybe<&2, U32>, same(List.head.or(parts(name)), a), u => Some{no}, u => nodes.named(t, a))
+        case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          when(Maybe<&2, U32>, same(List.head.or(parts(name)), a), u => Some{no}, u => nodes.named(t, a))
+        case _:
+          nodes.named(t, a)
+
+def ims.fresh(xs: List<&2, Im>, +seen: List<&2, Im>, +ns: List<&2, Node>) -> List<&2, Er>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{i, t}:
+      match i:
+        case Im{+path, +alias, +blend, +no}:
+          List.append(&2, Er,
+            when(List<&2, Er>, ims.alias(seen, alias),
+              u => [Er{no, "import " ++ text(path) ++ " as " ++ text(alias) ++ ": " ++ text(alias) ++ " is an earlier import's alias: give each import an alias of its own"}],
+              u => Nil{}),
+            List.append(&2, Er,
+              on.maybe(U32, List<&2, Er>, nodes.named(ns, alias), u => Nil{},
+                +l => [Er{l, text(alias) ++ " is the alias of import " ++ text(path) ++ ": an object or definition of the module takes another name"}]),
+              ims.fresh(t, Con{Im{path, alias, blend, no}, seen}, ns)))
+
+# an import of a Blend module without an alias, which Blend would take for
+# Bend's and never read (`im.of`)
+def im.bare(r: List<&2, U32> & List<&2, U32>, +named: Bool, +no: U32) -> List<&2, Er>:
+  (+path, rest) = r
+  when(List<&2, Er>, Bool.not(named) && ends(path, codes(".blend")),
+    u => [Er{no, "import " ++ text(path) ++ ": a Blend module is imported by an alias, import " ++ text(path) ++ " as NAME"}],
+    u => Nil{})
+
+def ims.bare(ns: List<&2, Node>) -> List<&2, Er>:
+  match ns:
+    case Nil{}:
+      Nil{}
+    case Con{nd, t}:
+      match nd:
+        case NImport{+txt, +no}:
+          List.append(&2, Er, im.bare(until(drop(7n, txt), 32), Maybe.is_some(&2, Im, im.of(txt, no)), no), ims.bare(t))
+        case _:
+          ims.bare(t)
+
 def trees.plain.ers(ts: List<&2, List<&2, Node>>) -> List<&2, Er>:
   match ts:
     case Nil{}:
       Nil{}
-    case Con{x, t}:
-      List.append(&2, Er, ims.plain.ers(ims.of(x)), trees.plain.ers(t))
+    case Con{+x, t}:
+      List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), List.append(&2, Er, ims.fresh(ims.of(x), Nil{}, x), trees.plain.ers(t))))
 
-# the modules' errors as read: an import none could read, one whose path
-# Bend would refuse
+# whether bytes hold a million lines or more, a newline ending each and
+# the last ended by none (`lines.at`): module k's lines are numbered from
+# k * 1000000, so that its millionth would read as the next module's
+def nl.many(bs: List<&2, U32>, +k: U32) -> Bool:
+  match bs:
+    case Nil{}:
+      U32.is_ge(k, 999999)
+    case Con{+b, t}:
+      nl.many(t, (k + when(U32, U32.is_eq(b, 10), u => 1, u => 0) : U32))
+
+def mds.long(ms: List<&2, Md>, +root: List<&2, U32>) -> List<&2, Er>:
+  match ms:
+    case Nil{}:
+      Nil{}
+    case Con{m, +t}:
+      match m:
+        case Md{path, bs, +ok, +from}:
+          when(List<&2, Er>, ok && nl.many(bs, 0),
+            u => Con{Er{from, text(md.name(root, path)) ++ " holds a million lines or more, past those Blend numbers"}, mds.long(t, root)},
+            u => mds.long(t, root))
+
+# a tree of more modules than Blend numbers: the 4295th's lines would
+# start past U32 (k * 1000000), wrapping onto the first's
+def mds.many(+ms: List<&2, Md>) -> List<&2, Er>:
+  when(List<&2, Er>, U32.is_gt(U32.from_nat(List.length(&2, Md, ms)), 4294),
+    u => [Er{0, "the tree holds more than 4294 modules, past those Blend numbers"}],
+    u => Nil{})
+
+# the modules' errors as read: an import none could read, a module too
+# long to number, too many modules, one whose path Bend would refuse
 def load.ers(+r: Md, +t: List<&2, Md>) -> List<&2, Er>:
-  List.append(&2, Er, mds.ers(t, md.path(r)), trees.plain.ers(mds.trees(Con{r, t}, 0)))
+  List.append(&2, Er, mds.ers(t, md.path(r)), List.append(&2, Er, mds.long(Con{r, t}, md.path(r)),
+    List.append(&2, Er, mds.many(Con{r, t}), trees.plain.ers(mds.trees(Con{r, t}, 0)))))
 
 # a command over the modules read, the root first; the modules' errors as
 # read first
@@ -7792,12 +7920,30 @@ def md.todo(+path: List<&2, U32>, m: Maybe<&2, List<&2, U32>>, +k: U32) -> List<
     case Some{+bs}:
       md.next(path, bs, k)
 
-# the modules, breadth first from the root, each once; fuel, the files
-# read at most
+# the reading's fuel: past any tree, each turn taking one import as
+# written and a module read once. It was 4096 turns, and an import graph
+# dense enough lost its later modules silently
+# (`blend-laws2.modules-read`)
+def load.fuel() -> Nat:
+  4294967295n
+
+# past the fuel, each import left as a module not read, so that its error
+# says so (`mds.ers`), never dropped silently (`blend-no-silent-failures`)
+def load.short(todo: List<&2, Td>, +mods: List<&2, Md>) -> List<&2, Md>:
+  match todo:
+    case Nil{}:
+      mods
+    case Con{td, t}:
+      match td:
+        case Td{+path, +from}:
+          load.short(t, Con{Md{path, Nil{}, False{}, from}, mods})
+
+# the modules, breadth first from the root, each once; fuel, its turns,
+# each an import as written
 def load.go(n: Nat, todo: List<&2, Td>, +mods: List<&2, Md>) -> IO(List<&2, Md>):
   match n:
     case 0n:
-      IO.pure(List<&2, Md>, List.reverse(&2, Md, mods))
+      IO.pure(List<&2, Md>, List.reverse(&2, Md, load.short(todo, mods)))
     case 1n++k:
       match todo:
         case Nil{}:
@@ -7812,12 +7958,12 @@ def load.go(n: Nat, todo: List<&2, Td>, +mods: List<&2, Md>) -> IO(List<&2, Md>)
 
 def main.file(+cmd: U32, +path: String) -> IO(Unit):
   do IO<Unit>:
-    ms : List<&2, Md> <- load.go(4096n, [Td{codes(path), 0}], Nil{})
+    ms : List<&2, Md> <- load.go(load.fuel(), [Td{codes(path), 0}], Nil{})
     main.out(run.mods(cmd, ms))
 
 def main.file.q(+cmd: U32, +q: List<&2, U32>, +path: String) -> IO(Unit):
   do IO<Unit>:
-    ms : List<&2, Md> <- load.go(4096n, [Td{codes(path), 0}], Nil{})
+    ms : List<&2, Md> <- load.go(load.fuel(), [Td{codes(path), 0}], Nil{})
     main.out(run.mods.q(cmd, q, ms))
 
 # `show FILE.blend [--read|--objects|--resolve] [NAME]`: a view is a
@@ -7964,7 +8110,7 @@ def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>
     case Nil{}:
       verify.cks(acc, Nil{}, fs)
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{d, 0}], Nil{}),
         +ms => verify.deps(dt, List.append(&2, Ck, acc, dep.checks(run.mods(4, ms), d)), fs))
 
 # Stamps (`blend-cli.stamps`, `blend-stamps`): each file Blend writes
@@ -8442,7 +8588,7 @@ def emit.deps(ds: List<&2, List<&2, U32>>, +force: Bool, st: Em) -> IO(Em):
     case Nil{}:
       IO.pure(Em, st)
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Em, load.go(4096n, [Td{d, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Em, load.go(load.fuel(), [Td{d, 0}], Nil{}),
         +ms => IO.bind(Maybe<&2, List<&2, U32>>, Em, read.file(bend.of(d)),
           +m => emit.deps(dt, force, em.dep(em.fresh(force, m, d, ms), st, d, ms, m))))
 
@@ -8499,7 +8645,7 @@ def main.emit.go(ps: List<&2, String>, +alone: Bool, +force: Bool, +mode: U32, +
     case Nil{}:
       emit.end(st, alone, force, mode, deps.missed(deps, named, Nil{}))
     case Con{+p, t}:
-      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{codes(p), 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{codes(p), 0}], Nil{}),
         +ms => IO.bind(Maybe<&2, List<&2, U32>>, Unit, read.file(bend.of(codes(p))),
           +m => main.emit.go(t, alone, force, mode, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
             em.dep(em.fresh(force, m, codes(p), ms), st, codes(p), ms, m))))
@@ -8665,7 +8811,7 @@ def deps.go(ds: List<&2, List<&2, U32>>, +make: Bool, +bytes: Bool, +bad: Bool) 
     case Nil{}:
       when(IO(Unit), bad, u => IO.exit(1), u => IO.pure(Unit, Unit{}))
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{d, 0}], Nil{}),
         +ms => IO.bind(Maybe<&2, List<&2, U32>>, Unit, read.file(bend.of(d)),
           m => IO.bind(U32, Unit, deps.state(m, bytes, d, ms),
             +st => IO.bind(Unit, Unit, dep.say(make, st, d, ms), u => deps.go(dt, make, bytes, bad || dep.bad(make, st))))))
@@ -8677,7 +8823,7 @@ def deps.gather(ps: List<&2, List<&2, U32>>, +make: Bool, +bytes: Bool, +named: 
     case Nil{}:
       deps.go(List.append(&2, List<&2, U32>, deps.missed(ds, named, Nil{}), named), make, bytes, False{})
     case Con{+p, t}:
-      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{p, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{p, 0}], Nil{}),
         +ms => deps.gather(t, make, bytes, named, List.append(&2, List<&2, U32>, ds, List.tail(&2, List<&2, U32>, mds.paths(ms)))))
 
 def main.deps.k(+make: Bool, +bytes: Bool, +xs: List<&2, String>) -> IO(Unit):

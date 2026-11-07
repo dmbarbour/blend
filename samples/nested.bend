@@ -1,5 +1,5 @@
 # Written by Blend from nested.blend; do not edit.
-# blend stamp: 3efd9b0ef5dd 79bbf8fa9bb03aba
+# blend stamp: 78e54ed99292 4c444bf8bbec6f00
 import Base
 
 # blend: nested.blend:3

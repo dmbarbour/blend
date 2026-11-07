@@ -1,0 +1,5 @@
+Error: import ./cycle.blend: a Blend module is imported by an alias, import ./cycle.blend as NAME
+Location: import-unaliased.blend:3
+2 | # Bend's and never read.
+3>| import ./cycle.blend
+4 | 

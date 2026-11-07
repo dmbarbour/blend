@@ -6384,9 +6384,9 @@ def units_held(os: List<&2, B.Oc>, +ds: List<&2, B.Node>, +h: {ocsh(os, ds) == T
                 urds_held(id, List.reverse(&2, B.Rd, rds), ds, rdsh_rev(rds, Nil{}, ds, and_l(rdsh(rds, ds), ocsh(t, ds), h), {==})),
                 units_held(t, ds, and_r(rdsh(rds, ds), ocsh(t, ds), h)))
 
-def Laws.nodes.copies(obs, ls, fs, als, paths, pss, nxs, ds, h):
-  units_held(B.module.copies(obs, B.Cx{obs, ls, fs, als, paths, pss, nxs, B.mds.of(obs)}), ds,
-    mcopies_ok(obs, B.Cx{obs, ls, fs, als, paths, pss, nxs, B.mds.of(obs)}, ds, mdsh_of(obs, ds, h)))
+def Laws.nodes.copies(obs, ls, fs, als, paths, pss, ds, h):
+  units_held(B.module.copies(obs, B.cx.of(obs, ls, fs, als, paths, pss)), ds,
+    mcopies_ok(obs, B.cx.of(obs, ls, fs, als, paths, pss), ds, mdsh_of(obs, ds, h)))
 
 # The objects' members (`nodes.objects`): a definition the same as itself
 # (`ndef_refl`), a tree's definitions held by its own list (`tree_self`)
@@ -7666,8 +7666,8 @@ def Laws.nodes.objects(trees, als):
   ma_ok(B.sy.obs(B.syn.of(als, B.obs(trees))), B.sy.obs(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))), B.trees.defs(trees),
     sg_ok(Nat.add(2n, Nat.add(List.length(&2, B.Ob, B.obs(trees)), List.length(&2, B.Ob, B.obs(trees)))), als, B.obs(trees), Nil{}, Nil{}, B.trees.defs(trees), obs_ok(trees)))
 
-def Laws.nodes(trees, als, ls, fs, als2, paths, pss, nxs):
-  Laws.nodes.copies(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.trees.defs(trees), Laws.nodes.objects(trees, als))
+def Laws.nodes(trees, als, ls, fs, als2, paths, pss):
+  Laws.nodes.copies(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, B.trees.defs(trees), Laws.nodes.objects(trees, als))
 
 # The tree (`markers.tree`): a body's lines made the tree's one for one
 # (`ln_bl`), each open object's members numbered so (`frok`), a node added
@@ -8511,9 +8511,9 @@ def units_ok(us: List<&2, B.Un>, +ds: List<&2, B.Node>, +hh: {B.units.held(us, d
         unit_ok(u, ds, and_l(B.node.held(B.un.node(u), ds), B.units.held(t, ds), hh), hd, and_l(um1(u), um(t), hm)),
         units_ok(t, ds, and_r(B.node.held(B.un.node(u), ds), B.units.held(t, ds), hh), hd, and_r(um1(u), um(t), hm)))
 
-def Laws.markers.units(trees, als, ls, fs, als2, paths, pss, nxs, h):
-  units_ok(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), B.trees.defs(trees), Laws.nodes(trees, als, ls, fs, als2, paths, pss, nxs), dsok_trees(trees, h),
-    units_m(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), mcopies_m(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})))
+def Laws.markers.units(trees, als, ls, fs, als2, paths, pss, h):
+  units_ok(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss))), B.trees.defs(trees), Laws.nodes(trees, als, ls, fs, als2, paths, pss), dsok_trees(trees, h),
+    units_m(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss)), mcopies_m(B.obs.made(B.syn.of(als, B.obs(trees))), B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss))))
 
 # The writer's lines
 # ------------------
@@ -11351,11 +11351,11 @@ def dsil_trees(ts: List<&2, List<&2, B.Node>>, +h: {B.trees.inline(ts) == True{}
     case Con{+tr, +t}:
       dsil_app(B.tree.defs(tr), B.trees.defs(t), dsil_tree(tr, and_l(B.nodes.inline(tr), B.trees.inline(t), h)), dsil_trees(t, and_r(B.nodes.inline(tr), B.trees.inline(t), h)))
 
-def Laws.inline.units(trees, als, ls, fs, als2, paths, pss, nxs, h, hf):
+def Laws.inline.units(trees, als, ls, fs, als2, paths, pss, h, hf):
   units_il(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}),
+      B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss)),
     mcopies_il(B.obs.made(B.syn.of(als, B.obs(trees))),
-      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}, B.trees.defs(trees),
+      B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss), B.trees.defs(trees),
       mdsh_of(B.obs.made(B.syn.of(als, B.obs(trees))), B.trees.defs(trees), Laws.nodes.objects(trees, als)), dsil_trees(trees, h), hf))
 
 # The context (`inline.members`, ...): the objects' members within a
@@ -12682,10 +12682,10 @@ def finals_fd(es: List<&2, B.En>, +obs: List<&2, B.Ob>, +h: {B.ens.chained(es, o
             finals_fd(t, obs, and_r(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), h)))
 
 def Laws.copies.found(ls, obs, bad, als, paths, pss, o):
-  pdef_rds(B.copies(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o),
-    fg_go(B.copies.fuel(), B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o, B.ins.finals(B.cx.map(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o)), B.Cp{Nil{}, Nil{}, B.copies.room(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)})}, {==},
+  pdef_rds(B.copies(B.cx.of(obs, ls, B.folds(ls, obs, bad), als, paths, pss), o),
+    fg_go(B.copies.fuel(), B.cx.of(obs, ls, B.folds(ls, obs, bad), als, paths, pss), o, B.ins.finals(B.cx.map(B.cx.of(obs, ls, B.folds(ls, obs, bad), als, paths, pss), o)), B.Cp{Nil{}, Nil{}, B.copies.room(B.cx.of(obs, ls, B.folds(ls, obs, bad), als, paths, pss))}, {==},
       nxs_ch(B.folds(ls, obs, bad), obs, Laws.folds.chained(ls, obs, bad)), {==},
-      finals_fd(B.cx.map(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o), obs, fdat_ch(B.folds(ls, obs, bad), U32.to_nat(o), obs, Laws.folds.chained(ls, obs, bad)))))
+      finals_fd(B.cx.map(B.cx.of(obs, ls, B.folds(ls, obs, bad), als, paths, pss), o), obs, fdat_ch(B.folds(ls, obs, bad), U32.to_nat(o), obs, Laws.folds.chained(ls, obs, bad)))))
 
 # The root's imports: aliases, parts of their lines
 
@@ -13031,39 +13031,18 @@ def eown_il(+cx: B.Cx, +h: {B.nodes.inline(B.ob.mems(B.ob.at(B.cx.obs(cx), 0))) 
 
 def Laws.markers.inline(files, trees, als, paths, us, res, mode, rtypes, ux, mt, laws, hf, ht):
   and_intro(Bool.and(Bool.and(B.inlines(files), B.obs.inline(B.obs.made(B.syn.of(als, B.obs(trees))))),
-      B.cis.inline(B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))),
+      B.cis.inline(B.emit.own(B.objects.cx(als, paths, B.obs(trees))))),
     B.ht.inline(B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws))),
+      B.objects.cx(als, paths, B.obs(trees)))), laws))),
     and_intro(Bool.and(B.inlines(files), B.obs.inline(B.obs.made(B.syn.of(als, B.obs(trees))))),
-      B.cis.inline(B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})),
+      B.cis.inline(B.emit.own(B.objects.cx(als, paths, B.obs(trees)))),
       and_intro(B.inlines(files), B.obs.inline(B.obs.made(B.syn.of(als, B.obs(trees)))), hf, Laws.inline.objects(trees, als, ht)),
-      eown_il(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}, obm_at(B.obs.made(B.syn.of(als, B.obs(trees))), 0, Laws.inline.members(trees, als, ht)))),
+      eown_il(B.objects.cx(als, paths, B.obs(trees)), obm_at(B.obs.made(B.syn.of(als, B.obs(trees))), 0, Laws.inline.members(trees, als, ht)))),
     Laws.inline.table(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))),
-      B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))),
-        B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
-        als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
-        B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws,
+      B.objects.cx(als, paths, B.obs(trees)))), laws,
       Laws.inline.units(trees, als, B.sy.ls(B.syn.of(als, B.obs(trees))),
         B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))),
         als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))),
-        B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))),
         ht, Laws.inline.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))),
           B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))), Laws.inline.members(trees, als, ht)))))
 
@@ -13726,10 +13705,10 @@ def hl_at(+us: List<&2, B.Un>, +s: U32, +h: {unsl(us) == True{} : Bool}) -> {lin
   lined_get(us, U32.to_nat(s), h)
 
 def Laws.markers.emitted(files, trees, als, paths, us, res, mode, rtypes, ux, mt, laws, s, x, j, b, hf, ht, hk):
-  Laws.markers.writer(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als, B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), res, paths, mode, rtypes, ux, B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}, s, x, j, b,
+  Laws.markers.writer(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als, B.emit.own(B.objects.cx(als, paths, B.obs(trees))), res, paths, mode, rtypes, ux, B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees)))), laws)), mt}, s, x, j, b,
     Laws.markers.inline(files, trees, als, paths, us, res, mode, rtypes, ux, mt, laws, hf, ht),
-    hl_at(B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws), s, unsl_filter(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws,
-      unsl_of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), Laws.markers.units(trees, als, B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), hk), units_e(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), mcopies_e(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))))))
+    hl_at(B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees)))), laws), s, unsl_filter(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees)))), laws,
+      unsl_of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees)))), Laws.markers.units(trees, als, B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), hk), units_e(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees))), mcopies_e(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees))))))))
 
 # The dispositions joined at emission (`sharing.emitted`): the writer's
 # uses, read through the table, are those `mults` reads from the units'
@@ -15118,9 +15097,9 @@ def units_dp(us: List<&2, B.Un>, +ds: List<&2, B.Node>, +hh: {B.units.held(us, d
         unit_dp(u, ds, and_l(B.node.held(B.un.node(u), ds), B.units.held(t, ds), hh), hd, and_l(um1(u), um(t), hm)),
         units_dp(t, ds, and_r(B.node.held(B.un.node(u), ds), B.units.held(t, ds), hh), hd, and_r(um1(u), um(t), hm)))
 
-def Laws.deep.units(trees, als, ls, fs, als2, paths, pss, nxs, h):
-  units_dp(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), B.trees.defs(trees), Laws.nodes(trees, als, ls, fs, als2, paths, pss, nxs), dsdp_trees(trees, h),
-    units_m(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), mcopies_m(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss, nxs, B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})))
+def Laws.deep.units(trees, als, ls, fs, als2, paths, pss, h):
+  units_dp(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss))), B.trees.defs(trees), Laws.nodes(trees, als, ls, fs, als2, paths, pss), dsdp_trees(trees, h),
+    units_m(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss)), mcopies_m(B.obs.made(B.syn.of(als, B.obs(trees))), B.cx.of(B.obs.made(B.syn.of(als, B.obs(trees))), ls, fs, als2, paths, pss))))
 
 # The markers unambiguous at emission (`unambiguous.emitted`), as
 # `markers.emitted`: a unit whose node is no definition has no lines
@@ -15222,10 +15201,10 @@ def dl_at(+us: List<&2, B.Un>, +s: U32, +h: {unsdl(us) == True{} : Bool}) -> {dl
   dlined_get(us, U32.to_nat(s), h)
 
 def Laws.unambiguous.emitted(files, trees, als, paths, us, res, mode, rtypes, ux, mt, laws, s, x, j, b, hf, ht, hd):
-  Laws.markers.unambiguous(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als, B.emit.own(B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), res, paths, mode, rtypes, ux, B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws)), mt}, s, x, j, b,
+  Laws.markers.unambiguous(B.Ec{files, B.obs.made(B.syn.of(als, B.obs(trees))), us, als, B.emit.own(B.objects.cx(als, paths, B.obs(trees))), res, paths, mode, rtypes, ux, B.pt.of(B.Un, B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees)))), laws)), mt}, s, x, j, b,
     Laws.markers.inline(files, trees, als, paths, us, res, mode, rtypes, ux, mt, laws, hf, ht),
-    dl_at(B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws), s, unsdl_filter(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), laws,
-      unsdl_of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))})), Laws.deep.units(trees, als, B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), hd), units_e(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}), mcopies_e(B.obs.made(B.syn.of(als, B.obs(trees))), B.Cx{B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), B.nxs.of(B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees)))))), B.mds.of(B.obs.made(B.syn.of(als, B.obs(trees))))}))))))
+    dl_at(B.units.of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees)))), laws), s, unsdl_filter(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees)))), laws,
+      unsdl_of(B.units(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees)))), Laws.deep.units(trees, als, B.sy.ls(B.syn.of(als, B.obs(trees))), B.folds(B.sy.ls(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.chains.bad(B.obs.made(B.syn.of(als, B.obs(trees))), B.obs.made(B.syn.of(als, B.obs(trees))), B.sy.pss(B.syn.of(als, B.obs(trees))))), als, paths, B.sy.pss(B.syn.of(als, B.obs(trees))), hd), units_e(B.module.copies(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees))), mcopies_e(B.obs.made(B.syn.of(als, B.obs(trees))), B.objects.cx(als, paths, B.obs(trees))))))))
 
 # A linearization sound (`c3.lin`): the merge's soundness (`c3.sound`)
 # over the lists without the empty ones, which drops none of what they
@@ -16321,16 +16300,40 @@ def ers_laws(+a: List<&2, B.Er>, +b: List<&2, B.Er>, +c: List<&2, B.Er>, +r: Lis
     h: {List.append(&2, B.Er, a, List.append(&2, B.Er, b, List.append(&2, B.Er, c, r))) == Nil{} : List<&2, B.Er>}) -> {c == Nil{} : List<&2, B.Er>}:
   app_nil_l(c, r, app_nil_r(b, List.append(&2, B.Er, c, r), app_nil_r(a, List.append(&2, B.Er, b, List.append(&2, B.Er, c, r)), h)))
 
-def le_if(c: Bool, +all: List<&2, B.Un>, hl: {c == True{} : Bool}, h: {B.er.laws.if(c, all) == Nil{} : List<&2, B.Er>}) ->
-    {B.er.laws(all, B.pt.of(B.Un, all), B.ux.of(all)) == Nil{} : List<&2, B.Er>}:
+# a unit that is no law, proof or lemma: proven, having no law to prove
+def nf_true(b: Bool, h: {Bool.not(b) == False{} : Bool}) -> {b == True{} : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({False{} == True{} : Bool}, MB.false_ne_true()(Equal.sym(Bool, True{}, False{}, h)))
+
+def def_proven(+x: B.Un, +ux: B.Ht<B.Xe>, +h: {Bool.not(U32.is_eq(B.node.what(B.un.node(x)), 0)) == False{} : Bool}) -> {B.un.proven(x, ux) == True{} : Bool}:
+  %Equal.sym(U32, B.node.what(B.un.node(x)), 0, u32_eq_of_is_eq(B.node.what(B.un.node(x)), 0, nf_true(U32.is_eq(B.node.what(B.un.node(x)), 0), h))) :
+    {Bool.or(Bool.not(U32.is_eq(_, 1)), Maybe.is_some(&2, U32, B.ux.find(ux, B.rf.proof(B.un.ref(x))))) == True{} : Bool}
+  {==}
+
+# a module none of whose units is a law, proof or lemma: every law (none)
+# proven, the check emission skips for it (`units.lawful`) needed by none
+def lawless_proven(xs: List<&2, B.Un>, +ux: B.Ht<B.Xe>, +h: {B.units.lawful(xs) == False{} : Bool}) -> {B.laws.proven(xs, ux) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(B.un.proven(x, ux), B.laws.proven(t, ux),
+        def_proven(x, ux, or_false_l(Bool.not(U32.is_eq(B.node.what(B.un.node(x)), 0)), B.units.lawful(t), h)),
+        lawless_proven(t, ux, or_false_r(Bool.not(U32.is_eq(B.node.what(B.un.node(x)), 0)), B.units.lawful(t), h)))
+
+# the laws' check, run or skipped: every law proven either way
+def le_any(c: Bool, +all: List<&2, B.Un>, +h: {B.er.laws.if(c, all) == Nil{} : List<&2, B.Er>}, +hc: {c == B.units.lawful(all) : Bool}) ->
+    {B.laws.proven(all, B.ux.of(all)) == True{} : Bool}:
   match c:
     case True{}:
-      h
+      Laws.laws.proven(all, B.pt.of(B.Un, all), B.ux.of(all), h)
     case False{}:
-      Empty.absurd({B.er.laws(all, B.pt.of(B.Un, all), B.ux.of(all)) == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(hl))
+      lawless_proven(all, B.ux.of(all), Equal.sym(Bool, False{}, B.units.lawful(all), hc))
 
-def Laws.laws.emitted(dse, mse, all, order, e, lwe, pfe, hl, h):
-  Laws.laws.proven(all, B.pt.of(B.Un, all), B.ux.of(all),
-    le_if(B.units.lawful(all), all, hl,
-      ers_laws(dse, mse, B.er.laws.if(B.units.lawful(all), all),
-        List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, lwe, pfe)), h)))
+def Laws.laws.emitted(dse, mse, all, order, e, lwe, pfe, h):
+  le_any(B.units.lawful(all), all,
+    ers_laws(dse, mse, B.er.laws.if(B.units.lawful(all), all),
+      List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, lwe, pfe)), h), {==})
