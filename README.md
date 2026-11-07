@@ -14,7 +14,11 @@ Status: the tool emits. `install.sh` installs the command `blend`
 beside `bend`, in `~/.bend/bin`, running this checkout: the tool built
 natively, built again when Blend or Bend changes, else run through Bend
 (`blend version`, `blend rebuild`, `blend --help`;
-`blend-command-mirrors-bend`). `blend emit [--alone] FILE.blend...
+`blend-command-mirrors-bend`). `blend FILE.blend [args]`, `-o OUT`,
+`--check-only` or `--verdict` emits the module's tree, then runs
+`bend FILE.bend` with the same arguments, each error Bend reports on a
+line of the module's file followed by the `.blend` line it comes from
+(`Source: FILE.blend:LINE`). `blend emit [--alone] FILE.blend...
 [DIR]` (or `run.sh emit ...`, the checkout's tool without installing) writes, for each module named, the `.bend` it makes, every
 concrete object's definitions, then its laws and their proofs where it
 has any, beside the module or into DIR, printing each path; or, writing nothing at all, the errors of
