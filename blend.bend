@@ -1327,38 +1327,35 @@ def show.first(ls: List<&2, Ln>) -> String:
 def show.line(+no: Loc) -> String:
   "  (line " ++ U32.show(loc.line(no)) ++ ")"
 
-# the tree, an item a line, members indented under their object; fuel,
-# the items' count, as the walk enters a member list from its object
-def show.go(n: Nat, ns: List<&2, Node>, +ind: String) -> String:
-  match n:
-    case 0n:
+# the tree, an item a line, members indented under their object; by
+# structure, an object's members and the items after it each a part of
+# the list, so that nothing is cut short (`blend-no-silent-failures`)
+def show.go(ns: List<&2, Node>, +ind: String) -> String:
+  match ns:
+    case Nil{}:
       ""
-    case 1n++k:
-      match ns:
-        case Nil{}:
-          ""
-        case Con{nd, t}:
-          match nd:
-            case NImport{txt, +no}:
-              ind ++ text(txt) ++ show.line(no) ++ "\n" ++ show.go(k, t, ind)
-            case NDecl{names, +no}:
-              ind ++ "declare " ++ show.names(names) ++ show.line(no) ++ "\n" ++ show.go(k, t, ind)
-            case NDef{+share, +upd, name, rest, params, +body, +no, +dind, +what}:
-              ind ++ show.share(share) ++ show.kw(upd) ++ text(name) ++ " [" ++ show.names(params) ++ "], " ++
-                U32.show(U32.from_nat(List.length(&2, Bl, body))) ++ " body lines" ++ show.line(no) ++ "\n" ++
-                show.used(show.uses(body), ind) ++ show.go(k, t, ind)
-            case NObj{+abs, +ext, name, parents, kids, +no}:
-              ind ++ show.abs(abs) ++ text(name) ++ show.ext(parents) ++ show.line(no) ++ "\n" ++
-                show.go(k, kids, ind ++ "  ") ++ show.go(k, t, ind)
-            case NBad{txt, +no}:
-              ind ++ "? " ++ text(txt) ++ show.line(no) ++ "\n" ++ show.go(k, t, ind)
-            case NErr{msg, +no}:
-              ind ++ "! " ++ text(msg) ++ show.line(no) ++ "\n" ++ show.go(k, t, ind)
-            case NBend{lines, +no}:
-              ind ++ "Bend's " ++ show.first(lines) ++ show.line(no) ++ "\n" ++ show.go(k, t, ind)
+    case Con{nd, t}:
+      match nd:
+        case NImport{txt, +no}:
+          ind ++ text(txt) ++ show.line(no) ++ "\n" ++ show.go(t, ind)
+        case NDecl{names, +no}:
+          ind ++ "declare " ++ show.names(names) ++ show.line(no) ++ "\n" ++ show.go(t, ind)
+        case NDef{+share, +upd, name, rest, params, +body, +no, +dind, +what}:
+          ind ++ show.share(share) ++ show.kw(upd) ++ text(name) ++ " [" ++ show.names(params) ++ "], " ++
+            U32.show(U32.from_nat(List.length(&2, Bl, body))) ++ " body lines" ++ show.line(no) ++ "\n" ++
+            show.used(show.uses(body), ind) ++ show.go(t, ind)
+        case NObj{+abs, +ext, name, parents, kids, +no}:
+          ind ++ show.abs(abs) ++ text(name) ++ show.ext(parents) ++ show.line(no) ++ "\n" ++
+            show.go(kids, ind ++ "  ") ++ show.go(t, ind)
+        case NBad{txt, +no}:
+          ind ++ "? " ++ text(txt) ++ show.line(no) ++ "\n" ++ show.go(t, ind)
+        case NErr{msg, +no}:
+          ind ++ "! " ++ text(msg) ++ show.line(no) ++ "\n" ++ show.go(t, ind)
+        case NBend{lines, +no}:
+          ind ++ "Bend's " ++ show.first(lines) ++ show.line(no) ++ "\n" ++ show.go(t, ind)
 
-def show(ns: List<&2, Node>, +n: Nat) -> String:
-  show.go(n, ns, "")
+def show(ns: List<&2, Node>) -> String:
+  show.go(ns, "")
 
 # Objects
 # =======
@@ -7767,7 +7764,7 @@ def usage() -> String:
 def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
   match cmd:
     case 1:
-      Out{True{}, show(tree.root(trees), 1n+count(tree.root(trees)))}
+      Out{True{}, show(tree.root(trees))}
     case 0:
       Out{False{}, usage()}
     case _:

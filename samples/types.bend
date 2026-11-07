@@ -1,5 +1,5 @@
 # Written by Blend from types.blend; do not edit.
-# blend stamp: 93f00e14ee3f d00d6464c315357a
+# blend stamp: bedd1e213079 d938284aafff4c5a
 import Base
 
 # blend: types.blend:11
