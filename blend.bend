@@ -2823,6 +2823,24 @@ def show.obs(os: List<&2, Ob>, ls: List<&2, Maybe<&2, Lz>>, fs: List<&2, Maybe<&
     case _ _ _:
       ""
 
+# an object named q, its linearization and definitions; the module and
+# others, nothing
+def show.ob.named(+obs: List<&2, Ob>, o: Ob, l: Maybe<&2, Lz>, +f: Maybe<&2, Fd>, +q: List<&2, U32>) -> String:
+  match o:
+    case Ob{+id, +host, path, +abs, parents, mems, +no, +kind, +tpl}:
+      when(String, Bool.not(U32.is_eq(id, host)) && String.eq(ob.name(obs, id), text(q)),
+        u => show.ob(obs, Ob{id, host, path, abs, parents, mems, no, kind, tpl}, l, f), u => "")
+
+def show.obs.q(os: List<&2, Ob>, ls: List<&2, Maybe<&2, Lz>>, fs: List<&2, Maybe<&2, Fd>>, +obs: List<&2, Ob>, +q: List<&2, U32>) -> String:
+  match os ls fs:
+    case Con{o, ot} Con{l, lt} Con{f, ft}:
+      show.ob.named(obs, o, l, f, q) ++ show.obs.q(ot, lt, ft, obs, q)
+    case _ _ _:
+      ""
+
+def show.obs.k(+got: String, +q: List<&2, U32>) -> Out:
+  when(Out, String.eq(got, ""), u => Out{False{}, "blend: no object " ++ text(q)}, u => Out{True{}, got})
+
 def show.ers.more(es: List<&2, Er>) -> String:
   match es:
     case Nil{}:
@@ -6913,6 +6931,8 @@ def objects.next(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, Lis
   match cmd:
     case 2:
       when(Out, List.is_empty(&2, U32, q), u => Out{True{}, show.obs(obs, ls, fs, obs)}, u => show.query(obs, fs, files, srcs, q))
+    case 5:
+      show.obs.k(show.obs.q(obs, ls, fs, obs, q), q)
     case _:
       +cx = {Cx{obs, ls, fs, als, paths, pss, nxs.of(fs), mds.of(obs)} : Cx}
       resolved.next(cmd, files, srcs, cx, module.copies(obs, cx))
@@ -7441,7 +7461,7 @@ def basename(path: String) -> String:
   base.k(until(List.reverse(&2, U32, codes(path)), 47))
 
 def usage() -> String:
-  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] [--no-check|--verdict] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR, then check with bend those holding laws; --alone those named alone, --no-check none, --verdict by the kernel too\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [read|objects|resolve|NAME]  a stage, the objects by default, or what NAME resolves to\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
+  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] [--no-check|--verdict] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR, then check with bend those holding laws; --alone those named alone, --no-check none, --verdict by the kernel too\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [--read|--objects|--resolve] [NAME]  a stage, the objects by default; what NAME resolves to, or with --objects that object\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
 
 # 1 read, 2 objects, 3 resolve, 4 emit
 def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:
@@ -7680,25 +7700,44 @@ def main.file.q(+cmd: U32, +q: List<&2, U32>, +path: String) -> IO(Unit):
     ms : List<&2, Md> <- load.go(4096n, [Td{codes(path), 0}], Nil{})
     main.out(run.mods.q(cmd, q, ms))
 
-# `show FILE.blend [read|objects|resolve|NAME]`: a stage, the objects by
-# default, or what a name resolves to
-def main.show.k(+path: String, +w: String) -> IO(Unit):
-  when(IO(Unit), String.eq(w, "read"), u => main.file(1, path),
-    u => when(IO(Unit), String.eq(w, "objects"), v => main.file(2, path),
-      v => when(IO(Unit), String.eq(w, "resolve"), x => main.file(3, path), x => main.file.q(2, codes(w), path))))
+# `show FILE.blend [--read|--objects|--resolve] [NAME]`: a view is a
+# flag, never a word a name could be, so that views may come without
+# taking names (the maintainer, 2026-11-07, as `bend base [--types|NAME]`);
+# the view 0 none given, 9 two, or an argument too many
+def show.view.of(+view: U32, +v: U32) -> U32:
+  when(U32, U32.is_eq(view, 0) || U32.is_eq(view, v), u => v, u => 9)
 
+# a view's name, for a NAME it takes not
+def show.view.flag(+view: U32) -> String:
+  when(String, U32.is_eq(view, 1), u => "--read", u => "--resolve")
+
+# the view chosen: the objects by default, or, a name given, what it
+# resolves to; `--objects NAME` that object alone; `--read` and
+# `--resolve` the whole module
+def main.show.at(+path: String, +view: U32, +name: List<&2, String>) -> IO(Unit):
+  on.maybe(String, IO(Unit), List.head(&2, String, name),
+    u => when(IO(Unit), U32.is_eq(view, 9), v => main.out(Out{False{}, usage()}), v => main.file(when(U32, U32.is_eq(view, 0), w => 2, w => view), path)),
+    +n => when(IO(Unit), U32.is_eq(view, 0), v => main.file.q(2, codes(n), path),
+      v => when(IO(Unit), U32.is_eq(view, 2), w => main.file.q(5, codes(n), path),
+        w => when(IO(Unit), U32.is_eq(view, 9), x => main.out(Out{False{}, usage()}),
+          x => main.out(Out{False{}, "blend: " ++ show.view.flag(view) ++ " shows the whole module, and takes no name"})))))
+
+def main.show.go(xs: List<&2, String>, +path: String, +view: U32, +name: List<&2, String>) -> IO(Unit):
+  match xs:
+    case Nil{}:
+      main.show.at(path, view, name)
+    case Con{+x, +t}:
+      when(IO(Unit), String.eq(x, "--read"), u => main.show.go(t, path, show.view.of(view, 1), name),
+        u => when(IO(Unit), String.eq(x, "--objects"), v => main.show.go(t, path, show.view.of(view, 2), name),
+          v => when(IO(Unit), String.eq(x, "--resolve"), w => main.show.go(t, path, show.view.of(view, 3), name),
+            w => when(IO(Unit), starts(codes(x), [45]) || Bool.not(List.is_empty(&2, String, name)), y => main.show.go(t, path, 9, name),
+              y => main.show.go(t, path, view, [x])))))
+
+# the file first, as Bend's commands take it, the flags anywhere after
 def main.show(+xs: List<&2, String>) -> IO(Unit):
   match xs:
     case Con{+path, r}:
-      match r:
-        case Nil{}:
-          main.file(2, path)
-        case Con{+w, t}:
-          match t:
-            case Nil{}:
-              main.show.k(path, w)
-            case Con{h, u}:
-              main.out(Out{False{}, usage()})
+      when(IO(Unit), starts(codes(path), [45]), u => main.out(Out{False{}, usage()}), u => main.show.go(r, path, 0, Nil{}))
     case Nil{}:
       main.out(Out{False{}, usage()})
 

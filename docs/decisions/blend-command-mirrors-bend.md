@@ -17,7 +17,9 @@ what a module reaches and a `deps` to list it, a dry run.
   program keeps its input, output and status (Bend's `Process.run`
   captures output, bounded). Words name the rest: `emit [--alone]`,
   `deps [--make]`, `show` (the stages, and a name's resolution, as
-  `bend base NAME`), `guide`, `version`, `update` and `rebuild`. A first
+  `bend base NAME`; each view a flag, never a word a name could be, so
+  that views may come without taking names, the maintainer,
+  2026-11-07), `guide`, `version`, `update` and `rebuild`. A first
   argument ending in `.blend` is a file, any other a word; flags may
   follow anywhere, `--` passing the rest to the program, as Bend's.
 - `emit` checks what it writes (the maintainer, 2026-11-05): Bend runs
