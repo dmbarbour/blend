@@ -27,6 +27,39 @@ it alone taught. Add to this file what a new proof teaches.
   that a walk cut short reports an error; a proof that the fuel suffices
   is stronger, and often feasible by a potential (below). Try it before
   settling for the weaker law.
+- **An invariant a walk hands on, as a function**: "every instance done
+  has its copy" is `@h:{done.has(...)} -> {copied(...)}` for the state,
+  each step building the next state's from the last's, which it uses
+  once, and the recursion taking it as an argument (`cm_go`,
+  `copies.embodied`); an empty start gives it by refutation.
+- **A silent fallback made an error, its law claimed where none is
+  reported**: `copy.of`'s placeholder for a member not found became an
+  error, so that "every copy a definition" holds where the copies report
+  none (`copies.defined`); errors only grow through the walk (`ers_back`,
+  an induction mirroring it), so the result's none brings each step's.
+  Proving the fallback never fires is a law of its own, the expensive
+  half (`blend-laws2.copies-found`).
+- **An invariant of a list kept beside its index**: where a step reads
+  what it builds on from an index (the fold's `ix`) and writes the list
+  (its map), the invariant holds of both (`fdok`), the trie's laws
+  twinned for its predicate (`hch_put`, `hch_leaf`); a lookup's result
+  is stated for the name sought (`mch`), so that no equation between
+  the index and the list is needed (`folds.chained`).
+- **A walk's twin for one field**: where only one branch of a walk makes
+  the part a law is about (the copies' priors, `rr.prior.of`), the twin
+  reuses the walk's mirrors and proves each other case by `{==}`
+  (`copies.found`, after the `rril` walk).
+- **A context's shape as an equation**: a lemma over a context built one
+  way takes the shape as a hypothesis `{field(cx) == built(..)}`, which
+  can be `+`-marked and handed through a recursion, where a function
+  hypothesis is used once; the law, stating the context so, gives `{==}`
+  (`cxmds`, `copies.found`).
+- **Completeness where termination is out of reach**: a worklist whose
+  pushes no potential bounds (the copies', which reach priors through
+  bodies) runs on ample fuel and reports an error where it runs out with
+  work left, so that the law claims completeness where no error is
+  reported (`copies.complete`): the fuel's end refuted by the error's
+  constructor, and the fuel's sufficiency listed as the missing piece.
 - **Mutate the code after a proof passes**: break what the law is about
   in a copy, and see the proofs fail. A law that survives the mutation
   claims less than meant. Keep the mutations in a `MUTANTS.txt` beside
@@ -172,7 +205,10 @@ it alone taught. Add to this file what a new proof teaches.
   each entry and let a lookup compare: a put at another key then leaves
   a lookup as it was whatever leaf it lands in (`put_else`, the
   descent's two tests split four ways), so no path arithmetic is
-  needed (`units.positions`; `blend-units-keyed`).
+  needed (`units.positions`; `blend-units-keyed`). Its converse, a
+  lookup after a put finds the entry put or one found before
+  (`ins_split`, `copies.embodied`), splits the same four ways, the
+  hypothesis carried across the bit's equation by `Equal.sym` of it.
 - **A trie on a `U32`'s own word** (`U32{Word(32n)}`, the lowest bit
   first) is structural all the way down: a lookup and a put recurse on
   the word, and `Word.cmp`'s last step splits into the tails and the

@@ -78,6 +78,41 @@
 #   token as one within a line is so (`same_il`); the resolver's
 #   decisions mirrored, messages too; each part a law joined last, a
 #   part a mutation breaks in a small lemma of its own (`eown_il`).
+# - The copies complete (`copies.complete`): an instance in the worklist
+#   or done ends done, by induction on the fuel, a branch's facts handed
+#   to its recursion (`cc_step`), the trie's laws twinned for instances
+#   (`ins_mono.k`, `ins_seen_mono`); the fuel's end an error, refuted
+#   where none is reported (`cc_short`).
+# - The copies embodied (`copies.embodied`): an invariant, done implies
+#   copied, handed on as a function, each step building the next from
+#   the last (`cm_go`, `cm_add`); a copy's instance through `copy.of`'s
+#   mirrors (`rd_inst`); a lookup after a put, the put or before
+#   (`ins_split`); an empty trie's leaves (`empty_leaf`); the copies'
+#   reversal keeping them (`rev_xs`).
+# - The copies defined (`copies.defined`): a guard made an error (a member
+#   not found), the law claiming where none is reported; errors only
+#   growing through the worklist (`ers_back`), so the result's none
+#   brings each copy's own none; a lookup returning only definitions of
+#   the name sought (`mem_find_def`, its `when` mirrored in `mfd_k`).
+# - The member tables indexed (`members.indexed`): a map's argument, no
+#   arithmetic of the trie's path (`blend-units-keyed`): a put of the
+#   name sought is first in its leaf (`leaf_put`, after rewriting the
+#   searched name to the put one, `names.same_eq`), a put the search
+#   passes over leaves the search as it was wherever it lands
+#   (`mf_other`, the passing given as a function used once per branch);
+#   an empty trie's leaves (`empty_leaf`, made generic in what it holds).
+# - The folds chained (`folds.chained`): a twin of `inline.folds`' walk,
+#   its mirrors reused, the invariant holding of the fold's index beside
+#   its map (`fdok`), since an update reads its chain from the index; a
+#   lookup's result stated for the name sought (`mch`), the entry's own
+#   name rewritten to it (`names.same_eq`); a member's definition found
+#   among all its object's members (`dfd_self`, by `dfd_cons`).
+# - The copies found (`copies.found`): a walk's twin for one field of its
+#   result, made in one place (`rr.prior.of`), reuses the earlier walk's
+#   mirrors, each other case `{==}`; a lemma generic in a context takes
+#   its shape as an equation (`cxmds(cx) == mds.of(..)`), which can be
+#   `+`-marked and handed through a recursion, where the law gives
+#   `{==}`.
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -6184,7 +6219,7 @@ def cn_held(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node, +ds: List<&2, B.Node>, +hm:
 
 # copy.of's lookup mirrored
 def ocm(+mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool) -> B.Rd & B.Rb:
-  B.on.maybe(B.Node, B.Rd & B.Rb, mb, u => (B.Rd{B.In{n, q, prior}, B.NBad{Nil{}, 0}, Nil{}, Nil{}}, B.Rb{Nil{}, Nil{}, Nil{}}),
+  B.on.maybe(B.Node, B.Rd & B.Rb, mb, u => (B.Rd{B.In{n, q, prior}, B.NBad{Nil{}, 0}, Nil{}, Nil{}}, B.Rb{Nil{}, [B.Er{B.ob.no(B.ob.at(B.cx.obs(cx), o)), "the copies of " ++ B.ob.name(B.cx.obs(cx), o) ++ " found no definition " ++ B.text(n) ++ " in " ++ B.ob.name(B.cx.obs(cx), q)}], Nil{}}),
     nd => B.copy.node(cx, o, B.In{n, q, prior}, nd))
 
 def oc_k(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, +ds: List<&2, B.Node>, +hm: {mheld(mb, ds) == True{} : Bool}) ->
@@ -6243,12 +6278,22 @@ def cg_ok(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +r
       %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cph(_, ds) == True{} : Bool}
       hf
 
+# past the fuel, the copies as they were, an error at most added
+def short_cph(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, +ds: List<&2, B.Node>, hc: {cph(c, ds) == True{} : Bool}) -> {cph(B.cp.short(todo, cx, o, c), ds) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
 # the copies' loop adds copies whose definitions are held
 def copies_ok(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}, +hc: {cph(c, ds) == True{} : Bool}) ->
     {cph(B.copies.go(n, cx, o, todo, c), ds) == True{} : Bool}:
   match n:
     case 0n:
-      hc
+      short_cph(todo, cx, o, c, ds, hc)
     case 1n+(+k):
       match todo:
         case Nil{}:
@@ -6348,6 +6393,851 @@ def Laws.nodes.copies(obs, ls, fs, als, paths, pss, nxs, ds, h):
 # and by every list holding it (`within_app_l`, `within_app_r`), each
 # object's members a node list of a tree, kept by the made objects'
 # rounds (`og_ok`, `sg_ok`).
+
+# The copies complete (`copies.complete`)
+# ---------------------------------------
+#
+# Each instance the copies' worklist takes ends in its set done: found
+# there, or copied and put there; an instance done stays done whatever is
+# put after it (`seen_mono`'s twin for instances); a worklist past its
+# fuel with instances left reports an error (`cp.short`). So, by
+# induction on the fuel, an instance in the worklist or done ends done,
+# where no error is reported.
+
+# an instance the same field by field is equal
+def in_bool_eq(+p: Bool, +s: Bool, h: {Bool.not(Bool.xor(p, s)) == True{} : Bool}) -> {p == s : Bool}:
+  match p s:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      Empty.absurd({True{} == False{} : Bool}, MB.false_ne_true()(h))
+    case False{} True{}:
+      Empty.absurd({False{} == True{} : Bool}, MB.false_ne_true()(h))
+    case False{} False{}:
+      {==}
+
+def in_eq_eq(a: B.In, b: B.In, +h: {B.in.eq(a, b) == True{} : Bool}) -> {a == b : B.In}:
+  match a b:
+    case B.In{+n, +q, +p} B.In{+m, +r, +s}:
+      %Laws.names.same_eq(n, m, MB.eq_true_of_and_left(B.same(n, m), U32.is_eq(q, r), MB.eq_true_of_and_left(Bool.and(B.same(n, m), U32.is_eq(q, r)), Bool.not(Bool.xor(p, s)), h))) : {B.In{n, q, p} == B.In{_, r, s} : B.In}
+      %u32_eq_of_is_eq(q, r, MB.eq_true_of_and_right(B.same(n, m), U32.is_eq(q, r), MB.eq_true_of_and_left(Bool.and(B.same(n, m), U32.is_eq(q, r)), Bool.not(Bool.xor(p, s)), h))) : {B.In{n, q, p} == B.In{n, _, s} : B.In}
+      %in_bool_eq(p, s, MB.eq_true_of_and_right(Bool.and(B.same(n, m), U32.is_eq(q, r)), Bool.not(Bool.xor(p, s)), h)) : {B.In{n, q, p} == B.In{n, q, _} : B.In}
+      {==}
+
+def not_xor_self(+p: Bool) -> {Bool.not(Bool.xor(p, p)) == True{} : Bool}:
+  match p:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def in_eq_refl(i: B.In) -> {B.in.eq(i, i) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +p}:
+      and_intro(Bool.and(B.same(n, n), U32.is_eq(q, q)), Bool.not(Bool.xor(p, p)),
+        and_intro(B.same(n, n), U32.is_eq(q, q), Laws.names.same_refl(n), u32_is_eq_refl(q)), not_xor_self(p))
+
+# membership: an instance found stays found with one before it, the one
+# first is found, and a list's instances are found with more after them
+def ins_cons(+m: B.In, l: List<&2, B.In>, +j: B.In, hs: {B.ins.has(l, j) == True{} : Bool}) -> {B.ins.has(Con{m, l}, j) == True{} : Bool}:
+  or_r_true(B.in.eq(m, j), B.ins.has(l, j), hs)
+
+def ins_self(+m: B.In, l: List<&2, B.In>) -> {B.ins.has(Con{m, l}, m) == True{} : Bool}:
+  or_l_true(B.in.eq(m, m), B.ins.has(l, m), in_eq_refl(m))
+
+def ins_app(t: List<&2, B.In>, +ys: List<&2, B.In>, +j: B.In, h: {B.ins.has(t, j) == True{} : Bool}) ->
+    {B.ins.has(List.append(&2, B.In, t, ys), j) == True{} : Bool}:
+  match t:
+    case Nil{}:
+      Empty.absurd({B.ins.has(ys, j) == True{} : Bool}, MB.false_ne_true()(h))
+    case Con{+x, +r}:
+      or_cases(B.in.eq(x, j), B.ins.has(r, j), Bool.or(B.in.eq(x, j), B.ins.has(List.append(&2, B.In, r, ys), j)), h,
+        fa => or_l_true(B.in.eq(x, j), B.ins.has(List.append(&2, B.In, r, ys), j), fa),
+        fb => or_r_true(B.in.eq(x, j), B.ins.has(List.append(&2, B.In, r, ys), j), ins_app(r, ys, j, fb)))
+
+def ins_then(+t: List<&2, B.In>, xs: List<&2, B.In>, +j: B.In, h: {B.ins.has(t, j) == True{} : Bool}) ->
+    {B.ins.has(B.ins.then(t, xs), j) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h
+    case Con{+x, +r}:
+      ins_app(t, Con{x, r}, j, h)
+
+# the set done: an instance put is found (`leaf_put`), and one found stays
+# found whatever is put (`seen_mono`'s twin)
+def done_put_self(+t: B.Ht<B.In>, +i: B.In) -> {B.done.has(B.done.put(t, i), i) == True{} : Bool}:
+  %leaf_put(B.In, 32n, t, (B.in.hash(i) .&. 1 : U32), B.in.hash(i), i) : {B.ins.has(_, i) == True{} : Bool}
+  ins_self(i, B.ht.leaf.go(B.In, 32n, t, (B.in.hash(i) .&. 1 : U32), B.in.hash(i)))
+
+def ins_mono.k(c2: Bool, c: Bool, +k: Nat, +z: B.Ht<B.In>, +o: B.Ht<B.In>, +b: U32, +h: U32, +h2: U32, +m: B.In, +j: B.In,
+    eq: {c == U32.is_eq(b, 0) : Bool},
+    hs: {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, c, z, o), nb(h), nh(h)), j) == True{} : Bool},
+    ih: @s:B.Ht<B.In> -> @hs2:{B.ins.has(B.ht.leaf.go(B.In, k, s, nb(h), nh(h)), j) == True{} : Bool} ->
+      {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.put.go(B.In, k, s, nb(h2), nh(h2), m), nb(h), nh(h)), j) == True{} : Bool}) ->
+    {B.ins.has(B.ht.leaf.go(B.In, 1n+k, B.ht.join(B.In, c2, B.ht.put.go(B.In, k, B.ht.pick(B.In, c2, z, o), nb(h2), nh(h2), m), B.ht.pick(B.In, c2, o, z)), b, h), j) == True{} : Bool}:
+  match c2 c:
+    case True{} True{}:
+      %eq : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, B.ht.put.go(B.In, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), j) == True{} : Bool}
+      ih(z, hs)
+    case True{} False{}:
+      %eq : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, B.ht.put.go(B.In, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), j) == True{} : Bool}
+      hs
+    case False{} True{}:
+      %eq : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, B.ht.put.go(B.In, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), j) == True{} : Bool}
+      hs
+    case False{} False{}:
+      %eq : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, B.ht.put.go(B.In, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), j) == True{} : Bool}
+      ih(o, hs)
+
+def ins_seen_mono(fuel: Nat, t: B.Ht<B.In>, +b: U32, +h: U32, +b2: U32, +h2: U32, +m: B.In, +j: B.In,
+    hs: {B.ins.has(B.ht.leaf.go(B.In, fuel, t, b, h), j) == True{} : Bool}) ->
+    {B.ins.has(B.ht.leaf.go(B.In, fuel, B.ht.put.go(B.In, fuel, t, b2, h2, m), b, h), j) == True{} : Bool}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          ins_cons(m, es, j, hs)
+        case B.HNode{z, o}:
+          Empty.absurd({B.ins.has(Con{m, Nil{}}, j) == True{} : Bool}, MB.false_ne_true()(hs))
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          ins_cons(m, es, j, hs)
+        case B.HNode{+z, +o}:
+          ins_mono.k(U32.is_eq(b2, 0), U32.is_eq(b, 0), k, z, o, b, h, h2, m, j, {==}, hs,
+            s => hs2 => ins_seen_mono(k, s, nb(h), nh(h), nb(h2), nh(h2), m, j, hs2))
+
+def done_mono(+t: B.Ht<B.In>, +i: B.In, +j: B.In, hs: {B.done.has(t, j) == True{} : Bool}) -> {B.done.has(B.done.put(t, i), j) == True{} : Bool}:
+  ins_seen_mono(32n, t, (B.in.hash(j) .&. 1 : U32), B.in.hash(j), (B.in.hash(i) .&. 1 : U32), B.in.hash(i), i, j, hs)
+
+# a copy added leaves the set done as it was
+def cpadd_done(+rd: B.Rd, b: B.Rb, c: B.Cp) -> {B.cp.done(c) == B.cp.done(B.cp.add(rd, b, c)) : B.Ht<B.In>}:
+  match b:
+    case B.Rb{ls, es, more}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          {==}
+
+# past the fuel: none left, the copies as they were; else an error,
+# which no hypothesis of none allows
+def cc_short(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, +j: B.In,
+    hj: {Bool.or(B.ins.has(todo, j), B.done.has(B.cp.done(c), j)) == True{} : Bool},
+    he: {B.cp.ers(B.cp.short(todo, cx, o, c)) == Nil{} : List<&2, B.Er>}) ->
+    {B.done.has(B.cp.done(B.cp.short(todo, cx, o, c)), j) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hj
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          Empty.absurd({B.done.has(done, j) == True{} : Bool},
+            (%Equal.sym(List<&2, B.Er>, B.cp.ers(B.cp.short(Con{i, t}, cx, o, B.Cp{rds, ers, done})), Nil{}, he) : nil_disc(B.Er, _)
+            Unit{}))
+
+# an instance in the step's worklist or done, found done after the step:
+# done found, or copied and put there
+def cc_true(+i: B.In, +t: List<&2, B.In>, +done: B.Ht<B.In>, +j: B.In,
+    eq: {True{} == B.done.has(done, i) : Bool},
+    hj: {Bool.or(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j)) == True{} : Bool}) ->
+    {Bool.or(B.ins.has(t, j), B.done.has(done, j)) == True{} : Bool}:
+  or_cases(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j), Bool.or(B.ins.has(t, j), B.done.has(done, j)), hj,
+    fa => or_cases(B.in.eq(i, j), B.ins.has(t, j), Bool.or(B.ins.has(t, j), B.done.has(done, j)), fa,
+      fe => or_r_true(B.ins.has(t, j), B.done.has(done, j),
+        (%in_eq_eq(i, j, fe) : {B.done.has(done, _) == True{} : Bool}
+        Equal.sym(Bool, True{}, B.done.has(done, i), eq))),
+      fh => or_l_true(B.ins.has(t, j), B.done.has(done, j), fh)),
+    fd => or_r_true(B.ins.has(t, j), B.done.has(done, j), fd))
+
+def cc_false(+i: B.In, +t: List<&2, B.In>, +more: List<&2, B.In>, +done: B.Ht<B.In>, +j: B.In,
+    hj: {Bool.or(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j)) == True{} : Bool}) ->
+    {Bool.or(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j)) == True{} : Bool}:
+  or_cases(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j), Bool.or(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j)), hj,
+    fa => or_cases(B.in.eq(i, j), B.ins.has(t, j), Bool.or(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j)), fa,
+      fe => or_r_true(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j),
+        (%in_eq_eq(i, j, fe) : {B.done.has(B.done.put(done, i), _) == True{} : Bool}
+        done_put_self(done, i))),
+      fh => or_l_true(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j), ins_then(t, more, j, fh))),
+    fd => or_r_true(B.ins.has(B.ins.then(t, more), j), B.done.has(B.done.put(done, i), j), done_mono(done, i, j, fd)))
+
+# the step: either branch keeps an instance in the worklist or done
+def cc_step(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>, +j: B.In,
+    eq: {c == B.done.has(done, i) : Bool},
+    hj: {Bool.or(Bool.or(B.in.eq(i, j), B.ins.has(t, j)), B.done.has(done, j)) == True{} : Bool},
+    he: {B.cp.ers(cgk(c, k, cx, o, i, t, rds, ers, done)) == Nil{} : List<&2, B.Er>},
+    ft: @hj2:{Bool.or(B.ins.has(t, j), B.done.has(done, j)) == True{} : Bool} ->
+      @he2:{B.cp.ers(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == Nil{} : List<&2, B.Er>} ->
+      {B.done.has(B.cp.done(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})), j) == True{} : Bool},
+    ff: @hj2:{Bool.or(B.ins.has(B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), j), B.done.has(B.cp.done(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), j)) == True{} : Bool} ->
+      @he2:{B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>} ->
+      {B.done.has(B.cp.done(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))), j) == True{} : Bool}) ->
+    {B.done.has(B.cp.done(cgk(c, k, cx, o, i, t, rds, ers, done)), j) == True{} : Bool}:
+  match c:
+    case True{}:
+      ft(cc_true(i, t, done, j, eq, hj), he)
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {B.done.has(B.cp.done(_), j) == True{} : Bool}
+      ff(
+        (%cpadd_done(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}) : {Bool.or(B.ins.has(B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), j), B.done.has(_, j)) == True{} : Bool}
+        cc_false(i, t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))), done, j, hj)),
+        (%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+        he))
+
+# by induction on the fuel: an instance in the worklist or done ends done,
+# where no error is reported
+def cc_go(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +j: B.In,
+    hj: {Bool.or(B.ins.has(todo, j), B.done.has(B.cp.done(c), j)) == True{} : Bool},
+    he: {B.cp.ers(B.copies.go(n, cx, o, todo, c)) == Nil{} : List<&2, B.Er>}) ->
+    {B.done.has(B.cp.done(B.copies.go(n, cx, o, todo, c)), j) == True{} : Bool}:
+  match n:
+    case 0n:
+      cc_short(todo, cx, o, c, j, hj, he)
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          hj
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              cc_step(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, j, {==}, hj, he,
+                hj2 => he2 => cc_go(k, cx, o, t, B.Cp{rds, ers, done}, j, hj2, he2),
+                hj2 => he2 => cc_go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), j, hj2, he2))
+
+def Laws.copies.complete(cx, o, i, hi, he):
+  cc_go(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)), B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, i,
+    or_l_true(B.ins.has(B.ins.finals(B.cx.map(cx, o)), i), B.done.has(B.cp.done(B.Cp{Nil{}, Nil{}, B.copies.room(cx)}), i), hi), he)
+
+# The copies embodied (`copies.embodied`)
+# ---------------------------------------
+#
+# Each instance the set done holds has its copy among those made: an
+# empty set holds none (`empty_leaf`), and a step puts an instance in the
+# set with its copy, whose instance is the one copied (`rd_inst`, through
+# `copy.of`'s mirrors); a lookup after a put finds the instance put or
+# one found before (`done_split`, the converse of `ins_seen_mono`). The
+# copies are read reversed, which keeps them (`rev_xs`).
+
+def rd_in(r: B.Rd) -> B.In:
+  match r:
+    case B.Rd{i, nd, hd, ls}:
+      i
+
+def ck_inst(+i: B.In, nd: B.Node, h: B.Rb, b: B.Rb, sh: List<&2, B.Er>) -> {i == rd_in(Pair.fst(B.Rd, B.Rb, B.copy.k(i, nd, h, b, sh))) : B.In}:
+  match h b:
+    case B.Rb{hl, he, hi} B.Rb{ls, es, more}:
+      {==}
+
+def cn_inst(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node) -> {i == rd_in(Pair.fst(B.Rd, B.Rb, B.copy.node(cx, o, i, nd))) : B.In}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          ck_inst(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
+            B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
+            B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+            B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
+              u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
+                B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          {==}
+        case B.NImport{+txt, +no}:
+          {==}
+        case B.NDecl{+names, +no}:
+          {==}
+        case B.NBad{+txt, +no}:
+          {==}
+        case B.NErr{+msg, +no}:
+          {==}
+        case B.NBend{+lines, +no}:
+          {==}
+
+def oc_inst(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool) ->
+    {B.In{n, q, prior} == rd_in(Pair.fst(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior))) : B.In}:
+  match mb:
+    case None{}:
+      {==}
+    case Some{nd}:
+      cn_inst(cx, o, B.In{n, q, prior}, nd)
+
+# a copy's instance: the instance copied
+def rd_inst(+cx: B.Cx, +o: U32, i: B.In) -> {i == rd_in(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i))) : B.In}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      oc_inst(B.cx.mem(cx, q, n), cx, o, n, q, prior)
+
+# membership of copies: by the first's instance, or the rest's
+def rds_head(rd: B.Rd, rds: List<&2, B.Rd>, +j: B.In, h: {B.in.eq(rd_in(rd), j) == True{} : Bool}) -> {B.rds.has(Con{rd, rds}, j) == True{} : Bool}:
+  match rd:
+    case B.Rd{+inst, nd, hd, ls}:
+      or_l_true(B.in.eq(inst, j), B.rds.has(rds, j), h)
+
+def rds_tail(rd: B.Rd, rds: List<&2, B.Rd>, +j: B.In, h: {B.rds.has(rds, j) == True{} : Bool}) -> {B.rds.has(Con{rd, rds}, j) == True{} : Bool}:
+  match rd:
+    case B.Rd{+inst, nd, hd, ls}:
+      or_r_true(B.in.eq(inst, j), B.rds.has(rds, j), h)
+
+# reversed onto an accumulator, a list's copies and the accumulator's kept
+def rev_acc(xs: List<&2, B.Rd>, +acc: List<&2, B.Rd>, +j: B.In, h: {B.rds.has(acc, j) == True{} : Bool}) ->
+    {B.rds.has(List.reverse.go(&2, B.Rd, xs, acc), j) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      rev_acc(t, Con{x, acc}, j, rds_tail(x, acc, j, h))
+
+def rev_xs(xs: List<&2, B.Rd>, +acc: List<&2, B.Rd>, +j: B.In, h: {B.rds.has(xs, j) == True{} : Bool}) ->
+    {B.rds.has(List.reverse.go(&2, B.Rd, xs, acc), j) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      Empty.absurd({B.rds.has(acc, j) == True{} : Bool}, MB.false_ne_true()(h))
+    case Con{x, +t}:
+      match x:
+        case B.Rd{+inst, +nd, +hd, +ls}:
+          or_cases(B.in.eq(inst, j), B.rds.has(t, j), B.rds.has(List.reverse.go(&2, B.Rd, t, Con{B.Rd{inst, nd, hd, ls}, acc}), j), h,
+            fa => rev_acc(t, Con{B.Rd{inst, nd, hd, ls}, acc}, j, or_l_true(B.in.eq(inst, j), B.rds.has(acc, j), fa)),
+            fb => rev_xs(t, Con{B.Rd{inst, nd, hd, ls}, acc}, j, fb))
+
+# a lookup after a put: the instance put, or one found before it
+def ins_split.k(c2: Bool, c: Bool, +k: Nat, +z: B.Ht<B.In>, +o: B.Ht<B.In>, +b: U32, +h: U32, +h2: U32, +m: B.In, +j: B.In,
+    +eq: {c == U32.is_eq(b, 0) : Bool},
+    hs: {B.ins.has(B.ht.leaf.go(B.In, 1n+k, B.ht.join(B.In, c2, B.ht.put.go(B.In, k, B.ht.pick(B.In, c2, z, o), nb(h2), nh(h2), m), B.ht.pick(B.In, c2, o, z)), b, h), j) == True{} : Bool},
+    ih: @s:B.Ht<B.In> -> @hs2:{B.ins.has(B.ht.leaf.go(B.In, k, B.ht.put.go(B.In, k, s, nb(h2), nh(h2), m), nb(h), nh(h)), j) == True{} : Bool} ->
+      {Bool.or(B.in.eq(m, j), B.ins.has(B.ht.leaf.go(B.In, k, s, nb(h), nh(h)), j)) == True{} : Bool}) ->
+    {Bool.or(B.in.eq(m, j), B.ins.has(B.ht.leaf.go(B.In, 1n+k, B.HNode{z, o}, b, h), j)) == True{} : Bool}:
+  match c2 c:
+    case True{} True{}:
+      %eq : {Bool.or(B.in.eq(m, j), B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, o), nb(h), nh(h)), j)) == True{} : Bool}
+      ih(z, (%Equal.sym(Bool, True{}, U32.is_eq(b, 0), eq) : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, B.ht.put.go(B.In, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), j) == True{} : Bool}
+        hs))
+    case True{} False{}:
+      %eq : {Bool.or(B.in.eq(m, j), B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, o), nb(h), nh(h)), j)) == True{} : Bool}
+      or_r_true(B.in.eq(m, j), B.ins.has(B.ht.leaf.go(B.In, k, o, nb(h), nh(h)), j),
+        (%Equal.sym(Bool, False{}, U32.is_eq(b, 0), eq) : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, B.ht.put.go(B.In, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), j) == True{} : Bool}
+        hs))
+    case False{} True{}:
+      %eq : {Bool.or(B.in.eq(m, j), B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, o), nb(h), nh(h)), j)) == True{} : Bool}
+      or_r_true(B.in.eq(m, j), B.ins.has(B.ht.leaf.go(B.In, k, z, nb(h), nh(h)), j),
+        (%Equal.sym(Bool, True{}, U32.is_eq(b, 0), eq) : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, B.ht.put.go(B.In, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), j) == True{} : Bool}
+        hs))
+    case False{} False{}:
+      %eq : {Bool.or(B.in.eq(m, j), B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, o), nb(h), nh(h)), j)) == True{} : Bool}
+      ih(o, (%Equal.sym(Bool, False{}, U32.is_eq(b, 0), eq) : {B.ins.has(B.ht.leaf.go(B.In, k, B.ht.pick(B.In, _, z, B.ht.put.go(B.In, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), j) == True{} : Bool}
+        hs))
+
+def ins_split(fuel: Nat, t: B.Ht<B.In>, +b: U32, +h: U32, +b2: U32, +h2: U32, +m: B.In, +j: B.In,
+    hs: {B.ins.has(B.ht.leaf.go(B.In, fuel, B.ht.put.go(B.In, fuel, t, b2, h2, m), b, h), j) == True{} : Bool}) ->
+    {Bool.or(B.in.eq(m, j), B.ins.has(B.ht.leaf.go(B.In, fuel, t, b, h), j)) == True{} : Bool}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          hs
+        case B.HNode{z, o}:
+          hs
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          hs
+        case B.HNode{+z, +o}:
+          ins_split.k(U32.is_eq(b2, 0), U32.is_eq(b, 0), k, z, o, b, h, h2, m, j, {==}, hs,
+            s => hs2 => ins_split(k, s, nb(h), nh(h), nb(h2), nh(h2), m, j, hs2))
+
+def done_split(+t: B.Ht<B.In>, +i: B.In, +j: B.In, hs: {B.done.has(B.done.put(t, i), j) == True{} : Bool}) ->
+    {Bool.or(B.in.eq(i, j), B.done.has(t, j)) == True{} : Bool}:
+  ins_split(32n, t, (B.in.hash(j) .&. 1 : U32), B.in.hash(j), (B.in.hash(i) .&. 1 : U32), B.in.hash(i), i, j, hs)
+
+# an empty trie's leaves are empty
+def empty_leaf(-A: Data, d: Nat, f: Nat, +b: U32, +h: U32) -> {Nil{} == B.ht.leaf.go(A, f, B.ht.empty(A, d), b, h) : List<&2, A>}:
+  match d:
+    case 0n:
+      match f:
+        case 0n:
+          {==}
+        case 1n+g:
+          {==}
+    case 1n+(+k):
+      match f:
+        case 0n:
+          {==}
+        case 1n+(+g):
+          %Equal.sym(B.Ht<A>, B.ht.pick(A, U32.is_eq(b, 0), B.ht.empty(A, k), B.ht.empty(A, k)), B.ht.empty(A, k), pick_same(A, U32.is_eq(b, 0), B.ht.empty(A, k))) : {Nil{} == B.ht.leaf.go(A, g, _, nb(h), nh(h)) : List<&2, A>}
+          empty_leaf(A, k, g, nb(h), nh(h))
+
+# the copies' predicate: a copy of j among those made
+def prd(c: B.Cp, +j: B.In) -> Bool:
+  match c:
+    case B.Cp{rds, ers, done}:
+      B.rds.has(rds, j)
+
+def prd_rds(c: B.Cp, +j: B.In, h: {prd(c, j) == True{} : Bool}) -> {B.rds.has(B.cp.rds(c), j) == True{} : Bool}:
+  match c:
+    case B.Cp{rds, ers, done}:
+      rev_xs(rds, Nil{}, j, h)
+
+def cpadd_prd(rd: B.Rd, b: B.Rb, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +d: B.Ht<B.In>, +j: B.In) ->
+    {B.rds.has(Con{rd, rds}, j) == prd(B.cp.add(rd, b, B.Cp{rds, ers, d}), j) : Bool}:
+  match b:
+    case B.Rb{ls, es, more}:
+      {==}
+
+# a copy added: the instance put has it, one done before had it
+def cm_add(+cx: B.Cx, +o: U32, +i: B.In, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>, +j: B.In,
+    inv: @h:{B.done.has(done, j) == True{} : Bool} -> {B.rds.has(rds, j) == True{} : Bool},
+    h: {B.done.has(B.cp.done(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), j) == True{} : Bool}) ->
+    {prd(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), j) == True{} : Bool}:
+  %cpadd_prd(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds, ers, B.done.put(done, i), j) : {_ == True{} : Bool}
+  or_cases(B.in.eq(i, j), B.done.has(done, j), B.rds.has(Con{Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds}, j),
+    done_split(done, i, j,
+      (%Equal.sym(B.Ht<B.In>, B.cp.done(B.Cp{rds, ers, B.done.put(done, i)}), B.cp.done(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})),
+          cpadd_done(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) : {B.done.has(_, j) == True{} : Bool}
+      h)),
+    fe => rds_head(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds, j, (%rd_inst(cx, o, i) : {B.in.eq(_, j) == True{} : Bool} fe)),
+    fd => rds_tail(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds, j, inv(fd)))
+
+# past the fuel: the copies and the set as they were
+def cm_short(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, +j: B.In,
+    inv: @h:{B.done.has(B.cp.done(c), j) == True{} : Bool} -> {prd(c, j) == True{} : Bool},
+    hd: {B.done.has(B.cp.done(B.cp.short(todo, cx, o, c)), j) == True{} : Bool}) ->
+    {prd(B.cp.short(todo, cx, o, c), j) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      inv(hd)
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          inv(hd)
+
+def cm_step(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>, +j: B.In,
+    eq: {c == B.done.has(done, i) : Bool},
+    inv: @h:{B.done.has(done, j) == True{} : Bool} -> {B.rds.has(rds, j) == True{} : Bool},
+    hd: {B.done.has(B.cp.done(cgk(c, k, cx, o, i, t, rds, ers, done)), j) == True{} : Bool},
+    ft: @inv2:(@h:{B.done.has(done, j) == True{} : Bool} -> {B.rds.has(rds, j) == True{} : Bool}) ->
+      @hd2:{B.done.has(B.cp.done(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})), j) == True{} : Bool} ->
+      {prd(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done}), j) == True{} : Bool},
+    ff: @inv2:(@h:{B.done.has(B.cp.done(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), j) == True{} : Bool} ->
+        {prd(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), j) == True{} : Bool}) ->
+      @hd2:{B.done.has(B.cp.done(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))), j) == True{} : Bool} ->
+      {prd(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), j) == True{} : Bool}) ->
+    {prd(cgk(c, k, cx, o, i, t, rds, ers, done), j) == True{} : Bool}:
+  match c:
+    case True{}:
+      ft(inv, hd)
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {prd(_, j) == True{} : Bool}
+      ff(h => cm_add(cx, o, i, rds, ers, done, j, inv, h),
+        (%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.done.has(B.cp.done(_), j) == True{} : Bool}
+        hd))
+
+# by induction on the fuel: an instance done after the copies has its
+# copy, where one done before them had it
+def cm_go(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +j: B.In,
+    inv: @h:{B.done.has(B.cp.done(c), j) == True{} : Bool} -> {prd(c, j) == True{} : Bool},
+    hd: {B.done.has(B.cp.done(B.copies.go(n, cx, o, todo, c)), j) == True{} : Bool}) ->
+    {prd(B.copies.go(n, cx, o, todo, c), j) == True{} : Bool}:
+  match n:
+    case 0n:
+      cm_short(todo, cx, o, c, j, inv, hd)
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          inv(hd)
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              cm_step(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, j, {==}, inv, hd,
+                inv2 => hd2 => cm_go(k, cx, o, t, B.Cp{rds, ers, done}, j, inv2, hd2),
+                inv2 => hd2 => cm_go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), j, inv2, hd2))
+
+# the start: the set empty, done holds nothing
+def room_none(+cx: B.Cx, +j: B.In, h: {B.done.has(B.copies.room(cx), j) == True{} : Bool}) -> {prd(B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, j) == True{} : Bool}:
+  Empty.absurd({prd(B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, j) == True{} : Bool}, MB.false_ne_true()(
+    (%Equal.sym(List<&2, B.In>, Nil{}, B.ht.leaf.go(B.In, 32n, B.ht.empty(B.In, B.ht.depth(32n, U32.from_nat(1n+B.mods.count(B.cx.obs(cx))))), (B.in.hash(j) .&. 1 : U32), B.in.hash(j)),
+        empty_leaf(B.In, B.ht.depth(32n, U32.from_nat(1n+B.mods.count(B.cx.obs(cx)))), 32n, (B.in.hash(j) .&. 1 : U32), B.in.hash(j))) : {B.ins.has(_, j) == True{} : Bool}
+    h)))
+
+def Laws.copies.embodied(cx, o, i, hd):
+  prd_rds(B.copies(cx, o), i,
+    cm_go(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)), B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, i, h => room_none(cx, i, h), hd))
+
+# The copies defined (`copies.defined`)
+# -------------------------------------
+#
+# Where the copies report no error, each holds a definition named as its
+# instance: a member table finds only definitions of the name sought
+# (`mem_find_def`), and a member not found is an error, which errors only
+# growing through the worklist (`ers_back`) brings to the result.
+
+# a lookup's result: none, or a definition of the name
+def mdef(m: Maybe<&2, B.Node>, +n: List<&2, U32>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{+nd}:
+      Bool.and(B.node.def(nd), B.same(B.node.name(nd), n))
+
+def mfd_k(c: Bool, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: U32, +ind: U32, +what: U32,
+    t: List<&2, B.Node>, +n: List<&2, U32>, eq: {c == B.same(name, n) : Bool}, ih: {mdef(B.mem.find(t, n), n) == True{} : Bool}) ->
+    {mdef(B.when(Maybe<&2, B.Node>, c, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(t, n)), n) == True{} : Bool}:
+  match c:
+    case True{}:
+      Equal.sym(Bool, True{}, B.same(name, n), eq)
+    case False{}:
+      ih
+
+def mem_find_def(ns: List<&2, B.Node>, +n: List<&2, U32>) -> {mdef(B.mem.find(ns, n), n) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          mfd_k(B.same(name, n), share, upd, name, rest, params, body, no, ind, what, t, n, {==}, mem_find_def(t, n))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          mem_find_def(t, n)
+        case B.NImport{+txt, +no}:
+          mem_find_def(t, n)
+        case B.NDecl{+names, +no}:
+          mem_find_def(t, n)
+        case B.NBad{+txt, +no}:
+          mem_find_def(t, n)
+        case B.NErr{+msg, +no}:
+          mem_find_def(t, n)
+        case B.NBend{+lines, +no}:
+          mem_find_def(t, n)
+
+def cxmem_def(cx: B.Cx, +q: U32, +n: List<&2, U32>) -> {mdef(B.cx.mem(cx, q, n), n) == True{} : Bool}:
+  match cx:
+    case B.Cx{obs, ls, fs, als, paths, pss, nxs, +mds}:
+      mem_find_def(B.ht.leaf(B.Node, B.md.or(List.get(&2, B.Ht<B.Node>, mds, U32.to_nat(q))), U32.and(B.hash.name(n), 1), B.hash.name(n)), n)
+
+# a copy's errors
+def rbe(b: B.Rb) -> List<&2, B.Er>:
+  match b:
+    case B.Rb{ls, es, more}:
+      es
+
+def ck_def(+i: B.In, +nd: B.Node, h: B.Rb, b: B.Rb, sh: List<&2, B.Er>, +rds: List<&2, B.Rd>,
+    hd: {B.rd.def(i, nd) == True{} : Bool}, hr: {B.rds.defs(rds) == True{} : Bool}) ->
+    {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, B.copy.k(i, nd, h, b, sh)), rds}) == True{} : Bool}:
+  match h b:
+    case B.Rb{hl, he, hi} B.Rb{ls, es, more}:
+      and_intro(B.rd.def(i, nd), B.rds.defs(rds), hd, hr)
+
+def cn_def(+cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, nd: B.Node, +rds: List<&2, B.Rd>,
+    hm: {mdef(Some{nd}, n) == True{} : Bool}, hr: {B.rds.defs(rds) == True{} : Bool}) ->
+    {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, B.copy.node(cx, o, B.In{n, q, prior}, nd)), rds}) == True{} : Bool}:
+  match nd:
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      ck_def(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
+        B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
+        B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+        B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
+          u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
+            B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
+        rds, hm, hr)
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NObj{abs, ext, name, parents, kids, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NImport{+txt, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NImport{txt, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NDecl{+names, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NDecl{names, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NBad{+txt, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NBad{txt, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NErr{+msg, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NErr{msg, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+    case B.NBend{+lines, +no}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NBend{lines, no}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hm))
+
+def oc_def(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, +rds: List<&2, B.Rd>,
+    hm: {mdef(mb, n) == True{} : Bool}, he: {rbe(Pair.snd(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior))) == Nil{} : List<&2, B.Er>},
+    hr: {B.rds.defs(rds) == True{} : Bool}) ->
+    {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior)), rds}) == True{} : Bool}:
+  match mb:
+    case None{}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NBad{Nil{}, 0}, Nil{}, Nil{}}, rds}) == True{} : Bool},
+        (%Equal.sym(List<&2, B.Er>, rbe(Pair.snd(B.Rd, B.Rb, ocm(None{}, cx, o, n, q, prior))), Nil{}, he) : nil_disc(B.Er, _)
+        Unit{}))
+    case Some{nd}:
+      cn_def(cx, o, n, q, prior, nd, rds, hm, hr)
+
+# a copy made where its own errors are none: a definition of its name
+def fst_def(+cx: B.Cx, +o: U32, i: B.In, +rds: List<&2, B.Rd>,
+    he: {rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))) == Nil{} : List<&2, B.Er>}, hr: {B.rds.defs(rds) == True{} : Bool}) ->
+    {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds}) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      oc_def(B.cx.mem(cx, q, n), cx, o, n, q, prior, rds, cxmem_def(cx, q, n), he, hr)
+
+# errors through a copy added: the copies' and then the copy's
+def cpadd_ers(+rd: B.Rd, b: B.Rb, c: B.Cp) -> {List.append(&2, B.Er, B.cp.ers(c), rbe(b)) == B.cp.ers(B.cp.add(rd, b, c)) : List<&2, B.Er>}:
+  match b:
+    case B.Rb{ls, es, more}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          {==}
+
+def cpe_nil_l(xs: List<&2, B.Er>, ys: List<&2, B.Er>, h: {List.append(&2, B.Er, xs, ys) == Nil{} : List<&2, B.Er>}) -> {xs == Nil{} : List<&2, B.Er>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>},
+        (%Equal.sym(List<&2, B.Er>, Con{x, List.append(&2, B.Er, t, ys)}, Nil{}, h) : nil_disc(B.Er, _)
+        Unit{}))
+
+def cpe_nil_r(xs: List<&2, B.Er>, ys: List<&2, B.Er>, h: {List.append(&2, B.Er, xs, ys) == Nil{} : List<&2, B.Er>}) -> {ys == Nil{} : List<&2, B.Er>}:
+  match xs:
+    case Nil{}:
+      h
+    case Con{x, t}:
+      Empty.absurd({ys == Nil{} : List<&2, B.Er>},
+        (%Equal.sym(List<&2, B.Er>, Con{x, List.append(&2, B.Er, t, ys)}, Nil{}, h) : nil_disc(B.Er, _)
+        Unit{}))
+
+# errors only grow through the worklist: where its result has none, the
+# state it started from had none
+def eb_step(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    h: {B.cp.ers(cgk(c, k, cx, o, i, t, rds, ers, done)) == Nil{} : List<&2, B.Er>},
+    ft: @h2:{B.cp.ers(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == Nil{} : List<&2, B.Er>} -> {ers == Nil{} : List<&2, B.Er>},
+    ff: @h2:{B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>} -> {ers == Nil{} : List<&2, B.Er>}) ->
+    {ers == Nil{} : List<&2, B.Er>}:
+  match c:
+    case True{}:
+      ft(h)
+    case False{}:
+      ff((%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+        h))
+
+def ers_back(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, h: {B.cp.ers(B.copies.go(n, cx, o, todo, c)) == Nil{} : List<&2, B.Er>}) ->
+    {B.cp.ers(c) == Nil{} : List<&2, B.Er>}:
+  match n:
+    case 0n:
+      match todo:
+        case Nil{}:
+          h
+        case Con{i, t}:
+          match c:
+            case B.Cp{rds, ers, done}:
+              Empty.absurd({ers == Nil{} : List<&2, B.Er>},
+                (%Equal.sym(List<&2, B.Er>, B.cp.ers(B.cp.short(Con{i, t}, cx, o, B.Cp{rds, ers, done})), Nil{}, h) : nil_disc(B.Er, _)
+                Unit{}))
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          h
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              eb_step(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, h,
+                h2 => ers_back(k, cx, o, t, B.Cp{rds, ers, done}, h2),
+                h2 => cpe_nil_l(ers, rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))),
+                  (%Equal.sym(List<&2, B.Er>, List.append(&2, B.Er, B.cp.ers(B.Cp{rds, ers, B.done.put(done, i)}), rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.ers(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})),
+                      cpadd_ers(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) : {_ == Nil{} : List<&2, B.Er>}
+                  ers_back(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), h2))))
+
+# the copies' predicate: every copy made a definition
+def pdef(c: B.Cp) -> Bool:
+  match c:
+    case B.Cp{rds, ers, done}:
+      B.rds.defs(rds)
+
+def short_pdef(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, hc: {pdef(c) == True{} : Bool}) -> {pdef(B.cp.short(todo, cx, o, c)) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
+def cpadd_pdef(rd: B.Rd, b: B.Rb, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +d: B.Ht<B.In>) ->
+    {B.rds.defs(Con{rd, rds}) == pdef(B.cp.add(rd, b, B.Cp{rds, ers, d})) : Bool}:
+  match b:
+    case B.Rb{ls, es, more}:
+      {==}
+
+# a copy added where the result reports no error: its own errors none, so
+# a definition of its name
+def dg_add(+k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    hc: {B.rds.defs(rds) == True{} : Bool},
+    he: {B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>}) ->
+    {pdef(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) == True{} : Bool}:
+  %cpadd_pdef(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds, ers, B.done.put(done, i)) : {_ == True{} : Bool}
+  fst_def(cx, o, i, rds,
+    cpe_nil_r(ers, rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))),
+      (%Equal.sym(List<&2, B.Er>, List.append(&2, B.Er, B.cp.ers(B.Cp{rds, ers, B.done.put(done, i)}), rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.ers(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})),
+          cpadd_ers(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) : {_ == Nil{} : List<&2, B.Er>}
+      ers_back(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), he))),
+    hc)
+
+def dg_step(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    hc: {B.rds.defs(rds) == True{} : Bool},
+    +he: {B.cp.ers(cgk(c, k, cx, o, i, t, rds, ers, done)) == Nil{} : List<&2, B.Er>},
+    ft: @hc2:{B.rds.defs(rds) == True{} : Bool} -> @he2:{B.cp.ers(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == Nil{} : List<&2, B.Er>} ->
+      {pdef(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == True{} : Bool},
+    ff: @hc2:{pdef(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) == True{} : Bool} ->
+      @he2:{B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>} ->
+      {pdef(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == True{} : Bool}) ->
+    {pdef(cgk(c, k, cx, o, i, t, rds, ers, done)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ft(hc, he)
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {pdef(_) == True{} : Bool}
+      ff(dg_add(k, cx, o, i, t, rds, ers, done, hc,
+          (%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+          he)),
+        (%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+        he))
+
+# by induction on the fuel: where the result reports no error, every copy
+# a definition, as every one before it was
+def dg_go(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp,
+    hc: {pdef(c) == True{} : Bool}, he: {B.cp.ers(B.copies.go(n, cx, o, todo, c)) == Nil{} : List<&2, B.Er>}) ->
+    {pdef(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
+  match n:
+    case 0n:
+      short_pdef(todo, cx, o, c, hc)
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          hc
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              dg_step(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, hc, he,
+                hc2 => he2 => dg_go(k, cx, o, t, B.Cp{rds, ers, done}, hc2, he2),
+                hc2 => he2 => dg_go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), hc2, he2))
+
+# the copies read reversed: still every one a definition
+def rev_defs(xs: List<&2, B.Rd>, +acc: List<&2, B.Rd>, +hx: {B.rds.defs(xs) == True{} : Bool}, ha: {B.rds.defs(acc) == True{} : Bool}) ->
+    {B.rds.defs(List.reverse.go(&2, B.Rd, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{x, +t}:
+      match x:
+        case B.Rd{+inst, +nd, +hd, +ls}:
+          rev_defs(t, Con{B.Rd{inst, nd, hd, ls}, acc}, MB.eq_true_of_and_right(B.rd.def(inst, nd), B.rds.defs(t), hx),
+            and_intro(B.rd.def(inst, nd), B.rds.defs(acc), MB.eq_true_of_and_left(B.rd.def(inst, nd), B.rds.defs(t), hx), ha))
+
+def pdef_rds(c: B.Cp, h: {pdef(c) == True{} : Bool}) -> {B.rds.defs(B.cp.rds(c)) == True{} : Bool}:
+  match c:
+    case B.Cp{rds, ers, done}:
+      rev_defs(rds, Nil{}, h, {==})
+
+def Laws.copies.defined(cx, o, he):
+  pdef_rds(B.copies(cx, o),
+    dg_go(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)), B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, {==}, he))
+
+# The member tables indexed (`members.indexed`)
+# ---------------------------------------------
+#
+# A member table finds what a search of the members finds: a put of a
+# definition of the name sought is first in the leaf of its hash
+# (`leaf_put`), and a put of anything the search passes over leaves the
+# search as it was, whatever leaf it lands in (`mf_other`), the
+# positional table's argument (`blend-units-keyed`), so that no arithmetic
+# of the trie's path is needed; the table starts with every leaf empty
+# (`empty_leaf`).
+
+# a put the search for n passes over leaves the search's leaf as it was
+def mfo.k(c2: Bool, c: Bool, +k: Nat, +z: B.Ht<B.Node>, +o: B.Ht<B.Node>, +b: U32, +h: U32, +h2: U32, +m: B.Node, +n: List<&2, U32>,
+    +eq: {c == U32.is_eq(b, 0) : Bool},
+    ih: @s:B.Ht<B.Node> -> {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.put.go(B.Node, k, s, nb(h2), nh(h2), m), nb(h), nh(h)), n) == B.mem.find(B.ht.leaf.go(B.Node, k, s, nb(h), nh(h)), n) : Maybe<&2, B.Node>}) ->
+    {B.mem.find(B.ht.leaf.go(B.Node, 1n+k, B.ht.join(B.Node, c2, B.ht.put.go(B.Node, k, B.ht.pick(B.Node, c2, z, o), nb(h2), nh(h2), m), B.ht.pick(B.Node, c2, o, z)), b, h), n) ==
+      B.mem.find(B.ht.leaf.go(B.Node, 1n+k, B.HNode{z, o}, b, h), n) : Maybe<&2, B.Node>}:
+  match c2 c:
+    case True{} True{}:
+      %eq : {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, B.ht.put.go(B.Node, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), n) ==
+        B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, o), nb(h), nh(h)), n) : Maybe<&2, B.Node>}
+      ih(z)
+    case True{} False{}:
+      %eq : {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, B.ht.put.go(B.Node, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), n) ==
+        B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, o), nb(h), nh(h)), n) : Maybe<&2, B.Node>}
+      {==}
+    case False{} True{}:
+      %eq : {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, B.ht.put.go(B.Node, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), n) ==
+        B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, o), nb(h), nh(h)), n) : Maybe<&2, B.Node>}
+      {==}
+    case False{} False{}:
+      %eq : {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, B.ht.put.go(B.Node, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), n) ==
+        B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, o), nb(h), nh(h)), n) : Maybe<&2, B.Node>}
+      ih(o)
+
+def mf_other(fuel: Nat, t: B.Ht<B.Node>, +b: U32, +h: U32, +b2: U32, +h2: U32, +m: B.Node, +n: List<&2, U32>,
+    skip: @l:List<&2, B.Node> -> {B.mem.find(Con{m, l}, n) == B.mem.find(l, n) : Maybe<&2, B.Node>}) ->
+    {B.mem.find(B.ht.leaf.go(B.Node, fuel, B.ht.put.go(B.Node, fuel, t, b2, h2, m), b, h), n) == B.mem.find(B.ht.leaf.go(B.Node, fuel, t, b, h), n) : Maybe<&2, B.Node>}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          skip(es)
+        case B.HNode{z, o}:
+          skip(Nil{})
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          skip(es)
+        case B.HNode{+z, +o}:
+          mfo.k(U32.is_eq(b2, 0), U32.is_eq(b, 0), k, z, o, b, h, h2, m, n, {==},
+            s => mf_other(k, s, nb(h), nh(h), nb(h2), nh(h2), m, n, skip))
+
+# a definition put, then searched for: found first where it has the name
+# sought, else the search of what was there
+def mfs.k(c: Bool, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: U32, +ind: U32, +what: U32,
+    +t: B.Ht<B.Node>, r: List<&2, B.Node>, +n: List<&2, U32>, +eq: {c == B.same(name, n) : Bool},
+    ih: {B.mem.find(B.ht.leaf(B.Node, t, U32.and(B.hash.name(n), 1), B.hash.name(n)), n) == B.mem.find(r, n) : Maybe<&2, B.Node>}) ->
+    {B.mem.find(B.ht.leaf(B.Node, B.ht.put(B.Node, t, U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}), U32.and(B.hash.name(n), 1), B.hash.name(n)), n) ==
+      B.when(Maybe<&2, B.Node>, c, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(r, n)) : Maybe<&2, B.Node>}:
+  match c:
+    case True{}:
+      %Laws.names.same_eq(name, n, Equal.sym(Bool, True{}, B.same(name, n), eq)) :
+        {B.mem.find(B.ht.leaf(B.Node, B.ht.put(B.Node, t, U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}), U32.and(B.hash.name(_), 1), B.hash.name(_)), _) ==
+          Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}} : Maybe<&2, B.Node>}
+      %leaf_put(B.Node, 32n, t, U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}) :
+        {B.mem.find(_, name) == Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}} : Maybe<&2, B.Node>}
+      %Equal.sym(Bool, B.same(name, name), True{}, Laws.names.same_refl(name)) :
+        {B.when(Maybe<&2, B.Node>, _, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(B.ht.leaf(B.Node, t, U32.and(B.hash.name(name), 1), B.hash.name(name)), name)) ==
+          Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}} : Maybe<&2, B.Node>}
+      {==}
+    case False{}:
+      Equal.trans(Maybe<&2, B.Node>,
+        B.mem.find(B.ht.leaf(B.Node, B.ht.put(B.Node, t, U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}), U32.and(B.hash.name(n), 1), B.hash.name(n)), n),
+        B.mem.find(B.ht.leaf(B.Node, t, U32.and(B.hash.name(n), 1), B.hash.name(n)), n),
+        B.mem.find(r, n),
+        mf_other(32n, t, U32.and(B.hash.name(n), 1), B.hash.name(n), U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}, n,
+          l => (%eq : {B.when(Maybe<&2, B.Node>, _, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(l, n)) == B.mem.find(l, n) : Maybe<&2, B.Node>}
+            {==})),
+        ih)
+
+# a table of the members put on one whose leaf for n is empty
+def md_puts(ns: List<&2, B.Node>, +t: B.Ht<B.Node>, +n: List<&2, U32>,
+    +he: {Nil{} == B.ht.leaf(B.Node, t, U32.and(B.hash.name(n), 1), B.hash.name(n)) : List<&2, B.Node>}) ->
+    {B.mem.find(B.ht.leaf(B.Node, B.md.puts(ns, t), U32.and(B.hash.name(n), 1), B.hash.name(n)), n) == B.mem.find(ns, n) : Maybe<&2, B.Node>}:
+  match ns:
+    case Nil{}:
+      %he : {B.mem.find(_, n) == None{} : Maybe<&2, B.Node>}
+      {==}
+    case Con{nd, +r}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          mfs.k(B.same(name, n), share, upd, name, rest, params, body, no, ind, what, B.md.puts(r, t), r, n, {==}, md_puts(r, t, n, he))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          md_puts(r, t, n, he)
+        case B.NImport{+txt, +no}:
+          md_puts(r, t, n, he)
+        case B.NDecl{+names, +no}:
+          md_puts(r, t, n, he)
+        case B.NBad{+txt, +no}:
+          md_puts(r, t, n, he)
+        case B.NErr{+msg, +no}:
+          md_puts(r, t, n, he)
+        case B.NBend{+lines, +no}:
+          md_puts(r, t, n, he)
+
+def Laws.members.indexed(ns, n):
+  md_puts(ns, B.ht.for(B.Node, List.length(&2, B.Node, ns)), n,
+    empty_leaf(B.Node, B.ht.depth(32n, U32.from_nat(List.length(&2, B.Node, ns))), 32n, U32.and(B.hash.name(n), 1), B.hash.name(n)))
 
 def tok_refl(t: B.Tok) -> {B.tok.same(t, t) == True{} : Bool}:
   match t:
@@ -7381,10 +8271,20 @@ def cg_m(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rd
       %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cpm(_) == True{} : Bool}
       hf
 
+# past the fuel, the copies as they were, an error at most added
+def short_cpm(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, hc: {cpm(c) == True{} : Bool}) -> {cpm(B.cp.short(todo, cx, o, c)) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
 def copies_m(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +hc: {cpm(c) == True{} : Bool}) -> {cpm(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
   match n:
     case 0n:
-      hc
+      short_cpm(todo, cx, o, c, hc)
     case 1n+(+k):
       match todo:
         case Nil{}:
@@ -10264,12 +11164,22 @@ def cgi(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds
       %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cpil(_) == True{} : Bool}
       hf
 
+# past the fuel, the copies as they were, an error at most added
+def short_cpil(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, hc: {cpil(c) == True{} : Bool}) -> {cpil(B.cp.short(todo, cx, o, c)) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
 # the copies' loop: each instance named within a line, each copy within
 def copies_il(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +ds: List<&2, B.Node>, +hx: {cxh(cx, ds) == True{} : Bool}, +hd: {dsil(ds) == True{} : Bool},
     +htd: {insil(todo) == True{} : Bool}, +hc: {cpil(c) == True{} : Bool}) -> {cpil(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
   match n:
     case 0n:
-      hc
+      short_cpil(todo, cx, o, c, hc)
     case 1n+(+k):
       match todo:
         case Nil{}:
@@ -10855,6 +11765,927 @@ def foldsgo_il(ls: List<&2, Maybe<&2, B.Lz>>, +obs: List<&2, B.Ob>, +bad: List<&
 
 def Laws.inline.folds(ls, obs, bad, h):
   foldsgo_il(ls, obs, bad, 0, h)
+
+# The folds chained (`folds.chained`)
+# -----------------------------------
+#
+# Every object an entry's chain names has a definition of its name: an
+# entry is made by an object's member of that name, and an update adds
+# its object to the chain it finds in the fold's index, which is kept
+# chained beside the map (`fdok`), as the trie's laws twinned for entries
+# carry it through a put and a lookup (`hch_put`, `hch_leaf`, the twins
+# of `hw_put`, `hw_leaf`); a lookup finds an entry of the name sought
+# (`enfind_ch`). The mirrors are `inline.folds`' (`fuk`, `fdk`, `esk`,
+# `flk`, `fgk2`).
+
+# a table of entries chained, each of its leaves'
+def hch(t: B.Ht<B.En>, +obs: List<&2, B.Ob>) -> Bool:
+  match t:
+    case B.HLeaf{es}:
+      B.ens.chained(es, obs)
+    case B.HNode{z, o}:
+      Bool.and(hch(z, obs), hch(o, obs))
+
+def hch_empty(d: Nat, +obs: List<&2, B.Ob>) -> {hch(B.ht.empty(B.En, d), obs) == True{} : Bool}:
+  match d:
+    case 0n:
+      {==}
+    case 1n+(+k):
+      and_intro(hch(B.ht.empty(B.En, k), obs), hch(B.ht.empty(B.En, k), obs), hch_empty(k, obs), hch_empty(k, obs))
+
+def join_hch(c: Bool, +x: B.Ht<B.En>, +y: B.Ht<B.En>, +obs: List<&2, B.Ob>, +hx: {hch(x, obs) == True{} : Bool}, +hy: {hch(y, obs) == True{} : Bool}) ->
+    {hch(B.ht.join(B.En, c, x, y), obs) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(hch(x, obs), hch(y, obs), hx, hy)
+    case False{}:
+      and_intro(hch(y, obs), hch(x, obs), hy, hx)
+
+def pick_hch(c: Bool, +z: B.Ht<B.En>, +o: B.Ht<B.En>, +obs: List<&2, B.Ob>, +h: {hch(B.HNode{z, o}, obs) == True{} : Bool}) ->
+    {hch(B.ht.pick(B.En, c, z, o), obs) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_l(hch(z, obs), hch(o, obs), h)
+    case False{}:
+      and_r(hch(z, obs), hch(o, obs), h)
+
+def pick_hch2(c: Bool, +z: B.Ht<B.En>, +o: B.Ht<B.En>, +obs: List<&2, B.Ob>, +h: {hch(B.HNode{z, o}, obs) == True{} : Bool}) ->
+    {hch(B.ht.pick(B.En, c, o, z), obs) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_r(hch(z, obs), hch(o, obs), h)
+    case False{}:
+      and_l(hch(z, obs), hch(o, obs), h)
+
+# an entry chained put in a table chained
+def hch_put(fuel: Nat, t: B.Ht<B.En>, +b: U32, +h: U32, +e: B.En, +obs: List<&2, B.Ob>, +he: {B.en.chained(e, obs) == True{} : Bool},
+    +ht: {hch(t, obs) == True{} : Bool}) -> {hch(B.ht.put.go(B.En, fuel, t, b, h, e), obs) == True{} : Bool}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{+es}:
+          and_intro(B.en.chained(e, obs), B.ens.chained(es, obs), he, ht)
+        case B.HNode{z, o}:
+          and_intro(B.en.chained(e, obs), True{}, he, {==})
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{+es}:
+          and_intro(B.en.chained(e, obs), B.ens.chained(es, obs), he, ht)
+        case B.HNode{+z, +o}:
+          join_hch(U32.is_eq(b, 0), B.ht.put.go(B.En, k, B.ht.pick(B.En, U32.is_eq(b, 0), z, o), nb(h), nh(h), e), B.ht.pick(B.En, U32.is_eq(b, 0), o, z), obs,
+            hch_put(k, B.ht.pick(B.En, U32.is_eq(b, 0), z, o), nb(h), nh(h), e, obs, he, pick_hch(U32.is_eq(b, 0), z, o, obs, ht)),
+            pick_hch2(U32.is_eq(b, 0), z, o, obs, ht))
+
+# a leaf of a table chained: entries chained
+def hch_leaf(fuel: Nat, t: B.Ht<B.En>, +b: U32, +h: U32, +obs: List<&2, B.Ob>, +ht: {hch(t, obs) == True{} : Bool}) ->
+    {B.ens.chained(B.ht.leaf.go(B.En, fuel, t, b, h), obs) == True{} : Bool}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          ht
+        case B.HNode{z, o}:
+          {==}
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          ht
+        case B.HNode{+z, +o}:
+          hch_leaf(k, B.ht.pick(B.En, U32.is_eq(b, 0), z, o), nb(h), nh(h), obs, pick_hch(U32.is_eq(b, 0), z, o, obs, ht))
+
+# a lookup's result: none, or an entry whose chain is chained for the
+# name sought
+def mch(m: Maybe<&2, B.En>, +obs: List<&2, B.Ob>, +n: List<&2, U32>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{e}:
+      match e:
+        case B.En{name, chain, +no, +what}:
+          B.chain.ok(chain, obs, n)
+
+def efk_ch(c: Bool, +name: List<&2, U32>, +chain: List<&2, U32>, +no: U32, +what: U32, t: List<&2, B.En>, +obs: List<&2, B.Ob>, +n: List<&2, U32>,
+    eq: {c == B.same(name, n) : Bool}, hx: {B.chain.ok(chain, obs, name) == True{} : Bool}, ih: {mch(B.en.find(t, n), obs, n) == True{} : Bool}) ->
+    {mch(B.when(Maybe<&2, B.En>, c, u => Some{B.En{name, chain, no, what}}, u => B.en.find(t, n)), obs, n) == True{} : Bool}:
+  match c:
+    case True{}:
+      %Laws.names.same_eq(name, n, Equal.sym(Bool, True{}, B.same(name, n), eq)) : {B.chain.ok(chain, obs, _) == True{} : Bool}
+      hx
+    case False{}:
+      ih
+
+# an entry found among entries chained: chained for the name sought
+def enfind_ch(es: List<&2, B.En>, +obs: List<&2, B.Ob>, +n: List<&2, U32>, +h: {B.ens.chained(es, obs) == True{} : Bool}) ->
+    {mch(B.en.find(es, n), obs, n) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{x, +t}:
+      match x:
+        case B.En{+name, +chain, +no, +what}:
+          efk_ch(B.same(name, n), name, chain, no, what, t, obs, n, {==},
+            and_l(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), h),
+            enfind_ch(t, obs, n, and_r(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), h)))
+
+def ixfind_ch(+ix: B.Ht<B.En>, +obs: List<&2, B.Ob>, +n: List<&2, U32>, +h: {hch(ix, obs) == True{} : Bool}) ->
+    {mch(B.ix.find(ix, n), obs, n) == True{} : Bool}:
+  enfind_ch(B.ht.leaf(B.En, ix, U32.and(B.hash.name(n), 1), B.hash.name(n)), obs, n, hch_leaf(32n, ix, U32.and(B.hash.name(n), 1), B.hash.name(n), obs, h))
+
+def ixput_ch(ix: B.Ht<B.En>, +e: B.En, +obs: List<&2, B.Ob>, +he: {B.en.chained(e, obs) == True{} : Bool}, +hi: {hch(ix, obs) == True{} : Bool}) ->
+    {hch(B.ix.put(ix, e), obs) == True{} : Bool}:
+  match e:
+    case B.En{+name, +chain, +no, +what}:
+      hch_put(32n, ix, U32.and(B.hash.name(name), 1), B.hash.name(name), B.En{name, chain, no, what}, obs, he, hi)
+
+def es_ch(c: Bool, +x: B.En, +t: List<&2, B.En>, +e: B.En, +n: List<&2, U32>, +obs: List<&2, B.Ob>, +hx: {B.en.chained(x, obs) == True{} : Bool},
+    +ht: {B.ens.chained(t, obs) == True{} : Bool}, +he: {B.en.chained(e, obs) == True{} : Bool}, +ih: {B.ens.chained(B.en.set(t, e, n), obs) == True{} : Bool}) ->
+    {B.ens.chained(esk(c, x, t, e, n), obs) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(B.en.chained(e, obs), B.ens.chained(t, obs), he, ht)
+    case False{}:
+      and_intro(B.en.chained(x, obs), B.ens.chained(B.en.set(t, e, n), obs), hx, ih)
+
+def enset_ch(es: List<&2, B.En>, +e: B.En, +n: List<&2, U32>, +obs: List<&2, B.Ob>, +hes: {B.ens.chained(es, obs) == True{} : Bool},
+    +he: {B.en.chained(e, obs) == True{} : Bool}) -> {B.ens.chained(B.en.set(es, e, n), obs) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      and_intro(B.en.chained(e, obs), True{}, he, {==})
+    case Con{x, +t}:
+      match x:
+        case B.En{+name, +chain, +no, +what}:
+          es_ch(B.same(name, n), B.En{name, chain, no, what}, t, e, n, obs,
+            and_l(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), hes),
+            and_r(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), hes), he,
+            enset_ch(t, e, n, obs, and_r(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), hes), he))
+
+# a fold's state chained: its map and its index
+def fdok(d: B.Fd, +obs: List<&2, B.Ob>) -> Bool:
+  match d:
+    case B.Fd{map, fes, ix}:
+      Bool.and(B.ens.chained(map, obs), hch(ix, obs))
+
+# an object's own entry, made by its member of the name
+def one_ch(+q: U32, +name: List<&2, U32>, +no: U32, +what: U32, +obs: List<&2, B.Ob>, +hq: {Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)) == True{} : Bool}) ->
+    {B.en.chained(B.En{name, [q], no, what}, obs) == True{} : Bool}:
+  and_intro(Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)), True{}, hq, {==})
+
+def ok_defs(cs: List<&2, U32>, +obs: List<&2, B.Ob>, +n: List<&2, U32>, +h: {B.chain.ok(cs, obs, n) == True{} : Bool}) ->
+    {B.chain.defines(cs, obs, n) == True{} : Bool}:
+  match cs:
+    case Nil{}:
+      {==}
+    case Con{+c, +t}:
+      h
+
+def fddefat_ch(+q: U32, +no: U32, +name: List<&2, U32>, +what: U32, e: B.En, +map: List<&2, B.En>, +fes: List<&2, B.Fe>, +ix: B.Ht<B.En>, +obs: List<&2, B.Ob>,
+    +hq: {Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)) == True{} : Bool}, +hm: {B.ens.chained(map, obs) == True{} : Bool}, +hi: {hch(ix, obs) == True{} : Bool}) ->
+    {fdok(B.fd.def.at(q, no, name, what, e, map, fes, ix), obs) == True{} : Bool}:
+  match e:
+    case B.En{+n, +chain, +eno, +was}:
+      and_intro(B.ens.chained(B.en.set(map, B.En{name, [q], no, what}, name), obs), hch(B.ix.put(ix, B.En{name, [q], no, what}), obs),
+        enset_ch(map, B.En{name, [q], no, what}, name, obs, hm, one_ch(q, name, no, what, obs, hq)),
+        ixput_ch(ix, B.En{name, [q], no, what}, obs, one_ch(q, name, no, what, obs, hq), hi))
+
+def fu_ch(c1: Bool, c2: Bool, +q: U32, +no: U32, +name: List<&2, U32>, +what: U32, +chain: List<&2, U32>, +eno: U32, +was: U32, +map: List<&2, B.En>, +fes: List<&2, B.Fe>,
+    +ix: B.Ht<B.En>, +obs: List<&2, B.Ob>, +hq: {Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)) == True{} : Bool}, +hc: {B.chain.ok(chain, obs, name) == True{} : Bool},
+    +hm: {B.ens.chained(map, obs) == True{} : Bool}, +hi: {hch(ix, obs) == True{} : Bool}) ->
+    {fdok(fuk(c1, c2, q, no, name, what, chain, eno, was, map, fes, ix), obs) == True{} : Bool}:
+  match c1 c2:
+    case True{} _:
+      and_intro(B.ens.chained(map, obs), hch(ix, obs), hm, hi)
+    case False{} True{}:
+      and_intro(B.ens.chained(B.en.set(map, B.En{name, chain, no, was}, name), obs), hch(B.ix.put(ix, B.En{name, chain, no, was}), obs),
+        enset_ch(map, B.En{name, chain, no, was}, name, obs, hm, hc), ixput_ch(ix, B.En{name, chain, no, was}, obs, hc, hi))
+    case False{} False{}:
+      and_intro(B.ens.chained(B.en.set(map, B.En{name, Con{q, chain}, no, was}, name), obs), hch(B.ix.put(ix, B.En{name, Con{q, chain}, no, was}), obs),
+        enset_ch(map, B.En{name, Con{q, chain}, no, was}, name, obs, hm, and_intro(Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)), B.chain.defines(chain, obs, name), hq, ok_defs(chain, obs, name, hc))),
+        ixput_ch(ix, B.En{name, Con{q, chain}, no, was}, obs, and_intro(Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)), B.chain.defines(chain, obs, name), hq, ok_defs(chain, obs, name, hc)), hi))
+
+def fdupd_ch(+q: U32, +no: U32, +name: List<&2, U32>, +what: U32, e: B.En, +map: List<&2, B.En>, +fes: List<&2, B.Fe>, +ix: B.Ht<B.En>, +obs: List<&2, B.Ob>,
+    +hq: {Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)) == True{} : Bool}, +hc: {mch(Some{e}, obs, name) == True{} : Bool}, +hm: {B.ens.chained(map, obs) == True{} : Bool}, +hi: {hch(ix, obs) == True{} : Bool}) ->
+    {fdok(B.fd.upd.at(q, no, name, what, e, map, fes, ix), obs) == True{} : Bool}:
+  match e:
+    case B.En{+n, +chain, +eno, +was}:
+      fu_ch(Bool.not(B.upd.fits(what, was)), U32.is_eq(B.en.head(chain), q), q, no, name, what, chain, eno, was, map, fes, ix, obs, hq, hc, hm, hi)
+
+def fdk_ch(m: Maybe<&2, B.En>, +q: U32, upd: Bool, +name: List<&2, U32>, +no: U32, +what: U32, +map: List<&2, B.En>, +fes: List<&2, B.Fe>, +ix: B.Ht<B.En>, +obs: List<&2, B.Ob>,
+    +hq: {Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)) == True{} : Bool}, +hm: {B.ens.chained(map, obs) == True{} : Bool}, +hi: {hch(ix, obs) == True{} : Bool}, +hmc: {mch(m, obs, name) == True{} : Bool}) ->
+    {fdok(fdk(m, q, upd, name, no, what, map, fes, ix), obs) == True{} : Bool}:
+  match m:
+    case None{}:
+      match upd:
+        case True{}:
+          and_intro(B.ens.chained(Con{B.En{name, [q], no, what}, map}, obs), hch(B.ix.put(ix, B.En{name, [q], no, what}), obs),
+            and_intro(B.en.chained(B.En{name, [q], no, what}, obs), B.ens.chained(map, obs), one_ch(q, name, no, what, obs, hq), hm),
+            ixput_ch(ix, B.En{name, [q], no, what}, obs, one_ch(q, name, no, what, obs, hq), hi))
+        case False{}:
+          and_intro(B.ens.chained(Con{B.En{name, [q], no, what}, map}, obs), hch(B.ix.put(ix, B.En{name, [q], no, what}), obs),
+            and_intro(B.en.chained(B.En{name, [q], no, what}, obs), B.ens.chained(map, obs), one_ch(q, name, no, what, obs, hq), hm),
+            ixput_ch(ix, B.En{name, [q], no, what}, obs, one_ch(q, name, no, what, obs, hq), hi))
+    case Some{+e}:
+      match upd:
+        case True{}:
+          fdupd_ch(q, no, name, what, e, map, fes, ix, obs, hq, hmc, hm, hi)
+        case False{}:
+          fddefat_ch(q, no, name, what, e, map, fes, ix, obs, hq, hm, hi)
+
+def fddef_ch(+q: U32, +upd: Bool, +name: List<&2, U32>, +no: U32, +what: U32, d: B.Fd, +obs: List<&2, B.Ob>, +hq: {Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)) == True{} : Bool},
+    +hd: {fdok(d, obs) == True{} : Bool}) -> {fdok(B.fd.def(q, upd, name, no, what, d), obs) == True{} : Bool}:
+  match d:
+    case B.Fd{+map, +fes, +ix}:
+      fdk_ch(B.ix.find(ix, name), q, upd, name, no, what, map, fes, ix, obs, hq, and_l(B.ens.chained(map, obs), hch(ix, obs), hd), and_r(B.ens.chained(map, obs), hch(ix, obs), hd),
+        ixfind_ch(ix, obs, name, and_r(B.ens.chained(map, obs), hch(ix, obs), hd)))
+
+# each definition among ns found in full
+def dfd(ns: List<&2, B.Node>, +full: List<&2, B.Node>) -> Bool:
+  match ns:
+    case Nil{}:
+      True{}
+    case Con{nd, t}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          Bool.and(Maybe.is_some(&2, B.Node, B.mem.find(full, name)), dfd(t, full))
+        case _:
+          dfd(t, full)
+
+def mfc_k(c: Bool, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: U32, +ind: U32, +what: U32, full: List<&2, B.Node>, +n: List<&2, U32>,
+    h: {Maybe.is_some(&2, B.Node, B.mem.find(full, n)) == True{} : Bool}) ->
+    {Maybe.is_some(&2, B.Node, B.when(Maybe<&2, B.Node>, c, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(full, n))) == True{} : Bool}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      h
+
+# a definition found stays found with a member before
+def mf_cons(x: B.Node, +full: List<&2, B.Node>, +n: List<&2, U32>, +h: {Maybe.is_some(&2, B.Node, B.mem.find(full, n)) == True{} : Bool}) ->
+    {Maybe.is_some(&2, B.Node, B.mem.find(Con{x, full}, n)) == True{} : Bool}:
+  match x:
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      mfc_k(B.same(name, n), share, upd, name, rest, params, body, no, ind, what, full, n, h)
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      h
+    case B.NImport{+txt, +no}:
+      h
+    case B.NDecl{+names, +no}:
+      h
+    case B.NBad{+txt, +no}:
+      h
+    case B.NErr{+msg, +no}:
+      h
+    case B.NBend{+lines, +no}:
+      h
+
+def dfd_cons(ns: List<&2, B.Node>, +x: B.Node, +full: List<&2, B.Node>, +h: {dfd(ns, full) == True{} : Bool}) -> {dfd(ns, Con{x, full}) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          and_intro(Maybe.is_some(&2, B.Node, B.mem.find(Con{x, full}, name)), dfd(t, Con{x, full}),
+            mf_cons(x, full, name, and_l(Maybe.is_some(&2, B.Node, B.mem.find(full, name)), dfd(t, full), h)),
+            dfd_cons(t, x, full, and_r(Maybe.is_some(&2, B.Node, B.mem.find(full, name)), dfd(t, full), h)))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          dfd_cons(t, x, full, h)
+        case B.NImport{+txt, +no}:
+          dfd_cons(t, x, full, h)
+        case B.NDecl{+names, +no}:
+          dfd_cons(t, x, full, h)
+        case B.NBad{+txt, +no}:
+          dfd_cons(t, x, full, h)
+        case B.NErr{+msg, +no}:
+          dfd_cons(t, x, full, h)
+        case B.NBend{+lines, +no}:
+          dfd_cons(t, x, full, h)
+
+# a definition is found among members holding it first
+def mf_self(+share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: U32, +ind: U32, +what: U32, +t: List<&2, B.Node>) ->
+    {Maybe.is_some(&2, B.Node, B.mem.find(Con{B.NDef{share, upd, name, rest, params, body, no, ind, what}, t}, name)) == True{} : Bool}:
+  %Equal.sym(Bool, B.same(name, name), True{}, Laws.names.same_refl(name)) :
+    {Maybe.is_some(&2, B.Node, B.when(Maybe<&2, B.Node>, _, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(t, name))) == True{} : Bool}
+  {==}
+
+# each definition among members found among them
+def dfd_self(ns: List<&2, B.Node>) -> {dfd(ns, ns) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      {==}
+    case Con{nd, +t}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          and_intro(Maybe.is_some(&2, B.Node, B.mem.find(Con{B.NDef{share, upd, name, rest, params, body, no, ind, what}, t}, name)), dfd(t, Con{B.NDef{share, upd, name, rest, params, body, no, ind, what}, t}),
+            mf_self(share, upd, name, rest, params, body, no, ind, what, t), dfd_cons(t, B.NDef{share, upd, name, rest, params, body, no, ind, what}, t, dfd_self(t)))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          dfd_cons(t, B.NObj{abs, ext, name, parents, kids, no}, t, dfd_self(t))
+        case B.NImport{+txt, +no}:
+          dfd_cons(t, B.NImport{txt, no}, t, dfd_self(t))
+        case B.NDecl{+names, +no}:
+          dfd_cons(t, B.NDecl{names, no}, t, dfd_self(t))
+        case B.NBad{+txt, +no}:
+          dfd_cons(t, B.NBad{txt, no}, t, dfd_self(t))
+        case B.NErr{+msg, +no}:
+          dfd_cons(t, B.NErr{msg, no}, t, dfd_self(t))
+        case B.NBend{+lines, +no}:
+          dfd_cons(t, B.NBend{lines, no}, t, dfd_self(t))
+
+def fdmems_ch(ns: List<&2, B.Node>, +q: U32, +d: B.Fd, +obs: List<&2, B.Ob>, +hns: {dfd(ns, B.ob.mems(B.ob.at(obs, q))) == True{} : Bool},
+    +hd: {fdok(d, obs) == True{} : Bool}) -> {fdok(B.fd.mems(ns, q, d), obs) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      hd
+    case Con{nd, +t}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          fdmems_ch(t, q, B.fd.def(q, upd, name, no, what, d), obs, and_r(Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)), dfd(t, B.ob.mems(B.ob.at(obs, q))), hns),
+            fddef_ch(q, upd, name, no, what, d, obs, and_l(Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name)), dfd(t, B.ob.mems(B.ob.at(obs, q))), hns), hd))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          fdmems_ch(t, q, d, obs, hns, hd)
+        case B.NImport{+txt, +no}:
+          fdmems_ch(t, q, d, obs, hns, hd)
+        case B.NDecl{+names, +no}:
+          fdmems_ch(t, q, d, obs, hns, hd)
+        case B.NBad{+txt, +no}:
+          fdmems_ch(t, q, d, obs, hns, hd)
+        case B.NErr{+msg, +no}:
+          fdmems_ch(t, q, d, obs, hns, hd)
+        case B.NBend{+lines, +no}:
+          fdmems_ch(t, q, d, obs, hns, hd)
+
+def fdobs_ch(qs: List<&2, U32>, +obs: List<&2, B.Ob>, +d: B.Fd, +hd: {fdok(d, obs) == True{} : Bool}) -> {fdok(B.fd.obs(qs, obs, d), obs) == True{} : Bool}:
+  match qs:
+    case Nil{}:
+      hd
+    case Con{+q, +t}:
+      fdobs_ch(t, obs, B.fd.mems(B.ob.mems(B.ob.at(obs, q)), q, d), fdmems_ch(B.ob.mems(B.ob.at(obs, q)), q, d, obs, dfd_self(B.ob.mems(B.ob.at(obs, q))), hd))
+
+def ens_rch(xs: List<&2, B.En>, +acc: List<&2, B.En>, +obs: List<&2, B.Ob>, +hx: {B.ens.chained(xs, obs) == True{} : Bool}, +ha: {B.ens.chained(acc, obs) == True{} : Bool}) ->
+    {B.ens.chained(List.reverse.go(&2, B.En, xs, acc), obs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{x, +t}:
+      match x:
+        case B.En{+name, +chain, +no, +what}:
+          ens_rch(t, Con{B.En{name, chain, no, what}, acc}, obs, and_r(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), hx),
+            and_intro(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(acc, obs), and_l(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), hx), ha))
+
+def fddone_ch(d: B.Fd, +obs: List<&2, B.Ob>, +h: {fdok(d, obs) == True{} : Bool}) -> {B.fd.chained(Some{B.fd.done(d)}, obs) == True{} : Bool}:
+  match d:
+    case B.Fd{+map, +fes, +ix}:
+      ens_rch(map, Nil{}, obs, and_l(B.ens.chained(map, obs), hch(ix, obs), h), {==})
+
+def fl_ch(c: Bool, +ord: List<&2, U32>, +obs: List<&2, B.Ob>) -> {B.fd.chained(flk(c, ord, obs), obs) == True{} : Bool}:
+  match c:
+    case True{}:
+      fddone_ch(B.fd.obs(List.reverse(&2, U32, ord), obs, B.Fd{Nil{}, Nil{}, B.ht.for(B.En, B.mems.count(ord, obs))}), obs,
+        fdobs_ch(List.reverse(&2, U32, ord), obs, B.Fd{Nil{}, Nil{}, B.ht.for(B.En, B.mems.count(ord, obs))},
+          and_intro(True{}, hch(B.ht.for(B.En, B.mems.count(ord, obs)), obs), {==}, hch_empty(B.ht.depth(32n, U32.from_nat(B.mems.count(ord, obs))), obs))))
+    case False{}:
+      {==}
+
+def fold_ch(+obs: List<&2, B.Ob>, l: Maybe<&2, B.Lz>) -> {B.fd.chained(B.fold(obs, l), obs) == True{} : Bool}:
+  match l:
+    case None{}:
+      {==}
+    case Some{z}:
+      match z:
+        case B.Lz{+ok, +ord}:
+          fl_ch(ok, ord, obs)
+
+def fg2_ch(c: Bool, +obs: List<&2, B.Ob>, +l: Maybe<&2, B.Lz>) -> {B.fd.chained(fgk2(c, obs, l), obs) == True{} : Bool}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      fold_ch(obs, l)
+
+def foldsgo_ch(ls: List<&2, Maybe<&2, B.Lz>>, +obs: List<&2, B.Ob>, +bad: List<&2, U32>, +id: U32) ->
+    {B.fds.chained(B.folds.go(ls, obs, bad, id), obs) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{+l, +t}:
+      and_intro(B.fd.chained(fgk2(Bool.or(Bool.not(B.is.object(B.ob.kind(B.ob.at(obs, id)))), B.has(bad, id)), obs, l), obs), B.fds.chained(B.folds.go(t, obs, bad, U32.add(id, 1)), obs),
+        fg2_ch(Bool.or(Bool.not(B.is.object(B.ob.kind(B.ob.at(obs, id)))), B.has(bad, id)), obs, l), foldsgo_ch(t, obs, bad, U32.add(id, 1)))
+
+def Laws.folds.chained(ls, obs, bad):
+  foldsgo_ch(ls, obs, bad, 0)
+
+# The copies found (`copies.found`)
+# ---------------------------------
+#
+# Every copy a definition, no error assumed: every instance the worklist
+# takes has its member. The finals' objects are their chains' heads
+# (`folds.chained`); a prior's is in the chain of the entry `cx.find`
+# finds, which the name tables of chained folds keep chained (`nxs_ch`),
+# as the resolver walked for its instances alone shows (the `rril` walk's
+# twin, its mirrors reused: only `rr.prior.of` makes an instance); and a
+# member table finds what the members' search finds (`members.indexed`,
+# `cxmem_eq`). The worklist's induction is `copies.defined`'s, unguarded.
+
+# an instance found: its object has a definition of its name
+def infd(i: B.In, +obs: List<&2, B.Ob>) -> Bool:
+  match i:
+    case B.In{name, +q, +prior}:
+      Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, q)), name))
+
+def insfd(xs: List<&2, B.In>, +obs: List<&2, B.Ob>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{i, t}:
+      Bool.and(infd(i, obs), insfd(t, obs))
+
+def rrfd(r: B.Rr, +obs: List<&2, B.Ob>) -> Bool:
+  match r:
+    case B.Rr{rt, ers, ins}:
+      insfd(ins, obs)
+
+def rbfd(b: B.Rb, +obs: List<&2, B.Ob>) -> Bool:
+  match b:
+    case B.Rb{ls, ers, ins}:
+      insfd(ins, obs)
+
+def insapp_fd(a: List<&2, B.In>, +b: List<&2, B.In>, +obs: List<&2, B.Ob>, +ha: {insfd(a, obs) == True{} : Bool}, +hb: {insfd(b, obs) == True{} : Bool}) ->
+    {insfd(List.append(&2, B.In, a, b), obs) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{+i, +t}:
+      and_intro(infd(i, obs), insfd(List.append(&2, B.In, t, b), obs), and_l(infd(i, obs), insfd(t, obs), ha), insapp_fd(t, b, obs, and_r(infd(i, obs), insfd(t, obs), ha), hb))
+
+# the context's name tables chained, and its member tables of its objects
+def hchs(ms: List<&2, B.Ht<B.En>>, +obs: List<&2, B.Ob>) -> Bool:
+  match ms:
+    case Nil{}:
+      True{}
+    case Con{m, t}:
+      Bool.and(hch(m, obs), hchs(t, obs))
+
+def cxch(c: B.Cx) -> Bool:
+  match c:
+    case B.Cx{+obs, ls, fs, als, paths, pss, nxs, mds}:
+      hchs(nxs, obs)
+
+def cxmds(c: B.Cx) -> List<&2, B.Ht<B.Node>>:
+  match c:
+    case B.Cx{obs, ls, fs, als, paths, pss, nxs, mds}:
+      mds
+
+def nxget_ch(ms: List<&2, B.Ht<B.En>>, n: Nat, +obs: List<&2, B.Ob>, +h: {hchs(ms, obs) == True{} : Bool}) ->
+    {hch(B.nx.or(List.get(&2, B.Ht<B.En>, ms, n)), obs) == True{} : Bool}:
+  match ms:
+    case Nil{}:
+      {==}
+    case Con{+m, +t}:
+      match n:
+        case 0n:
+          and_l(hch(m, obs), hchs(t, obs), h)
+        case 1n+k:
+          nxget_ch(t, k, obs, and_r(hch(m, obs), hchs(t, obs), h))
+
+def cxnx_ch(+cx: B.Cx, +o: U32, +hc: {cxch(cx) == True{} : Bool}) -> {hch(B.cx.nx(cx, o), B.cx.obs(cx)) == True{} : Bool}:
+  match cx:
+    case B.Cx{+obs, +ls, +fs, +als, +paths, +pss, +nxs, +mds}:
+      nxget_ch(nxs, U32.to_nat(o), obs, hc)
+
+def cxfind_ch(+cx: B.Cx, +o: U32, +n: List<&2, U32>, +hc: {cxch(cx) == True{} : Bool}) -> {mch(B.cx.find(cx, o, n), B.cx.obs(cx), n) == True{} : Bool}:
+  enfind_ch(B.ht.leaf(B.En, B.cx.nx(cx, o), U32.and(B.hash.name(n), 1), B.hash.name(n)), B.cx.obs(cx), n,
+    hch_leaf(32n, B.cx.nx(cx, o), U32.and(B.hash.name(n), 1), B.hash.name(n), B.cx.obs(cx), cxnx_ch(cx, o, hc)))
+
+# a member table of the context's, by members.indexed
+def mdget(obs: List<&2, B.Ob>, k: Nat, +n: List<&2, U32>) ->
+    {B.mem.find(B.ob.mems(B.ob.or(List.get(&2, B.Ob, obs, k))), n) == B.md.find(B.md.or(List.get(&2, B.Ht<B.Node>, B.mds.of(obs), k)), n) : Maybe<&2, B.Node>}:
+  match obs:
+    case Nil{}:
+      {==}
+    case Con{+o, +t}:
+      match k:
+        case 0n:
+          Equal.sym(Maybe<&2, B.Node>, B.md.find(B.md.table(B.ob.mems(o)), n), B.mem.find(B.ob.mems(o), n), Laws.members.indexed(B.ob.mems(o), n))
+        case 1n+j:
+          mdget(t, j, n)
+
+def cxmem_eq(+cx: B.Cx, +q: U32, +n: List<&2, U32>, +hmd: {cxmds(cx) == B.mds.of(B.cx.obs(cx)) : List<&2, B.Ht<B.Node>>}) ->
+    {B.mem.find(B.ob.mems(B.ob.at(B.cx.obs(cx), q)), n) == B.cx.mem(cx, q, n) : Maybe<&2, B.Node>}:
+  match cx:
+    case B.Cx{+obs, +ls, +fs, +als, +paths, +pss, +nxs, +mds}:
+      %Equal.sym(List<&2, B.Ht<B.Node>>, mds, B.mds.of(obs), hmd) :
+        {B.mem.find(B.ob.mems(B.ob.at(obs, q)), n) == B.md.find(B.md.or(List.get(&2, B.Ht<B.Node>, _, U32.to_nat(q))), n) : Maybe<&2, B.Node>}
+      mdget(obs, U32.to_nat(q), n)
+
+# The resolver walked for its instances: none but a prior's
+
+def rfn_fd(c: Bool, +cx: B.Cx, +obj: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32) -> {rrfd(rfn_k(c, cx, obj, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def final_fd(+cx: B.Cx, +obj: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32) -> {rrfd(B.rr.final(cx, obj, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  rfn_fd(B.ob.abs(B.ob.at(B.cx.obs(cx), obj)), cx, obj, mark, n, t, no)
+
+def rhs_fd(c: Bool, +cx: B.Cx, +h: U32, +n: List<&2, U32>, +t: B.Tok, +whole: List<&2, U32>, +no: U32) -> {rrfd(rhs_k(c, cx, h, n, t, whole, no), B.cx.obs(cx)) == True{} : Bool}:
+  match c:
+    case True{}:
+      final_fd(cx, h, 0, n, t, no)
+    case False{}:
+      {==}
+
+def rh_fd(m: Maybe<&2, U32>, +cx: B.Cx, +n: List<&2, U32>, +t: B.Tok, +whole: List<&2, U32>, +no: U32) -> {rrfd(rhk(m, cx, n, t, whole, no), B.cx.obs(cx)) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+h}:
+      rhs_fd(B.cx.has(cx, h, n), cx, h, n, t, whole, no)
+
+def host_fd(+cx: B.Cx, +o: U32, +q: U32, +k: Nat, +n: List<&2, U32>, +t: B.Tok, +whole: List<&2, U32>, +no: U32) ->
+    {rrfd(B.rr.host(cx, o, q, k, n, t, whole, no), B.cx.obs(cx)) == True{} : Bool}:
+  rh_fd(List.get(&2, U32, B.hosts(B.cx.obs(cx), q), Nat.sub(k, 1n)), cx, n, t, whole, no)
+
+def rfo1_fd(m: Maybe<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +obs: List<&2, B.Ob>) -> {rrfd(rfo1(m, mark, n, t), obs) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+p}:
+      {==}
+
+def rfo2_fd(c: Bool, +cx: B.Cx, +m: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +obs: List<&2, B.Ob>) -> {rrfd(rfo2(c, cx, m, mark, n, t), obs) == True{} : Bool}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def rfok_fd(c: Bool, +cx: B.Cx, +m: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +obs: List<&2, B.Ob>) -> {rrfd(rfok(c, cx, m, mark, n, t), obs) == True{} : Bool}:
+  match c:
+    case True{}:
+      rfo1_fd(B.ci.find(B.mod.cis(cx, m), B.List.head.or(B.parts(n))), mark, n, t, obs)
+    case False{}:
+      rfo2_fd(B.names.has(B.tree.types(B.mod.tree(cx, m)), n), cx, m, mark, n, t, obs)
+
+def foreign_fd(+cx: B.Cx, +m: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok) -> {rrfd(B.rr.foreign(cx, m, mark, n, t), B.cx.obs(cx)) == True{} : Bool}:
+  rfok_fd(Bool.not(B.blank.parts(List.tail(&2, List<&2, U32>, B.parts(n)))), cx, m, mark, n, t, B.cx.obs(cx))
+
+def rbs_fd(c: Bool, +n: List<&2, U32>, +t: B.Tok, +no: U32, +obs: List<&2, B.Ob>) -> {rrfd(rbs_k(c, n, t, no), obs) == True{} : Bool}:
+  match c:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def rbd_fd(c: Bool, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32) -> {rrfd(rbd_k(c, cx, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  match c:
+    case True{}:
+      rbs_fd(B.starts.s(n, "Blend_"), n, t, no, B.cx.obs(cx))
+    case False{}:
+      foreign_fd(cx, B.loc.mod(B.ob.no(B.ob.at(B.cx.obs(cx), q))), mark, n, t)
+
+def bend_fd(+cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32) -> {rrfd(B.rr.bend(cx, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  rbd_fd(U32.is_eq(B.loc.mod(B.ob.no(B.ob.at(B.cx.obs(cx), q))), 0), cx, q, mark, n, t, no)
+
+def rf_fd(+cx: B.Cx, +mark: U32, +t: B.Tok, +no: U32, f: B.Rf) -> {rrfd(B.rr.rf(cx, mark, t, no, f), B.cx.obs(cx)) == True{} : Bool}:
+  match f:
+    case B.Rf{+obj, +name, +prior, +origin}:
+      final_fd(cx, obj, mark, name, t, no)
+
+def rd_fd(m: Maybe<&2, B.Rf>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32) -> {rrfd(rdk(m, cx, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  match m:
+    case None{}:
+      bend_fd(cx, q, mark, n, t, no)
+    case Some{f}:
+      rf_fd(cx, mark, t, no, f)
+
+def dotted_fd(+cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32) -> {rrfd(B.rr.dotted(cx, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  rd_fd(B.look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, B.parts(n)), cx, q, mark, n, t, no)
+
+def rp_fd(m: Maybe<&2, U32>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32) -> {rrfd(rpk(m, cx, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  match m:
+    case None{}:
+      dotted_fd(cx, q, mark, n, t, no)
+    case Some{+h}:
+      final_fd(cx, h, mark, n, t, no)
+
+def plaink_fd(local: Bool, +cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32) ->
+    {rrfd(B.rr.plain.k(local, cx, o, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  match local:
+    case True{}:
+      {==}
+    case False{}:
+      rp_fd(B.look(cx, Con{o, B.hosts(B.cx.obs(cx), q)}, n), cx, q, mark, n, t, no)
+
+def plain_fd(+cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32) ->
+    {rrfd(B.rr.plain(cx, o, q, locals, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  plaink_fd(B.names.has(locals, n), cx, o, q, mark, n, t, no)
+
+# a prior found: the first of a chain's objects after another's, each
+# defining the name
+def pfd(m: Maybe<&2, U32>, +obs: List<&2, B.Ob>, +n: List<&2, U32>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{c}:
+      Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, c)), n))
+
+def pf_k(c: Bool, +x: U32, t: List<&2, U32>, +after: List<&2, U32>, +obs: List<&2, B.Ob>, +n: List<&2, U32>,
+    hx: {Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, x)), n)) == True{} : Bool}, ih: {pfd(B.prior.find(t, after), obs, n) == True{} : Bool}) ->
+    {pfd(B.when(Maybe<&2, U32>, c, u => Some{x}, u => B.prior.find(t, after)), obs, n) == True{} : Bool}:
+  match c:
+    case True{}:
+      hx
+    case False{}:
+      ih
+
+def pfind_fd(cs: List<&2, U32>, +after: List<&2, U32>, +obs: List<&2, B.Ob>, +n: List<&2, U32>, +h: {B.chain.defines(cs, obs, n) == True{} : Bool}) ->
+    {pfd(B.prior.find(cs, after), obs, n) == True{} : Bool}:
+  match cs:
+    case Nil{}:
+      {==}
+    case Con{+c, +t}:
+      pf_k(B.has(after, c), c, t, after, obs, n,
+        and_l(Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, c)), n)), B.chain.defines(t, obs, n), h),
+        pfind_fd(t, after, obs, n, and_r(Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, c)), n)), B.chain.defines(t, obs, n), h)))
+
+def mch_defs(m: Maybe<&2, B.En>, +obs: List<&2, B.Ob>, +n: List<&2, U32>, +h: {mch(m, obs, n) == True{} : Bool}) -> {B.chain.defines(B.en.chain(m), obs, n) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{e}:
+      match e:
+        case B.En{+name, +chain, +no, +what}:
+          ok_defs(chain, obs, n, h)
+
+def rpo_fd(m: Maybe<&2, U32>, +cx: B.Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hm: {pfd(m, B.cx.obs(cx), n) == True{} : Bool}) ->
+    {rrfd(rpok(m, cx, o, q, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+c}:
+      and_intro(infd(B.In{n, c, True{}}, B.cx.obs(cx)), True{}, hm, {==})
+
+def prior_of_fd(+cx: B.Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hc: {cxch(cx) == True{} : Bool}) -> {rrfd(B.rr.prior.of(cx, o, q, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  rpo_fd(B.prior.find(B.en.chain(B.cx.find(cx, o, n)), B.after(B.cx.ord(cx, o), q)), cx, o, q, n, t, no,
+    pfind_fd(B.en.chain(B.cx.find(cx, o, n)), B.after(B.cx.ord(cx, o), q), B.cx.obs(cx), n,
+      mch_defs(B.cx.find(cx, o, n), B.cx.obs(cx), n, cxfind_ch(cx, o, n, hc))))
+
+def rpr_fd(c: Bool, +cx: B.Cx, +o: U32, +q: U32, +n: List<&2, U32>, +t: B.Tok, +no: U32, +hc: {cxch(cx) == True{} : Bool}) -> {rrfd(rprk(c, cx, o, q, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  match c:
+    case True{}:
+      prior_of_fd(cx, o, q, List.append(&2, U32, n, [35]), t, no, hc)
+    case False{}:
+      prior_of_fd(cx, o, q, n, t, no, hc)
+
+def under_fd(local: Bool, +cx: B.Cx, +o: U32, +q: U32, +r: List<&2, U32>, +t: B.Tok, +no: U32, +hc: {cxch(cx) == True{} : Bool}) ->
+    {rrfd(B.rr.under(local, cx, o, q, r, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  match local:
+    case True{}:
+      {==}
+    case False{}:
+      rpr_fd(B.cx.has(cx, o, List.append(&2, U32, r, [35])), cx, o, q, r, t, no, hc)
+
+def markk_fd(up: Bool, tpl: Bool, under: Bool, +cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +h: U32, +r: List<&2, U32>, +no: U32, +hc: {cxch(cx) == True{} : Bool}) ->
+    {rrfd(B.rr.mark.k(up, tpl, under, cx, o, q, locals, h, r, B.TName{Con{h, r}}, no), B.cx.obs(cx)) == True{} : Bool}:
+  match up tpl under:
+    case True{} _ _:
+      host_fd(cx, o, q, B.carets(Con{h, r}), List.drop(&2, U32, Con{h, r}, B.carets(Con{h, r})), B.TName{Con{h, r}}, Con{h, r}, no)
+    case False{} True{} _:
+      plain_fd(cx, o, q, locals, 126, r, B.TName{Con{h, r}}, no)
+    case False{} False{} True{}:
+      under_fd(Bool.or(Bool.or(B.blank(r), B.names.has(locals, Con{h, r})), B.is.root(B.cx.obs(cx), o)), cx, o, q, r, B.TName{Con{h, r}}, no, hc)
+    case False{} False{} False{}:
+      plain_fd(cx, o, q, locals, 0, Con{h, r}, B.TName{Con{h, r}}, no)
+
+def rrof_fd(+cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, t: B.Tok, +no: U32, +hc: {cxch(cx) == True{} : Bool}) ->
+    {rrfd(B.rr.of(cx, o, q, locals, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  match t:
+    case B.TName{+x}:
+      match x:
+        case Nil{}:
+          {==}
+        case Con{+h, +r}:
+          markk_fd(U32.is_eq(h, 94), U32.is_eq(h, 126), U32.is_eq(h, 95), cx, o, q, locals, h, r, no, hc)
+    case B.TNum{+x}:
+      {==}
+    case B.TStr{+x}:
+      {==}
+    case B.TCom{+x}:
+      {==}
+    case B.TSp{+x}:
+      {==}
+    case B.TSym{+c}:
+      {==}
+
+def cons_fd(x: B.Rr, rest: B.Rb, +obs: List<&2, B.Ob>, +hx: {rrfd(x, obs) == True{} : Bool}, +hr: {rbfd(rest, obs) == True{} : Bool}) -> {rbfd(B.rb.cons(x, rest), obs) == True{} : Bool}:
+  match x rest:
+    case B.Rr{+rt, +e, +i} B.Rb{+ls, +es, +more}:
+      insapp_fd(i, more, obs, hx, hr)
+
+def toks_fd(ts: List<&2, B.Tok>, +cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +no: U32, +hc: {cxch(cx) == True{} : Bool}) ->
+    {rbfd(B.rb.toks(ts, cx, o, q, locals, no), B.cx.obs(cx)) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      {==}
+    case Con{+t, +r}:
+      cons_fd(B.rr.of(cx, o, q, locals, t, no), B.rb.toks(r, cx, o, q, locals, no), B.cx.obs(cx), rrof_fd(cx, o, q, locals, t, no, hc), toks_fd(r, cx, o, q, locals, no, hc))
+
+def line_fd(+no: U32, +ind: U32, b: B.Rb, +obs: List<&2, B.Ob>, +h: {rbfd(b, obs) == True{} : Bool}) -> {rbfd(B.rb.line(no, ind, b), obs) == True{} : Bool}:
+  match b:
+    case B.Rb{+ls, +es, +more}:
+      h
+
+def join_fd(a: B.Rb, b: B.Rb, +obs: List<&2, B.Ob>, +ha: {rbfd(a, obs) == True{} : Bool}, +hb: {rbfd(b, obs) == True{} : Bool}) -> {rbfd(B.rb.join(a, b), obs) == True{} : Bool}:
+  match a b:
+    case B.Rb{+l1, +e1, +i1} B.Rb{+l2, +e2, +i2}:
+      insapp_fd(i1, i2, obs, ha, hb)
+
+def lines_fd(bs: List<&2, B.Bl>, +cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +hc: {cxch(cx) == True{} : Bool}) ->
+    {rbfd(B.rb.lines(bs, cx, o, q, locals), B.cx.obs(cx)) == True{} : Bool}:
+  match bs:
+    case Nil{}:
+      {==}
+    case Con{b, +t}:
+      match b:
+        case B.Bl{+no, +ind, +ts}:
+          join_fd(B.rb.line(no, ind, B.rb.toks(ts, cx, o, q, locals, no)), B.rb.lines(t, cx, o, q, locals), B.cx.obs(cx),
+            line_fd(no, ind, B.rb.toks(ts, cx, o, q, locals, no), B.cx.obs(cx), toks_fd(ts, cx, o, q, locals, no, hc)),
+            lines_fd(t, cx, o, q, locals, hc))
+
+# a copy's priors found
+def ck_fd(i: B.In, nd: B.Node, h: B.Rb, b: B.Rb, sh: List<&2, B.Er>, +obs: List<&2, B.Ob>, hh: {rbfd(h, obs) == True{} : Bool}, hb: {rbfd(b, obs) == True{} : Bool}) ->
+    {insfd(B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.k(i, nd, h, b, sh))), obs) == True{} : Bool}:
+  match h b:
+    case B.Rb{hl, he, +hi} B.Rb{ls, es, +more}:
+      insapp_fd(hi, more, obs, hh, hb)
+
+def cn_fd(+cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, nd: B.Node, +hc: {cxch(cx) == True{} : Bool}) ->
+    {insfd(B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.node(cx, o, B.In{n, q, prior}, nd))), B.cx.obs(cx)) == True{} : Bool}:
+  match nd:
+    case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+      ck_fd(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
+        B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
+        B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+        B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
+          u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
+            B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
+        B.cx.obs(cx), line_fd(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no), B.cx.obs(cx), toks_fd(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no, hc)),
+        lines_fd(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), hc))
+    case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+      {==}
+    case B.NImport{+txt, +no}:
+      {==}
+    case B.NDecl{+names, +no}:
+      {==}
+    case B.NBad{+txt, +no}:
+      {==}
+    case B.NErr{+msg, +no}:
+      {==}
+    case B.NBend{+lines, +no}:
+      {==}
+
+def oc_fd(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, +hc: {cxch(cx) == True{} : Bool}) ->
+    {insfd(B.rb.ins(Pair.snd(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior))), B.cx.obs(cx)) == True{} : Bool}:
+  match mb:
+    case None{}:
+      {==}
+    case Some{nd}:
+      cn_fd(cx, o, n, q, prior, nd, hc)
+
+def snd_fd(+cx: B.Cx, +o: U32, i: B.In, +hc: {cxch(cx) == True{} : Bool}) -> {insfd(B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))), B.cx.obs(cx)) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      oc_fd(B.cx.mem(cx, q, n), cx, o, n, q, prior, hc)
+
+def then_fd(t: List<&2, B.In>, xs: List<&2, B.In>, +obs: List<&2, B.Ob>, +ht: {insfd(t, obs) == True{} : Bool}, +hx: {insfd(xs, obs) == True{} : Bool}) -> {insfd(B.ins.then(t, xs), obs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ht
+    case Con{+x, +r}:
+      insapp_fd(t, Con{x, r}, obs, ht, hx)
+
+# a copy made of an instance found: a definition of its name
+def oc_fnd(mb: Maybe<&2, B.Node>, +cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, +rds: List<&2, B.Rd>,
+    hs: {Maybe.is_some(&2, B.Node, mb) == True{} : Bool}, hm: {mdef(mb, n) == True{} : Bool}, hr: {B.rds.defs(rds) == True{} : Bool}) ->
+    {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, ocm(mb, cx, o, n, q, prior)), rds}) == True{} : Bool}:
+  match mb:
+    case None{}:
+      Empty.absurd({B.rds.defs(Con{B.Rd{B.In{n, q, prior}, B.NBad{Nil{}, 0}, Nil{}, Nil{}}, rds}) == True{} : Bool}, MB.false_ne_true()(hs))
+    case Some{nd}:
+      cn_def(cx, o, n, q, prior, nd, rds, hm, hr)
+
+def fst_fnd(+cx: B.Cx, +o: U32, i: B.In, +rds: List<&2, B.Rd>, +hmd: {cxmds(cx) == B.mds.of(B.cx.obs(cx)) : List<&2, B.Ht<B.Node>>},
+    hi: {infd(i, B.cx.obs(cx)) == True{} : Bool}, hr: {B.rds.defs(rds) == True{} : Bool}) -> {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds}) == True{} : Bool}:
+  match i:
+    case B.In{+n, +q, +prior}:
+      %cxmem_eq(cx, q, n, hmd) : {B.rds.defs(Con{Pair.fst(B.Rd, B.Rb, ocm(_, cx, o, n, q, prior)), rds}) == True{} : Bool}
+      oc_fnd(B.mem.find(B.ob.mems(B.ob.at(B.cx.obs(cx), q)), n), cx, o, n, q, prior, rds, hi, mem_find_def(B.ob.mems(B.ob.at(B.cx.obs(cx), q)), n), hr)
+
+def fg_add(+k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    +hmd: {cxmds(cx) == B.mds.of(B.cx.obs(cx)) : List<&2, B.Ht<B.Node>>}, hc: {B.rds.defs(rds) == True{} : Bool}, hi: {infd(i, B.cx.obs(cx)) == True{} : Bool}) ->
+    {pdef(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) == True{} : Bool}:
+  %cpadd_pdef(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds, ers, B.done.put(done, i)) : {_ == True{} : Bool}
+  fst_fnd(cx, o, i, rds, hmd, hi, hc)
+
+def fg_step(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    +hmd: {cxmds(cx) == B.mds.of(B.cx.obs(cx)) : List<&2, B.Ht<B.Node>>}, +hx: {cxch(cx) == True{} : Bool}, hc: {B.rds.defs(rds) == True{} : Bool},
+    +hi: {infd(i, B.cx.obs(cx)) == True{} : Bool}, +ht: {insfd(t, B.cx.obs(cx)) == True{} : Bool},
+    ft: @hc2:{B.rds.defs(rds) == True{} : Bool} -> @ht2:{insfd(t, B.cx.obs(cx)) == True{} : Bool} -> {pdef(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == True{} : Bool},
+    ff: @hc2:{pdef(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) == True{} : Bool} -> @ht2:{insfd(B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cx.obs(cx)) == True{} : Bool} -> {pdef(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == True{} : Bool}) ->
+    {pdef(cgk(c, k, cx, o, i, t, rds, ers, done)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ft(hc, ht)
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {pdef(_) == True{} : Bool}
+      ff(fg_add(k, cx, o, i, t, rds, ers, done, hmd, hc, hi), then_fd(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))), B.cx.obs(cx), ht, snd_fd(cx, o, i, hx)))
+
+# by induction on the fuel: every copy a definition, every instance taken
+# found
+def fg_go(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +hmd: {cxmds(cx) == B.mds.of(B.cx.obs(cx)) : List<&2, B.Ht<B.Node>>},
+    +hx: {cxch(cx) == True{} : Bool}, hc: {pdef(c) == True{} : Bool}, +ht: {insfd(todo, B.cx.obs(cx)) == True{} : Bool}) -> {pdef(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
+  match n:
+    case 0n:
+      short_pdef(todo, cx, o, c, hc)
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          hc
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              fg_step(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, hmd, hx, hc,
+                and_l(infd(i, B.cx.obs(cx)), insfd(t, B.cx.obs(cx)), ht), and_r(infd(i, B.cx.obs(cx)), insfd(t, B.cx.obs(cx)), ht),
+                hc2 => ht2 => fg_go(k, cx, o, t, B.Cp{rds, ers, done}, hmd, hx, hc2, ht2),
+                hc2 => ht2 => fg_go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), hmd, hx, hc2, ht2))
+
+# The context emission builds: its name tables of chained folds
+def fdmap_ch(m: Maybe<&2, B.Fd>, +obs: List<&2, B.Ob>, +h: {B.fd.chained(m, obs) == True{} : Bool}) -> {B.ens.chained(B.fd.map(m), obs) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{d}:
+      match d:
+        case B.Fd{map, fes, ix}:
+          h
+
+def nxputs_ch(es: List<&2, B.En>, +t: B.Ht<B.En>, +obs: List<&2, B.Ob>, +h: {B.ens.chained(es, obs) == True{} : Bool}, +ht: {hch(t, obs) == True{} : Bool}) ->
+    {hch(B.nx.puts(es, t), obs) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      ht
+    case Con{+e, +rest}:
+      hch_put(32n, B.nx.puts(rest, t), U32.and(B.hash.name(B.en.name(e)), 1), B.hash.name(B.en.name(e)), e, obs,
+        and_l(B.en.chained(e, obs), B.ens.chained(rest, obs), h), nxputs_ch(rest, t, obs, and_r(B.en.chained(e, obs), B.ens.chained(rest, obs), h), ht))
+
+def nxs_ch(fs: List<&2, Maybe<&2, B.Fd>>, +obs: List<&2, B.Ob>, +h: {B.fds.chained(fs, obs) == True{} : Bool}) -> {hchs(B.nxs.of(fs), obs) == True{} : Bool}:
+  match fs:
+    case Nil{}:
+      {==}
+    case Con{+m, +t}:
+      and_intro(hch(B.nx.of(B.fd.map(m)), obs), hchs(B.nxs.of(t), obs),
+        nxputs_ch(B.fd.map(m), B.ht.for(B.En, List.length(&2, B.En, B.fd.map(m))), obs, fdmap_ch(m, obs, and_l(B.fd.chained(m, obs), B.fds.chained(t, obs), h)),
+          hch_empty(B.ht.depth(32n, U32.from_nat(List.length(&2, B.En, B.fd.map(m)))), obs)),
+        nxs_ch(t, obs, and_r(B.fd.chained(m, obs), B.fds.chained(t, obs), h)))
+
+def fdat_ch(fs: List<&2, Maybe<&2, B.Fd>>, k: Nat, +obs: List<&2, B.Ob>, +h: {B.fds.chained(fs, obs) == True{} : Bool}) ->
+    {B.ens.chained(B.fd.map(B.fd.or(List.get(&2, Maybe<&2, B.Fd>, fs, k))), obs) == True{} : Bool}:
+  match fs:
+    case Nil{}:
+      {==}
+    case Con{+m, +t}:
+      match k:
+        case 0n:
+          fdmap_ch(m, obs, and_l(B.fd.chained(m, obs), B.fds.chained(t, obs), h))
+        case 1n+j:
+          fdat_ch(t, j, obs, and_r(B.fd.chained(m, obs), B.fds.chained(t, obs), h))
+
+# a final's object, its chain's head: one defining it
+def head_fd(cs: List<&2, U32>, +obs: List<&2, B.Ob>, +n: List<&2, U32>, +h: {B.chain.ok(cs, obs, n) == True{} : Bool}) ->
+    {Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, B.en.head(cs))), n)) == True{} : Bool}:
+  match cs:
+    case Nil{}:
+      Empty.absurd({Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, B.en.head(Nil{}))), n)) == True{} : Bool}, MB.false_ne_true()(h))
+    case Con{+c, +t}:
+      and_l(Maybe.is_some(&2, B.Node, B.mem.find(B.ob.mems(B.ob.at(obs, c)), n)), B.chain.defines(t, obs, n), h)
+
+def finals_fd(es: List<&2, B.En>, +obs: List<&2, B.Ob>, +h: {B.ens.chained(es, obs) == True{} : Bool}) -> {insfd(B.ins.finals(es), obs) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{e, +t}:
+      match e:
+        case B.En{+name, +chain, +no, +what}:
+          and_intro(infd(B.In{name, B.en.head(chain), False{}}, obs), insfd(B.ins.finals(t), obs),
+            head_fd(chain, obs, name, and_l(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), h)),
+            finals_fd(t, obs, and_r(B.en.chained(B.En{name, chain, no, what}, obs), B.ens.chained(t, obs), h)))
+
+def Laws.copies.found(ls, obs, bad, als, paths, pss, o):
+  pdef_rds(B.copies(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o),
+    fg_go(B.copies.fuel(), B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o, B.ins.finals(B.cx.map(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o)), B.Cp{Nil{}, Nil{}, B.copies.room(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)})}, {==},
+      nxs_ch(B.folds(ls, obs, bad), obs, Laws.folds.chained(ls, obs, bad)), {==},
+      finals_fd(B.cx.map(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o), obs, fdat_ch(B.folds(ls, obs, bad), U32.to_nat(o), obs, Laws.folds.chained(ls, obs, bad)))))
 
 # The root's imports: aliases, parts of their lines
 
@@ -11680,10 +13511,20 @@ def cg_e(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rd
       %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {cpe(_) == True{} : Bool}
       hf
 
+# past the fuel, the copies as they were, an error at most added
+def short_cpe(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, hc: {cpe(c) == True{} : Bool}) -> {cpe(B.cp.short(todo, cx, o, c)) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
 def copies_e(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +hc: {cpe(c) == True{} : Bool}) -> {cpe(B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
   match n:
     case 0n:
-      hc
+      short_cpe(todo, cx, o, c, hc)
     case 1n+(+k):
       match todo:
         case Nil{}:

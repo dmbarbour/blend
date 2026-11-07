@@ -565,9 +565,9 @@ a copy of a member that is no definition given a line
 === missing_lines markers.emitted
 a copy of a definition not found given a line
 --- blend.bend
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
 +++
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, [Rl{7, 0, Nil{}}]}, Rb{Nil{}, Nil{}, Nil{}}),
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, [Rl{7, 0, Nil{}}]}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
 
 === refs_unnumbered sharing.emitted
 each unit's references taken as the first's: mults reads uses the writer does not
@@ -841,3 +841,200 @@ a law with no proof let pass, written beside the code to stop every run
 +++
     case False{} False{}:
       rest
+
+=== copies_short_silent copies.complete
+a worklist past its fuel drops the instances left silently, as the
+copies' did while their fuel was the root file's definitions
+--- blend.bend
+    case Con{i, t} Cp{rds, ers, done}:
+      Cp{rds, Con{Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " outran their fuel"}, ers}, done}
++++
+    case Con{i, t} Cp{rds, ers, done}:
+      Cp{rds, ers, done}
+
+=== copies_done_unput copies.complete
+an instance copied is not put in the set done
+--- blend.bend
+                  rd => +b => copies.go(k, cx, o, ins.then(t, rb.ins(b)), cp.add(rd, b, Cp{rds, ers, done.put(done, i)}))))
++++
+                  rd => +b => copies.go(k, cx, o, ins.then(t, rb.ins(b)), cp.add(rd, b, Cp{rds, ers, done}))))
+
+=== copies_then_drops copies.complete
+the priors a copy reaches replace the worklist's rest, which is lost
+--- blend.bend
+    case Con{x, r}:
+      List.append(&2, In, t, Con{x, r})
++++
+    case Con{x, r}:
+      Con{x, r}
+
+=== copies_skip_undone copies.complete
+an instance not yet done is skipped, as one done would be
+--- blend.bend
+              when(Cp, done.has(done, i), u => copies.go(k, cx, o, t, Cp{rds, ers, done}),
++++
+              when(Cp, Bool.not(done.has(done, i)), u => copies.go(k, cx, o, t, Cp{rds, ers, done}),
+
+=== copies_no_finals copies.complete
+the worklist starts empty, the finals never taken
+--- blend.bend
+  copies.go(copies.fuel(), cx, o, ins.finals(cx.map(cx, o)), Cp{Nil{}, Nil{}, copies.room(cx)})
++++
+  copies.go(copies.fuel(), cx, o, Nil{}, Cp{Nil{}, Nil{}, copies.room(cx)})
+
+=== copies_add_drops copies.embodied
+an instance is marked done, its copy not added
+--- blend.bend
+      Cp{Con{rd, rds}, List.append(&2, Er, ers, es), done}
++++
+      Cp{rds, List.append(&2, Er, ers, es), done}
+
+=== copies_bad_other copies.embodied
+a member not found is copied as another instance, its prior flag
+flipped
+--- blend.bend
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
++++
+        u => (Rd{In{n, q, Bool.not(prior)}, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
+
+=== copies_node_other copies.embodied
+a definition's copy names another instance, the final for a prior
+--- blend.bend
+          copy.k(In{n, q, prior}, nd,
++++
+          copy.k(In{n, q, False{}}, nd,
+
+=== copies_short_drops copies.embodied
+a worklist past its fuel drops the copies it made, the set kept
+--- blend.bend
+      Cp{rds, Con{Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " outran their fuel"}, ers}, done}
++++
+      Cp{Nil{}, Con{Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " outran their fuel"}, ers}, done}
+
+=== copies_read_short copies.embodied
+the copies read lose the first made
+--- blend.bend
+      List.reverse(&2, Rd, rds)
++++
+      List.reverse(&2, Rd, List.drop(&2, Rd, rds, 1n))
+
+=== copies_missing_silent copies.defined
+a member not found is copied as a placeholder silently, as it was
+--- blend.bend
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
++++
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
+
+=== copies_k_bad copies.defined
+a definition found is copied as a placeholder
+--- blend.bend
+      (Rd{i, nd, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
++++
+      (Rd{i, NBad{Nil{}, 0}, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
+
+=== members_any_name copies.defined
+a member table's lookup takes the first definition, whatever its name
+--- blend.bend
+          when(Maybe<&2, Node>, same(name, n), u => Some{NDef{share, upd, name, rest, params, body, no, ind, what}}, u => mem.find(t, n))
++++
+          when(Maybe<&2, Node>, True{}, u => Some{NDef{share, upd, name, rest, params, body, no, ind, what}}, u => mem.find(t, n))
+
+=== copies_errors_lost copies.defined
+a copy's errors are lost when it is added
+--- blend.bend
+      Cp{Con{rd, rds}, List.append(&2, Er, ers, es), done}
++++
+      Cp{Con{rd, rds}, ers, done}
+
+=== md_puts_order members.indexed
+a member table put in the members' order, so that a leaf holds them
+reversed and finds the last definition of a name, not the first
+--- blend.bend
+      when(Ht<Node>, node.def(nd), u => md.put(md.puts(r, t), nd), u => md.puts(r, t))
++++
+      when(Ht<Node>, node.def(nd), u => md.puts(r, md.put(t, nd)), u => md.puts(r, t))
+
+=== md_puts_nondefs members.indexed
+a member table holds the members other than definitions, not the
+definitions
+--- blend.bend
+      when(Ht<Node>, node.def(nd), u => md.put(md.puts(r, t), nd), u => md.puts(r, t))
++++
+      when(Ht<Node>, node.def(nd), u => md.puts(r, t), u => md.put(md.puts(r, t), nd))
+
+=== md_put_one_hash members.indexed
+a member table puts every definition at one hash
+--- blend.bend
+  +h = hash.name(node.name(nd))
++++
+  +h = hash.name(Nil{})
+
+=== md_find_other_bit members.indexed
+a member table's lookup takes its first step by another bit than a put
+--- blend.bend
+  mem.find(ht.leaf(Node, t, (h .&. 1 : U32), h), n)
++++
+  mem.find(ht.leaf(Node, t, ((h >> 1n : U32) .&. 1 : U32), h), n)
+
+=== upd_other_object folds.chained
+an update puts another object at its entry's chain's head than its own
+--- blend.bend
+          v => Fd{en.set(map, En{name, Con{q, chain}, no, was}, name), fes, ix.put(ix, En{name, Con{q, chain}, no, was})}))
++++
+          v => Fd{en.set(map, En{name, Con{(q + 1 : U32), chain}, no, was}, name), fes, ix.put(ix, En{name, Con{(q + 1 : U32), chain}, no, was})}))
+
+=== def_chain_empty folds.chained
+an introduction's entry in the map has an empty chain
+--- blend.bend
+          v => Fd{Con{En{name, [q], no, what}, map}, fes, ix.put(ix, En{name, [q], no, what})}),
++++
+          v => Fd{Con{En{name, Nil{}, no, what}, map}, fes, ix.put(ix, En{name, [q], no, what})}),
+
+=== mems_other_object folds.chained
+an object's members are folded as another object's
+--- blend.bend
+          fd.mems(t, q, fd.def(q, upd, name, no, what, d))
++++
+          fd.mems(t, q, fd.def((q + 1 : U32), upd, name, no, what, d))
+
+=== upd_other_name folds.chained
+an update finds its chain under another name than its own
+--- blend.bend
+      on.maybe(En, Fd, ix.find(ix, name),
++++
+      on.maybe(En, Fd, ix.find(ix, List.reverse(&2, U32, name)),
+
+=== prior_other_object copies.found
+a prior's instance names the object after the one its chain gives
+--- blend.bend
+    +c => Rr{RR{0, Rf{o, n, True{}, c}}, Nil{}, [In{n, c, True{}}]})
++++
+    +c => Rr{RR{0, Rf{o, n, True{}, c}}, Nil{}, [In{n, (c + 1 : U32), True{}}]})
+
+=== prior_other_chain copies.found
+a prior is sought in the chain of another name than its own
+--- blend.bend
+  on.maybe(U32, Rr, prior.find(en.chain(cx.find(cx, o, n)), after(cx.ord(cx, o), q)),
++++
+  on.maybe(U32, Rr, prior.find(en.chain(cx.find(cx, o, List.reverse(&2, U32, n))), after(cx.ord(cx, o), q)),
+
+=== finals_module copies.found
+a final's instance names the module, not its chain's head
+--- blend.bend
+          Con{In{name, en.head(chain), False{}}, ins.finals(t)}
++++
+          Con{In{name, 0, False{}}, ins.finals(t)}
+
+=== copy_bogus_prior copies.found
+a copy reaches a prior no chain gives
+--- blend.bend
+      (Rd{i, nd, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
++++
+      (Rd{i, nd, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), Con{In{Nil{}, 0, True{}}, List.append(&2, In, hi, more)}})
+
+=== mem_other_object copies.found
+the copies look a member up in the next object's table
+--- blend.bend
+      md.find(md.or(List.get(&2, Ht<Node>, mds, U32.to_nat(q))), n)
++++
+      md.find(md.or(List.get(&2, Ht<Node>, mds, U32.to_nat((q + 1 : U32)))), n)

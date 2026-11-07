@@ -497,6 +497,85 @@ law nodes.copies:
   for +h: {B.objs.within(obs, ds) == True{} : Bool}
   {B.units.held(B.units(B.module.copies(obs, B.Cx{obs, ls, fs, als, paths, pss, nxs, B.mds.of(obs)})), ds) == True{} : Bool}
 
+# LAW: an object's copies leave none of its finals uncopied, whatever
+# module defines them, where they report no error: each instance the
+# copies' worklist takes ends in its set of instances done, copied there
+# or found there, and a worklist past its fuel reports an error rather
+# than drop the rest silently, as one did while its fuel was the root
+# file's definitions (`blend-scale.copies-fuel`).
+# Record: blend-adds-no-bend-logic
+law copies.complete:
+  for +cx: B.Cx
+  for +o: U32
+  for +i: B.In
+  for +hi: {B.ins.has(B.ins.finals(B.cx.map(cx, o)), i) == True{} : Bool}
+  for +he: {B.cp.ers(B.copies(cx, o)) == Nil{} : List<&2, B.Er>}
+  {B.done.has(B.cp.done(B.copies(cx, o)), i) == True{} : Bool}
+
+# LAW: and each instance the copies mark done has its copy among those
+# they make, which become the object's units, one for each
+# (`un.rds`): an instance is put in the set done with its copy added, in
+# one step, and an empty set starts with no copies.
+# Record: blend-adds-no-bend-logic
+law copies.embodied:
+  for +cx: B.Cx
+  for +o: U32
+  for +i: B.In
+  for +hd: {B.done.has(B.cp.done(B.copies(cx, o)), i) == True{} : Bool}
+  {B.rds.has(B.cp.rds(B.copies(cx, o)), i) == True{} : Bool}
+
+# LAW: and where the copies report no error, every copy holds a
+# definition named as its instance, never the placeholder a member not
+# found would get: the member tables find only definitions of the name
+# sought, and a member not found is an error (with `copies.embodied`,
+# every instance done is a definition copied).
+# Record: blend-adds-no-bend-logic
+law copies.defined:
+  for +cx: B.Cx
+  for +o: U32
+  for +he: {B.cp.ers(B.copies(cx, o)) == Nil{} : List<&2, B.Er>}
+  {B.rds.defs(B.cp.rds(B.copies(cx, o))) == True{} : Bool}
+
+# LAW: an object's member table finds what a search of its members
+# finds, the first definition of the name sought, or none: a leaf keeps
+# its entries in their order, and holds every definition whose name
+# hashes there (`blend-scale.copies`), so that the copies find in it
+# every definition the object has.
+# Record: blend-adds-no-bend-logic
+law members.indexed:
+  for +ns: List<&2, B.Node>
+  for +n: List<&2, U32>
+  {B.md.find(B.md.table(ns), n) == B.mem.find(ns, n) : Maybe<&2, B.Node>}
+
+# LAW: every object an entry of a fold names in its chain has a
+# definition of the entry's name among its members, and no chain is
+# empty: an entry is made by a member's definition and updated by one,
+# so that an instance a chain gives, its final or a prior, has its
+# member.
+# Record: blend-adds-no-bend-logic
+law folds.chained:
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +obs: List<&2, B.Ob>
+  for +bad: List<&2, U32>
+  {B.fds.chained(B.folds(ls, obs, bad), obs) == True{} : Bool}
+
+# LAW: and so, in the context emission builds, every copy an object's
+# copies make holds a definition named as its instance, no error
+# assumed: every instance the copies take has its member, the finals'
+# objects their chains' heads, a prior's in the chain of the entry its
+# name finds, and the member tables find what the members' search finds
+# (`members.indexed`); so `copies.defined`'s error never fires.
+# Record: blend-adds-no-bend-logic
+law copies.found:
+  for +ls: List<&2, Maybe<&2, B.Lz>>
+  for +obs: List<&2, B.Ob>
+  for +bad: List<&2, U32>
+  for +als: List<&2, B.Al>
+  for +paths: List<&2, List<&2, U32>>
+  for +pss: List<&2, List<&2, U32>>
+  for +o: U32
+  {B.rds.defs(B.cp.rds(B.copies(B.Cx{obs, ls, B.folds(ls, obs, bad), als, paths, pss, B.nxs.of(B.folds(ls, obs, bad)), B.mds.of(obs)}, o))) == True{} : Bool}
+
 # LAW: every object's members, the made objects' included, are
 # definitions the modules' trees hold: an object's members its node's in
 # the tree, a made object's none or a mixin's.

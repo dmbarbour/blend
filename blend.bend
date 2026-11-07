@@ -3869,12 +3869,16 @@ def md.puts(ns: List<&2, Node>, +t: Ht<Node>) -> Ht<Node>:
     case Con{+nd, +r}:
       when(Ht<Node>, node.def(nd), u => md.put(md.puts(r, t), nd), u => md.puts(r, t))
 
+# an object's member table, on its members (law members.indexed)
+def md.table(+ns: List<&2, Node>) -> Ht<Node>:
+  md.puts(ns, ht.for(Node, List.length(&2, Node, ns)))
+
 def mds.of(obs: List<&2, Ob>) -> List<&2, Ht<Node>>:
   match obs:
     case Nil{}:
       Nil{}
     case Con{+o, t}:
-      Con{md.puts(ob.mems(o), ht.for(Node, List.length(&2, Node, ob.mems(o)))), mds.of(t)}
+      Con{md.table(ob.mems(o)), mds.of(t)}
 
 def md.or(m: Maybe<&2, Ht<Node>>) -> Ht<Node>:
   match m:
@@ -3883,12 +3887,17 @@ def md.or(m: Maybe<&2, Ht<Node>>) -> Ht<Node>:
     case Some{t}:
       t
 
-# q's definition n, as mem.find finds it among q's members
+# a member table's definition n, as mem.find finds it among the members
+# (law members.indexed)
+def md.find(t: Ht<Node>, +n: List<&2, U32>) -> Maybe<&2, Node>:
+  +h = hash.name(n)
+  mem.find(ht.leaf(Node, t, (h .&. 1 : U32), h), n)
+
+# q's definition n
 def cx.mem(c: Cx, +q: U32, +n: List<&2, U32>) -> Maybe<&2, Node>:
   match c:
     case Cx{obs, ls, fs, als, paths, pss, nxs, mds}:
-      +h = hash.name(n)
-      mem.find(ht.leaf(Node, md.or(List.get(&2, Ht<Node>, mds, U32.to_nat(q))), (h .&. 1 : U32), h), n)
+      md.find(md.or(List.get(&2, Ht<Node>, mds, U32.to_nat(q))), n)
 
 def path.name(+path: List<&2, List<&2, U32>>, +n: List<&2, U32>) -> List<&2, U32>:
   match path:
@@ -3937,11 +3946,14 @@ def copy.node(+cx: Cx, +o: U32, i: In, +nd: Node) -> Rd & Rb:
         case _:
           (Rd{In{n, q, prior}, nd, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}})
 
+# an instance's copy: its member's, or an error where it has none
+# (`blend-no-silent-failures`), which emission never meets (law
+# copies.found)
 def copy.of(+cx: Cx, +o: U32, +i: In) -> Rd & Rb:
   match i:
     case In{+n, +q, +prior}:
       on.maybe(Node, Rd & Rb, cx.mem(cx, q, n),
-        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}}),
+        u => (Rd{i, NBad{Nil{}, 0}, Nil{}, Nil{}}, Rb{Nil{}, [Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " found no definition " ++ text(n) ++ " in " ++ ob.name(cx.obs(cx), q)}], Nil{}}),
         nd => copy.node(cx, o, i, nd))
 
 def in.eq(a: In, b: In) -> Bool:
@@ -3992,12 +4004,21 @@ def rb.ins(b: Rb) -> List<&2, In>:
     case Rb{ls, es, more}:
       more
 
-# the worklist of copies: the finals, then each prior reached; fuel, the
-# file's definitions
+# past the fuel: with none left, the copies as they are; else an error,
+# so that no copy is ever dropped silently (law copies.complete,
+# `blend-no-silent-failures`)
+def cp.short(todo: List<&2, In>, +cx: Cx, +o: U32, c: Cp) -> Cp:
+  match todo c:
+    case Nil{} _:
+      c
+    case Con{i, t} Cp{rds, ers, done}:
+      Cp{rds, Con{Er{ob.no(ob.at(cx.obs(cx), o)), "the copies of " ++ ob.name(cx.obs(cx), o) ++ " outran their fuel"}, ers}, done}
+
+# the worklist of copies: the finals, then each prior reached
 def copies.go(n: Nat, +cx: Cx, +o: U32, todo: List<&2, In>, +c: Cp) -> Cp:
   match n:
     case 0n:
-      c
+      cp.short(todo, cx, o, c)
     case 1n++k:
       match todo:
         case Nil{}:
@@ -4102,6 +4123,82 @@ def cp.ers(c: Cp) -> List<&2, Er>:
   match c:
     case Cp{rds, ers, done}:
       ers
+
+def cp.done(c: Cp) -> Ht<In>:
+  match c:
+    case Cp{rds, ers, done}:
+      done
+
+# whether a copy holds a definition named as its instance
+def rd.def(i: In, +nd: Node) -> Bool:
+  match i:
+    case In{n, +q, +p}:
+      node.def(nd) && same(node.name(nd), n)
+
+# whether every copy among rs holds a definition (law copies.defined)
+def rds.defs(rs: List<&2, Rd>) -> Bool:
+  match rs:
+    case Nil{}:
+      True{}
+    case Con{r, t}:
+      match r:
+        case Rd{inst, node, hd, ls}:
+          rd.def(inst, node) && rds.defs(t)
+
+# whether a copy of instance i is among rs (law copies.embodied)
+def rds.has(rs: List<&2, Rd>, +i: In) -> Bool:
+  match rs:
+    case Nil{}:
+      False{}
+    case Con{r, t}:
+      match r:
+        case Rd{inst, node, hd, ls}:
+          in.eq(inst, i) || rds.has(t, i)
+
+# whether each object of cs has a definition named n among its members
+# (law folds.chained)
+def chain.defines(cs: List<&2, U32>, +obs: List<&2, Ob>, +n: List<&2, U32>) -> Bool:
+  match cs:
+    case Nil{}:
+      True{}
+    case Con{+c, t}:
+      Maybe.is_some(&2, Node, mem.find(ob.mems(ob.at(obs, c)), n)) && chain.defines(t, obs, n)
+
+# whether a chain names some object, each with a definition named n
+def chain.ok(cs: List<&2, U32>, +obs: List<&2, Ob>, +n: List<&2, U32>) -> Bool:
+  match cs:
+    case Nil{}:
+      False{}
+    case Con{+c, t}:
+      chain.defines(Con{c, t}, obs, n)
+
+def en.chained(e: En, +obs: List<&2, Ob>) -> Bool:
+  match e:
+    case En{+name, chain, +no, +what}:
+      chain.ok(chain, obs, name)
+
+def ens.chained(es: List<&2, En>, +obs: List<&2, Ob>) -> Bool:
+  match es:
+    case Nil{}:
+      True{}
+    case Con{e, t}:
+      en.chained(e, obs) && ens.chained(t, obs)
+
+def fd.chained(m: Maybe<&2, Fd>, +obs: List<&2, Ob>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{d}:
+      match d:
+        case Fd{map, fes, ix}:
+          ens.chained(map, obs)
+
+def fds.chained(fs: List<&2, Maybe<&2, Fd>>, +obs: List<&2, Ob>) -> Bool:
+  match fs:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      fd.chained(f, obs) && fds.chained(t, obs)
 
 def cp.rds(c: Cp) -> List<&2, Rd>:
   match c:
