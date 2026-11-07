@@ -2,7 +2,7 @@
 
 A law is a `law <name>:` block in a file named LAWS.bend: the `law` line at
 column 0 and the indented lines after it. A Blend module's law members are
-laws too (README.md): in a `.blend` file, a `law <name>:` line at any
+laws too (GUIDE.md): in a `.blend` file, a `law <name>:` line at any
 indentation and the lines indented deeper after it, named by the objects
 it sits in, `Monoid.right_id`. Comments and spacing aside, adding,
 changing or removing one is a law change. A sample's laws are none: a

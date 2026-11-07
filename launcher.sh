@@ -4,9 +4,10 @@
 # checkout it runs. It runs the tool built natively from that checkout,
 # built again when Blend or Bend changes (build.sh); where no native build
 # can be made (no clang, or BLEND_NATIVE=0), `bend blend.bend --`, slower.
-# Its own words: `version`, `rebuild`, `update`; a file first, it runs the
+# Its own words: `guide`, `version`, `rebuild`, `update`; a file first, it runs the
 # module as `bend` runs a .bend; the rest go to the tool.
 #
+#   blend guide      the guide, GUIDE.md
 #   blend version    where it runs from, Blend's source hash, Bend's
 #                    version, and whether natively or through Bend
 #   blend rebuild    the tool built again
@@ -37,6 +38,8 @@ native=1
 command -v clang >/dev/null 2>&1 || native=0
 hash() { { sha256sum "$1" 2>/dev/null || shasum -a 256 "$1"; } | cut -c1-8; }
 case ${1:-} in
+  guide)
+    exec cat "$src/GUIDE.md" ;;
   version)
     at=$(git -C "$src" rev-parse --short HEAD 2>/dev/null) &&
       { [ -z "$(git -C "$src" status --porcelain -- blend.bend 2>/dev/null)" ] || at="$at, blend.bend changed"; }

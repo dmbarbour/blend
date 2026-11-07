@@ -1,6 +1,6 @@
 import Base
 
-# Blend: static objects for Bend (README.md; the plan,
+# Blend: static objects for Bend (GUIDE.md; the plan,
 # docs/plans/Blend_2026-11-04.md). It reads a `.blend` file into its
 # structure (`blend-read`), checks its objects (`blend-objects`), binds
 # the names in each concrete object's copies (`blend-resolve`) and emits
@@ -7461,7 +7461,7 @@ def basename(path: String) -> String:
   base.k(until(List.reverse(&2, U32, codes(path)), 47))
 
 def usage() -> String:
-  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] [--no-check|--verdict] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR, then check with bend those holding laws; --alone those named alone, --no-check none, --verdict by the kernel too\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [--read|--objects|--resolve] [NAME]  a stage, the objects by default; what NAME resolves to, or with --objects that object\n  blend version|rebuild|update              the launcher's own: where blend runs from, a build again, a later Blend\n  blend --help                              this"
+  "usage:\n  blend FILE.blend [args]                   emit its tree, then run it with bend (-o OUT, --check-only, --verdict as bend's)\n  blend emit [--alone] [--no-check|--verdict] FILE.blend... [DIR]  write each module's .bend and its imports' beside them, or into DIR, then check with bend those holding laws; --alone those named alone, --no-check none, --verdict by the kernel too\n  blend deps [--make] FILE.blend...         each module emit would write, current, stale, missing or refused; --make its rules\n  blend show FILE.blend [--read|--objects|--resolve] [NAME]  a stage, the objects by default; what NAME resolves to, or with --objects that object\n  blend guide|version|rebuild|update        the launcher's own: the guide, where blend runs from, a build again, a later Blend\n  blend --help                              this"
 
 # 1 read, 2 objects, 3 resolve, 4 emit
 def run(+cmd: U32, +files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +q: List<&2, U32>, +paths: List<&2, List<&2, U32>>, +trees: List<&2, List<&2, Node>>) -> Out:

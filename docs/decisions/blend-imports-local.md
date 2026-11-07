@@ -28,4 +28,4 @@ check; importing a package's Blend files is not supported yet
   written through the root's re-imports.
 - Blend refuses some paths Bend takes.
 
-**Rule lives in:** `README.md`, Imports.
+**Rule lives in:** `GUIDE.md`, Imports.

@@ -21,4 +21,4 @@ linearization, never an order that breaks one it merges.
 - The laws `c3.sound`, `c3.complete` and `c3.first` hold the merge to
   this (`blend-laws.c3`).
 
-**Rule lives in:** `README.md`, The model.
+**Rule lives in:** `GUIDE.md`, Objects.

@@ -21,4 +21,4 @@ included: `Obj.h` with `Obj.f`, `Obj.h.c1` with `Obj.f.c1`.
 - The sample `sharing` emits `Arith.inc` beside `Arith.inc.c1` and
   `Arith.inc.c2`.
 
-**Rule lives in:** `README.md`, The model.
+**Rule lives in:** `GUIDE.md`, Sharing.

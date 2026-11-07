@@ -41,4 +41,4 @@ checker and adds no Bend logic of its own (`blend-adds-no-bend-logic`).
 - The samples `declares`, `declare-twice`, `declare-no-type`,
   `declare-misfit`, `declare-kind`.
 
-**Rule lives in:** `README.md`, The model.
+**Rule lives in:** `GUIDE.md`, Types and declarations.

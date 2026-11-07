@@ -2,7 +2,7 @@
 # The .blend line an emitted .bend line comes from, for Bend's errors on
 # emitted code: the nearest marker above it (`# blend: FILE:LINE`, before
 # each definition) names its definition's line, and each line of the
-# definition after it is the source's next (README.md).
+# definition after it is the source's next (GUIDE.md).
 #
 #   where.sh FILE.bend LINE    prints FILE.blend:LINE
 set -u
