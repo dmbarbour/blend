@@ -7200,11 +7200,13 @@ def al.tos(als: List<&2, Al>, +from: U32) -> List<&2, U32>:
           when(List<&2, U32>, U32.is_eq(f, from), u => Con{to, al.tos(t, from)}, u => al.tos(t, from))
 
 # whether target is reached from front by imports; fuel, the imports' count
-# and one, as each module is followed once
+# and two, as each module is followed once and each import pushed once.
+# Past it, reached: a cycle reported where one may hide, never one hidden
+# (`blend-no-silent-failures`, `blend-laws2.fuels`)
 def reach.go(n: Nat, +als: List<&2, Al>, front: List<&2, U32>, +seen: List<&2, U32>, +target: U32) -> Bool:
   match n:
     case 0n:
-      False{}
+      True{}
     case 1n++k:
       match front:
         case Nil{}:

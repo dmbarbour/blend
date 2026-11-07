@@ -1086,3 +1086,24 @@ emission writes its files past its errors
       ers.out(files, srcs, Con{x, t})
 +++
       Outs{[Fo{root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf)}]}
+
+=== flat_fuel_short flat.fuel
+the lines read into items on a fuel one short of their count
+--- blend.bend
+  flat.go(List.length(&2, Ln, ls), ls, Nil{})
++++
+  flat.go(Nat.sub(List.length(&2, Ln, ls), 1n), ls, Nil{})
+
+=== flat_line_kept flat.fuel
+a line read into an item and read again, the turn taking none
+--- blend.bend
+                u => flat.go(m, t, when(List<&2, Item>, is.member.type(txt), v => Con{type.item(txt, no, ind), out}, v => flat.item.k(txt, no, ind, out))))
++++
+                u => flat.go(m, Con{Ln{no, ind, txt}, t}, when(List<&2, Item>, is.member.type(txt), v => Con{type.item(txt, no, ind), out}, v => flat.item.k(txt, no, ind, out))))
+
+=== close_fuel_short close.fuel
+objects closed on a fuel one short of the stack's height
+--- blend.bend
+  close.go(List.length(&2, Fr, st), st, i)
++++
+  close.go(Nat.sub(List.length(&2, Fr, st), 1n), st, i)

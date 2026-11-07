@@ -1241,3 +1241,23 @@ law errors.emitted:
   for +es: List<&2, B.Er>
   for +h: {B.out.ok(B.emit.out(files, srcs, e, order, tree, more, lw, pf, es)) == True{} : Bool}
   {es == Nil{} : List<&2, B.Er>}
+
+# LAW: the reading's loops run on fuel enough (`blend-laws2.fuels`): the
+# lines read into items take one turn each at most, a header taking its
+# body, so that more fuel than lines changes nothing, and no line is
+# ever dropped for want of it (`flat.go`).
+# Record: blend-no-silent-failures
+law flat.fuel:
+  for +ls: List<&2, B.Ln>
+  for +k: Nat
+  {B.flat.go(Nat.add(k, List.length(&2, B.Ln, ls)), ls, Nil{}) == B.flat(ls) : List<&2, B.Item>}
+
+# LAW: and objects closed take a frame each, so that more fuel than the
+# stack's height changes nothing (`close.go`).
+# Record: blend-no-silent-failures
+law close.fuel:
+  for +st: List<&2, B.Fr>
+  for +i: U32
+  for +k: Nat
+  {B.close.go(Nat.add(k, List.length(&2, B.Fr, st)), st, i) == B.close(st, i) : List<&2, B.Fr>}
+
