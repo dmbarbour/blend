@@ -94,6 +94,13 @@
 #   growing through the worklist (`ers_back`), so the result's none
 #   brings each copy's own none; a lookup returning only definitions of
 #   the name sought (`mem_find_def`, its `when` mirrored in `mfd_k`).
+# - The member tables indexed (`members.indexed`): a map's argument, no
+#   arithmetic of the trie's path (`blend-units-keyed`): a put of the
+#   name sought is first in its leaf (`leaf_put`, after rewriting the
+#   searched name to the put one, `names.same_eq`), a put the search
+#   passes over leaves the search as it was wherever it lands
+#   (`mf_other`, the passing given as a function used once per branch);
+#   an empty trie's leaves (`empty_leaf`, made generic in what it holds).
 # - Mutate the code after a proof passes: a law that survives a mutation
 #   claims less than meant.
 
@@ -6727,7 +6734,7 @@ def done_split(+t: B.Ht<B.In>, +i: B.In, +j: B.In, hs: {B.done.has(B.done.put(t,
   ins_split(32n, t, (B.in.hash(j) .&. 1 : U32), B.in.hash(j), (B.in.hash(i) .&. 1 : U32), B.in.hash(i), i, j, hs)
 
 # an empty trie's leaves are empty
-def empty_leaf(d: Nat, f: Nat, +b: U32, +h: U32) -> {Nil{} == B.ht.leaf.go(B.In, f, B.ht.empty(B.In, d), b, h) : List<&2, B.In>}:
+def empty_leaf(-A: Data, d: Nat, f: Nat, +b: U32, +h: U32) -> {Nil{} == B.ht.leaf.go(A, f, B.ht.empty(A, d), b, h) : List<&2, A>}:
   match d:
     case 0n:
       match f:
@@ -6740,8 +6747,8 @@ def empty_leaf(d: Nat, f: Nat, +b: U32, +h: U32) -> {Nil{} == B.ht.leaf.go(B.In,
         case 0n:
           {==}
         case 1n+(+g):
-          %Equal.sym(B.Ht<B.In>, B.ht.pick(B.In, U32.is_eq(b, 0), B.ht.empty(B.In, k), B.ht.empty(B.In, k)), B.ht.empty(B.In, k), pick_same(B.In, U32.is_eq(b, 0), B.ht.empty(B.In, k))) : {Nil{} == B.ht.leaf.go(B.In, g, _, nb(h), nh(h)) : List<&2, B.In>}
-          empty_leaf(k, g, nb(h), nh(h))
+          %Equal.sym(B.Ht<A>, B.ht.pick(A, U32.is_eq(b, 0), B.ht.empty(A, k), B.ht.empty(A, k)), B.ht.empty(A, k), pick_same(A, U32.is_eq(b, 0), B.ht.empty(A, k))) : {Nil{} == B.ht.leaf.go(A, g, _, nb(h), nh(h)) : List<&2, A>}
+          empty_leaf(A, k, g, nb(h), nh(h))
 
 # the copies' predicate: a copy of j among those made
 def prd(c: B.Cp, +j: B.In) -> Bool:
@@ -6832,7 +6839,7 @@ def cm_go(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp, +j: B.In,
 def room_none(+cx: B.Cx, +j: B.In, h: {B.done.has(B.copies.room(cx), j) == True{} : Bool}) -> {prd(B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, j) == True{} : Bool}:
   Empty.absurd({prd(B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, j) == True{} : Bool}, MB.false_ne_true()(
     (%Equal.sym(List<&2, B.In>, Nil{}, B.ht.leaf.go(B.In, 32n, B.ht.empty(B.In, B.ht.depth(32n, U32.from_nat(1n+B.mods.count(B.cx.obs(cx))))), (B.in.hash(j) .&. 1 : U32), B.in.hash(j)),
-        empty_leaf(B.ht.depth(32n, U32.from_nat(1n+B.mods.count(B.cx.obs(cx)))), 32n, (B.in.hash(j) .&. 1 : U32), B.in.hash(j))) : {B.ins.has(_, j) == True{} : Bool}
+        empty_leaf(B.In, B.ht.depth(32n, U32.from_nat(1n+B.mods.count(B.cx.obs(cx)))), 32n, (B.in.hash(j) .&. 1 : U32), B.in.hash(j))) : {B.ins.has(_, j) == True{} : Bool}
     h)))
 
 def Laws.copies.embodied(cx, o, i, hd):
@@ -7109,6 +7116,116 @@ def pdef_rds(c: B.Cp, h: {pdef(c) == True{} : Bool}) -> {B.rds.defs(B.cp.rds(c))
 def Laws.copies.defined(cx, o, he):
   pdef_rds(B.copies(cx, o),
     dg_go(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)), B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, {==}, he))
+
+# The member tables indexed (`members.indexed`)
+# ---------------------------------------------
+#
+# A member table finds what a search of the members finds: a put of a
+# definition of the name sought is first in the leaf of its hash
+# (`leaf_put`), and a put of anything the search passes over leaves the
+# search as it was, whatever leaf it lands in (`mf_other`), the
+# positional table's argument (`blend-units-keyed`), so that no arithmetic
+# of the trie's path is needed; the table starts with every leaf empty
+# (`empty_leaf`).
+
+# a put the search for n passes over leaves the search's leaf as it was
+def mfo.k(c2: Bool, c: Bool, +k: Nat, +z: B.Ht<B.Node>, +o: B.Ht<B.Node>, +b: U32, +h: U32, +h2: U32, +m: B.Node, +n: List<&2, U32>,
+    +eq: {c == U32.is_eq(b, 0) : Bool},
+    ih: @s:B.Ht<B.Node> -> {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.put.go(B.Node, k, s, nb(h2), nh(h2), m), nb(h), nh(h)), n) == B.mem.find(B.ht.leaf.go(B.Node, k, s, nb(h), nh(h)), n) : Maybe<&2, B.Node>}) ->
+    {B.mem.find(B.ht.leaf.go(B.Node, 1n+k, B.ht.join(B.Node, c2, B.ht.put.go(B.Node, k, B.ht.pick(B.Node, c2, z, o), nb(h2), nh(h2), m), B.ht.pick(B.Node, c2, o, z)), b, h), n) ==
+      B.mem.find(B.ht.leaf.go(B.Node, 1n+k, B.HNode{z, o}, b, h), n) : Maybe<&2, B.Node>}:
+  match c2 c:
+    case True{} True{}:
+      %eq : {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, B.ht.put.go(B.Node, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), n) ==
+        B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, o), nb(h), nh(h)), n) : Maybe<&2, B.Node>}
+      ih(z)
+    case True{} False{}:
+      %eq : {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, B.ht.put.go(B.Node, k, z, nb(h2), nh(h2), m), o), nb(h), nh(h)), n) ==
+        B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, o), nb(h), nh(h)), n) : Maybe<&2, B.Node>}
+      {==}
+    case False{} True{}:
+      %eq : {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, B.ht.put.go(B.Node, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), n) ==
+        B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, o), nb(h), nh(h)), n) : Maybe<&2, B.Node>}
+      {==}
+    case False{} False{}:
+      %eq : {B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, B.ht.put.go(B.Node, k, o, nb(h2), nh(h2), m)), nb(h), nh(h)), n) ==
+        B.mem.find(B.ht.leaf.go(B.Node, k, B.ht.pick(B.Node, _, z, o), nb(h), nh(h)), n) : Maybe<&2, B.Node>}
+      ih(o)
+
+def mf_other(fuel: Nat, t: B.Ht<B.Node>, +b: U32, +h: U32, +b2: U32, +h2: U32, +m: B.Node, +n: List<&2, U32>,
+    skip: @l:List<&2, B.Node> -> {B.mem.find(Con{m, l}, n) == B.mem.find(l, n) : Maybe<&2, B.Node>}) ->
+    {B.mem.find(B.ht.leaf.go(B.Node, fuel, B.ht.put.go(B.Node, fuel, t, b2, h2, m), b, h), n) == B.mem.find(B.ht.leaf.go(B.Node, fuel, t, b, h), n) : Maybe<&2, B.Node>}:
+  match fuel:
+    case 0n:
+      match t:
+        case B.HLeaf{es}:
+          skip(es)
+        case B.HNode{z, o}:
+          skip(Nil{})
+    case 1n+(+k):
+      match t:
+        case B.HLeaf{es}:
+          skip(es)
+        case B.HNode{+z, +o}:
+          mfo.k(U32.is_eq(b2, 0), U32.is_eq(b, 0), k, z, o, b, h, h2, m, n, {==},
+            s => mf_other(k, s, nb(h), nh(h), nb(h2), nh(h2), m, n, skip))
+
+# a definition put, then searched for: found first where it has the name
+# sought, else the search of what was there
+def mfs.k(c: Bool, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: U32, +ind: U32, +what: U32,
+    +t: B.Ht<B.Node>, r: List<&2, B.Node>, +n: List<&2, U32>, +eq: {c == B.same(name, n) : Bool},
+    ih: {B.mem.find(B.ht.leaf(B.Node, t, U32.and(B.hash.name(n), 1), B.hash.name(n)), n) == B.mem.find(r, n) : Maybe<&2, B.Node>}) ->
+    {B.mem.find(B.ht.leaf(B.Node, B.ht.put(B.Node, t, U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}), U32.and(B.hash.name(n), 1), B.hash.name(n)), n) ==
+      B.when(Maybe<&2, B.Node>, c, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(r, n)) : Maybe<&2, B.Node>}:
+  match c:
+    case True{}:
+      %Laws.names.same_eq(name, n, Equal.sym(Bool, True{}, B.same(name, n), eq)) :
+        {B.mem.find(B.ht.leaf(B.Node, B.ht.put(B.Node, t, U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}), U32.and(B.hash.name(_), 1), B.hash.name(_)), _) ==
+          Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}} : Maybe<&2, B.Node>}
+      %leaf_put(B.Node, 32n, t, U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}) :
+        {B.mem.find(_, name) == Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}} : Maybe<&2, B.Node>}
+      %Equal.sym(Bool, B.same(name, name), True{}, Laws.names.same_refl(name)) :
+        {B.when(Maybe<&2, B.Node>, _, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(B.ht.leaf(B.Node, t, U32.and(B.hash.name(name), 1), B.hash.name(name)), name)) ==
+          Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}} : Maybe<&2, B.Node>}
+      {==}
+    case False{}:
+      Equal.trans(Maybe<&2, B.Node>,
+        B.mem.find(B.ht.leaf(B.Node, B.ht.put(B.Node, t, U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}), U32.and(B.hash.name(n), 1), B.hash.name(n)), n),
+        B.mem.find(B.ht.leaf(B.Node, t, U32.and(B.hash.name(n), 1), B.hash.name(n)), n),
+        B.mem.find(r, n),
+        mf_other(32n, t, U32.and(B.hash.name(n), 1), B.hash.name(n), U32.and(B.hash.name(name), 1), B.hash.name(name), B.NDef{share, upd, name, rest, params, body, no, ind, what}, n,
+          l => (%eq : {B.when(Maybe<&2, B.Node>, _, u => Some{B.NDef{share, upd, name, rest, params, body, no, ind, what}}, u => B.mem.find(l, n)) == B.mem.find(l, n) : Maybe<&2, B.Node>}
+            {==})),
+        ih)
+
+# a table of the members put on one whose leaf for n is empty
+def md_puts(ns: List<&2, B.Node>, +t: B.Ht<B.Node>, +n: List<&2, U32>,
+    +he: {Nil{} == B.ht.leaf(B.Node, t, U32.and(B.hash.name(n), 1), B.hash.name(n)) : List<&2, B.Node>}) ->
+    {B.mem.find(B.ht.leaf(B.Node, B.md.puts(ns, t), U32.and(B.hash.name(n), 1), B.hash.name(n)), n) == B.mem.find(ns, n) : Maybe<&2, B.Node>}:
+  match ns:
+    case Nil{}:
+      %he : {B.mem.find(_, n) == None{} : Maybe<&2, B.Node>}
+      {==}
+    case Con{nd, +r}:
+      match nd:
+        case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
+          mfs.k(B.same(name, n), share, upd, name, rest, params, body, no, ind, what, B.md.puts(r, t), r, n, {==}, md_puts(r, t, n, he))
+        case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
+          md_puts(r, t, n, he)
+        case B.NImport{+txt, +no}:
+          md_puts(r, t, n, he)
+        case B.NDecl{+names, +no}:
+          md_puts(r, t, n, he)
+        case B.NBad{+txt, +no}:
+          md_puts(r, t, n, he)
+        case B.NErr{+msg, +no}:
+          md_puts(r, t, n, he)
+        case B.NBend{+lines, +no}:
+          md_puts(r, t, n, he)
+
+def Laws.members.indexed(ns, n):
+  md_puts(ns, B.ht.for(B.Node, List.length(&2, B.Node, ns)), n,
+    empty_leaf(B.Node, B.ht.depth(32n, U32.from_nat(List.length(&2, B.Node, ns))), 32n, U32.and(B.hash.name(n), 1), B.hash.name(n)))
 
 def tok_refl(t: B.Tok) -> {B.tok.same(t, t) == True{} : Bool}:
   match t:

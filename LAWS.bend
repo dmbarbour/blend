@@ -536,6 +536,17 @@ law copies.defined:
   for +he: {B.cp.ers(B.copies(cx, o)) == Nil{} : List<&2, B.Er>}
   {B.rds.defs(B.cp.rds(B.copies(cx, o))) == True{} : Bool}
 
+# LAW: an object's member table finds what a search of its members
+# finds, the first definition of the name sought, or none: a leaf keeps
+# its entries in their order, and holds every definition whose name
+# hashes there (`blend-scale.copies`), so that the copies find in it
+# every definition the object has.
+# Record: blend-adds-no-bend-logic
+law members.indexed:
+  for +ns: List<&2, B.Node>
+  for +n: List<&2, U32>
+  {B.md.find(B.md.table(ns), n) == B.mem.find(ns, n) : Maybe<&2, B.Node>}
+
 # LAW: every object's members, the made objects' included, are
 # definitions the modules' trees hold: an object's members its node's in
 # the tree, a made object's none or a mixin's.

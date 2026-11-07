@@ -3869,12 +3869,16 @@ def md.puts(ns: List<&2, Node>, +t: Ht<Node>) -> Ht<Node>:
     case Con{+nd, +r}:
       when(Ht<Node>, node.def(nd), u => md.put(md.puts(r, t), nd), u => md.puts(r, t))
 
+# an object's member table, on its members (law members.indexed)
+def md.table(+ns: List<&2, Node>) -> Ht<Node>:
+  md.puts(ns, ht.for(Node, List.length(&2, Node, ns)))
+
 def mds.of(obs: List<&2, Ob>) -> List<&2, Ht<Node>>:
   match obs:
     case Nil{}:
       Nil{}
     case Con{+o, t}:
-      Con{md.puts(ob.mems(o), ht.for(Node, List.length(&2, Node, ob.mems(o)))), mds.of(t)}
+      Con{md.table(ob.mems(o)), mds.of(t)}
 
 def md.or(m: Maybe<&2, Ht<Node>>) -> Ht<Node>:
   match m:
@@ -3883,12 +3887,17 @@ def md.or(m: Maybe<&2, Ht<Node>>) -> Ht<Node>:
     case Some{t}:
       t
 
-# q's definition n, as mem.find finds it among q's members
+# a member table's definition n, as mem.find finds it among the members
+# (law members.indexed)
+def md.find(t: Ht<Node>, +n: List<&2, U32>) -> Maybe<&2, Node>:
+  +h = hash.name(n)
+  mem.find(ht.leaf(Node, t, (h .&. 1 : U32), h), n)
+
+# q's definition n
 def cx.mem(c: Cx, +q: U32, +n: List<&2, U32>) -> Maybe<&2, Node>:
   match c:
     case Cx{obs, ls, fs, als, paths, pss, nxs, mds}:
-      +h = hash.name(n)
-      mem.find(ht.leaf(Node, md.or(List.get(&2, Ht<Node>, mds, U32.to_nat(q))), (h .&. 1 : U32), h), n)
+      md.find(md.or(List.get(&2, Ht<Node>, mds, U32.to_nat(q))), n)
 
 def path.name(+path: List<&2, List<&2, U32>>, +n: List<&2, U32>) -> List<&2, U32>:
   match path:

@@ -945,3 +945,33 @@ a copy's errors are lost when it is added
       Cp{Con{rd, rds}, List.append(&2, Er, ers, es), done}
 +++
       Cp{Con{rd, rds}, ers, done}
+
+=== md_puts_order members.indexed
+a member table put in the members' order, so that a leaf holds them
+reversed and finds the last definition of a name, not the first
+--- blend.bend
+      when(Ht<Node>, node.def(nd), u => md.put(md.puts(r, t), nd), u => md.puts(r, t))
++++
+      when(Ht<Node>, node.def(nd), u => md.puts(r, md.put(t, nd)), u => md.puts(r, t))
+
+=== md_puts_nondefs members.indexed
+a member table holds the members other than definitions, not the
+definitions
+--- blend.bend
+      when(Ht<Node>, node.def(nd), u => md.put(md.puts(r, t), nd), u => md.puts(r, t))
++++
+      when(Ht<Node>, node.def(nd), u => md.puts(r, t), u => md.put(md.puts(r, t), nd))
+
+=== md_put_one_hash members.indexed
+a member table puts every definition at one hash
+--- blend.bend
+  +h = hash.name(node.name(nd))
++++
+  +h = hash.name(Nil{})
+
+=== md_find_other_bit members.indexed
+a member table's lookup takes its first step by another bit than a put
+--- blend.bend
+  mem.find(ht.leaf(Node, t, (h .&. 1 : U32), h), n)
++++
+  mem.find(ht.leaf(Node, t, ((h >> 1n : U32) .&. 1 : U32), h), n)
