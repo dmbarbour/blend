@@ -1,5 +1,5 @@
 # Written by Blend from declares.blend; do not edit.
-# blend stamp: eec4e8aaf12a 742056af9e6ac4f3
+# blend stamp: 78e54ed99292 8f5ebfa0f2053d2a
 import Base
 
 # blend: declares.blend:12
