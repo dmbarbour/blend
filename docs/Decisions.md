@@ -62,6 +62,14 @@ Blend is a command of its own, shaped as Bend's and installed beside it.
   and the command; the README motivates and gets a user started; their
   examples whole modules the gate emits and checks.
 
+## Failures
+
+Blend reports what it cannot do.
+
+- [`blend-no-silent-failures`](decisions/blend-no-silent-failures.md): a
+  failure no law prevents is reported as an error, never handled
+  silently; a law may then claim its property where none is reported.
+
 ## The model
 
 Blend translates static objects into Bend and adds no logic of its own;

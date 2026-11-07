@@ -3946,6 +3946,9 @@ def copy.node(+cx: Cx, +o: U32, i: In, +nd: Node) -> Rd & Rb:
         case _:
           (Rd{In{n, q, prior}, nd, Nil{}, Nil{}}, Rb{Nil{}, Nil{}, Nil{}})
 
+# an instance's copy: its member's, or an error where it has none
+# (`blend-no-silent-failures`), which emission never meets (law
+# copies.found)
 def copy.of(+cx: Cx, +o: U32, +i: In) -> Rd & Rb:
   match i:
     case In{+n, +q, +prior}:
@@ -4002,7 +4005,8 @@ def rb.ins(b: Rb) -> List<&2, In>:
       more
 
 # past the fuel: with none left, the copies as they are; else an error,
-# so that no copy is ever dropped silently (law copies.complete)
+# so that no copy is ever dropped silently (law copies.complete,
+# `blend-no-silent-failures`)
 def cp.short(todo: List<&2, In>, +cx: Cx, +o: U32, c: Cp) -> Cp:
   match todo c:
     case Nil{} _:
