@@ -10,12 +10,12 @@ the objects are gone.
 - **Configurations that mix.** An object may extend several, each
   contributing its choices, combined in a fixed order (C3); `Bold` and
   `Loud` make `BoldLoud` without either knowing of the other.
-- **Fast as written by hand.** Bend compiles a chain of functions into
-  one segment only while each function has a single caller. A hook
-  passed as a template argument threads through every signature, and a
-  helper two variants share has two callers. Blend gives each object its
-  own copy of every definition it inherits, so each variant folds on its
-  own; sharing is asked for, never accidental.
+- **Fast as written by hand.** Bend folds a chain of functions into one
+  compiled segment only while each has a single caller; a helper two
+  variants share has two, and a hook passed as a `~` argument threads
+  every signature. Blend gives each object its own copy of every
+  definition it inherits, so each variant folds on its own; sharing is
+  asked for, never accidental.
 - **Laws per family.** A law stated once in an abstract object is
   instantiated, and proved, for each concrete family, and Bend checks
   it.
@@ -61,15 +61,14 @@ slower. Releases are planned; for now, from a checkout:
     git clone https://github.com/dmbarbour/blend
     sh blend/install.sh
 
-That puts `blend` beside `bend`, in `~/.bend/bin`. Then:
+That puts `blend` beside `bend`, in `~/.bend/bin`. Then, in
+`blend/samples/`:
 
     blend family.blend        write family.bend, then run it with bend
-    blend emit family.blend   write it, and have bend check its laws
+    blend emit monoid.blend   write monoid.bend, and have bend check its laws
     blend guide               the language, what Blend writes, the command
+                              (GUIDE.md)
     blend --help
-
-Errors come in Bend's shape, and an error Bend reports on a written line
-is followed by the `.blend` line it comes from.
 
 ## Working on Blend
 

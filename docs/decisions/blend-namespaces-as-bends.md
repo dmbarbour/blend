@@ -46,7 +46,7 @@ refused by another's: the module stays one, as a Bend file is.
 - A name the user writes may not begin `Blend_`. The root's namespace is
   no larger for what it inherits: a name it did not import fails in
   Bend, however its inheritance runs.
-- The sample `imports` copies a datatype (`S.Dim`) and a plain Bend
+- The sample `namespaces` copies a datatype (`D.Dim`) and a plain Bend
   import (`Blend_1`); `reserved-prefix` fails.
 - Known short of it: Blend identifies a module by its path made plain,
   where Bend goes by the file a path resolves to, so a symlinked
