@@ -1,4 +1,5 @@
 import Base
+import ./blend_stamp.bend as Stamp
 
 # Blend: static objects for Bend (GUIDE.md; the plan,
 # docs/plans/Blend_2026-11-04.md). It reads a `.blend` file into its
@@ -7974,11 +7975,11 @@ def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>
 # emitting it again; `emit` leaves an import so stamped as it is, and
 # `deps` reads the line.
 
-# what Blend writes, by version: bumped whenever its output changes, as
-# the gate requires (check_generated.sh), so that a Blend newer in all
-# else leaves current what it would write the same
+# the format of what Blend writes: blend.bend's hash (blend_stamp.sh,
+# which the pre-commit hook runs), so that every change to Blend leaves stale
+# what it wrote (`blend-stamps`)
 def blend.format() -> List<&2, U32>:
-  codes("1")
+  codes(Stamp.hash())
 
 # FNV-1a, its multiplier given, a value at a time
 def hash.lane(xs: List<&2, U32>, +h: U32, +m: U32) -> U32:

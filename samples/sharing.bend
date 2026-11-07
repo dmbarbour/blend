@@ -1,5 +1,5 @@
 # Written by Blend from sharing.blend; do not edit.
-# blend stamp: 1 2ab40755c09bfe25
+# blend stamp: daafbb8ba9f9 4eec9d099e44b2af
 import Base
 
 # blend: sharing.blend:4
