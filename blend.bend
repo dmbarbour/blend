@@ -7891,12 +7891,30 @@ def md.todo(+path: List<&2, U32>, m: Maybe<&2, List<&2, U32>>, +k: U32) -> List<
     case Some{+bs}:
       md.next(path, bs, k)
 
-# the modules, breadth first from the root, each once; fuel, the files
-# read at most
+# the reading's fuel: past any tree, each turn taking one import as
+# written and a module read once. It was 4096 turns, and an import graph
+# dense enough lost its later modules silently
+# (`blend-laws2.modules-read`)
+def load.fuel() -> Nat:
+  4294967295n
+
+# past the fuel, each import left as a module not read, so that its error
+# says so (`mds.ers`), never dropped silently (`blend-no-silent-failures`)
+def load.short(todo: List<&2, Td>, +mods: List<&2, Md>) -> List<&2, Md>:
+  match todo:
+    case Nil{}:
+      mods
+    case Con{td, t}:
+      match td:
+        case Td{+path, +from}:
+          load.short(t, Con{Md{path, Nil{}, False{}, from}, mods})
+
+# the modules, breadth first from the root, each once; fuel, its turns,
+# each an import as written
 def load.go(n: Nat, todo: List<&2, Td>, +mods: List<&2, Md>) -> IO(List<&2, Md>):
   match n:
     case 0n:
-      IO.pure(List<&2, Md>, List.reverse(&2, Md, mods))
+      IO.pure(List<&2, Md>, List.reverse(&2, Md, load.short(todo, mods)))
     case 1n++k:
       match todo:
         case Nil{}:
@@ -7911,12 +7929,12 @@ def load.go(n: Nat, todo: List<&2, Td>, +mods: List<&2, Md>) -> IO(List<&2, Md>)
 
 def main.file(+cmd: U32, +path: String) -> IO(Unit):
   do IO<Unit>:
-    ms : List<&2, Md> <- load.go(4096n, [Td{codes(path), 0}], Nil{})
+    ms : List<&2, Md> <- load.go(load.fuel(), [Td{codes(path), 0}], Nil{})
     main.out(run.mods(cmd, ms))
 
 def main.file.q(+cmd: U32, +q: List<&2, U32>, +path: String) -> IO(Unit):
   do IO<Unit>:
-    ms : List<&2, Md> <- load.go(4096n, [Td{codes(path), 0}], Nil{})
+    ms : List<&2, Md> <- load.go(load.fuel(), [Td{codes(path), 0}], Nil{})
     main.out(run.mods.q(cmd, q, ms))
 
 # `show FILE.blend [--read|--objects|--resolve] [NAME]`: a view is a
@@ -8063,7 +8081,7 @@ def verify.deps(ds: List<&2, List<&2, U32>>, acc: List<&2, Ck>, fs: List<&2, Fo>
     case Nil{}:
       verify.cks(acc, Nil{}, fs)
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{d, 0}], Nil{}),
         +ms => verify.deps(dt, List.append(&2, Ck, acc, dep.checks(run.mods(4, ms), d)), fs))
 
 # Stamps (`blend-cli.stamps`, `blend-stamps`): each file Blend writes
@@ -8541,7 +8559,7 @@ def emit.deps(ds: List<&2, List<&2, U32>>, +force: Bool, st: Em) -> IO(Em):
     case Nil{}:
       IO.pure(Em, st)
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Em, load.go(4096n, [Td{d, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Em, load.go(load.fuel(), [Td{d, 0}], Nil{}),
         +ms => IO.bind(Maybe<&2, List<&2, U32>>, Em, read.file(bend.of(d)),
           +m => emit.deps(dt, force, em.dep(em.fresh(force, m, d, ms), st, d, ms, m))))
 
@@ -8598,7 +8616,7 @@ def main.emit.go(ps: List<&2, String>, +alone: Bool, +force: Bool, +mode: U32, +
     case Nil{}:
       emit.end(st, alone, force, mode, deps.missed(deps, named, Nil{}))
     case Con{+p, t}:
-      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{codes(p), 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{codes(p), 0}], Nil{}),
         +ms => IO.bind(Maybe<&2, List<&2, U32>>, Unit, read.file(bend.of(codes(p))),
           +m => main.emit.go(t, alone, force, mode, named, List.append(&2, List<&2, U32>, deps, List.tail(&2, List<&2, U32>, mds.paths(ms))),
             em.dep(em.fresh(force, m, codes(p), ms), st, codes(p), ms, m))))
@@ -8764,7 +8782,7 @@ def deps.go(ds: List<&2, List<&2, U32>>, +make: Bool, +bytes: Bool, +bad: Bool) 
     case Nil{}:
       when(IO(Unit), bad, u => IO.exit(1), u => IO.pure(Unit, Unit{}))
     case Con{+d, dt}:
-      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{d, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{d, 0}], Nil{}),
         +ms => IO.bind(Maybe<&2, List<&2, U32>>, Unit, read.file(bend.of(d)),
           m => IO.bind(U32, Unit, deps.state(m, bytes, d, ms),
             +st => IO.bind(Unit, Unit, dep.say(make, st, d, ms), u => deps.go(dt, make, bytes, bad || dep.bad(make, st))))))
@@ -8776,7 +8794,7 @@ def deps.gather(ps: List<&2, List<&2, U32>>, +make: Bool, +bytes: Bool, +named: 
     case Nil{}:
       deps.go(List.append(&2, List<&2, U32>, deps.missed(ds, named, Nil{}), named), make, bytes, False{})
     case Con{+p, t}:
-      IO.bind(List<&2, Md>, Unit, load.go(4096n, [Td{p, 0}], Nil{}),
+      IO.bind(List<&2, Md>, Unit, load.go(load.fuel(), [Td{p, 0}], Nil{}),
         +ms => deps.gather(t, make, bytes, named, List.append(&2, List<&2, U32>, ds, List.tail(&2, List<&2, U32>, mds.paths(ms)))))
 
 def main.deps.k(+make: Bool, +bytes: Bool, +xs: List<&2, String>) -> IO(Unit):
