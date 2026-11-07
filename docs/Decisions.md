@@ -68,7 +68,8 @@ Blend reports what it cannot do.
 
 - [`blend-no-silent-failures`](decisions/blend-no-silent-failures.md): a
   failure no law prevents is reported as an error, never handled
-  silently; a law may then claim its property where none is reported.
+  silently; a law may then claim its property where none is reported,
+  and a report a law proves unreachable may go.
 
 ## The model
 
