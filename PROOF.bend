@@ -17041,6 +17041,35 @@ def ck_go(xs: List<&2, B.Wr>, +fs: List<&2, List<&2, U32>>, +ms: List<&2, List<&
 def Laws.checks.cover(ls):
   ck_go(ls, B.wrs.pick(ls, ls), B.wrs.missed(ls, B.wrs.pick(ls, ls), ls), ls, nms_refl(B.wrs.missed(ls, B.wrs.pick(ls, ls), ls)))
 
+# Checks detect (`checks.detect`)
+# -------------------------------
+#
+# The test is emission's own: a module written with a part holding a
+# unit is written only where `lns.laws` finds its laws, else a failure
+
+def ef_w(d: Bool, +path: List<&2, U32>, +bs: List<&2, U32>, ed: {B.lns.laws(B.lines(bs)) == d : Bool}) ->
+    {B.outs.found(B.when(B.Out, d, u => B.Outs{[B.Fo{path, bs}]},
+      u => B.Out{False{}, "blend: " ++ B.text(path) ++ " holds laws its check would not find, a fault of Blend's"})) == True{} : Bool}:
+  match d:
+    case True{}:
+      and_intro(B.lns.laws(B.lines(bs)), True{}, ed, {==})
+    case False{}:
+      {==}
+
+def ef_k(c: Bool, +path: List<&2, U32>, +bs: List<&2, U32>, hc: {c == True{} : Bool}) -> {B.outs.found(B.emit.found(c, path, bs)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ef_w(B.lns.laws(B.lines(bs)), path, bs, {==})
+    case False{}:
+      Empty.absurd({B.outs.found(B.emit.found(False{}, path, bs)) == True{} : Bool}, MB.false_ne_true()(hc))
+
+def Laws.checks.detect(files, srcs, e, order, tree, more, lw, pf, es, hp):
+  match es:
+    case Nil{}:
+      ef_k(Bool.or(B.pf.has(lw), B.pf.has(pf)), B.root.file(B.path.at(B.ec.paths(e), 0), B.codes(".bend")), B.module.bytes(files, e, order, tree, more, lw, pf), hp)
+    case Con{x, t}:
+      {==}
+
 # law emitted.checked: the Ce taken apart, emit.out's errors none
 # (`errors.emitted`), then each part's in turn as for the objects, in a
 # lemma over the parts' records, so that a mutant's mismatch is a small

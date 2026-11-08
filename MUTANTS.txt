@@ -1257,3 +1257,25 @@ it lost
                   rd => +b => copies.go(k, cx, o, ins.then(t, rb.ins(b)), cp.add(rd, b, Cp{rds, ers, done.put(done, i)}))))
 +++
                   rd => +b => copies.go(k, cx, o, ins.then(t, rb.ins(b)), cp.add(rd, b, Cp{rds, Nil{}, done.put(done, i)}))))
+
+=== found_unchecked checks.detect
+a module written with laws whether or not the check's test finds them
+--- blend.bend
+      when(Out, lns.laws(lines(bs)), u => Outs{[Fo{path, bs}]},
++++
+      when(Out, True{}, u => Outs{[Fo{path, bs}]},
+
+=== found_parts_ignored checks.detect
+a module's laws never looked for, whatever its parts hold
+--- blend.bend
+      emit.found(pf.has(lw) || pf.has(pf), root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf))
++++
+      emit.found(False{}, root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf))
+
+=== found_laws_part_alone checks.detect
+a module's proofs' part forgotten, a file of proofs, lemmas or witnesses
+alone never looked at
+--- blend.bend
+      emit.found(pf.has(lw) || pf.has(pf), root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf))
++++
+      emit.found(pf.has(lw), root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf))

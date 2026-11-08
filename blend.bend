@@ -6883,12 +6883,70 @@ def file.stem(+b: List<&2, U32>) -> List<&2, U32>:
 def root.file(+root: List<&2, U32>, +last: List<&2, U32>) -> List<&2, U32>:
   List.append(&2, U32, file.stem(bendify(List.head.or(List.reverse(&2, List<&2, U32>, split.slash(root, Nil{}, Nil{}))), True{})), last)
 
+# a header's name, up to its parameters or type
+def hd.name(xs: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{+h, +t}:
+      when(List<&2, U32>, U32.is_eq(h, 40) || U32.is_eq(h, 58) || U32.is_eq(h, 32) || U32.is_eq(h, 60), u => Nil{}, u => Con{h, hd.name(t)})
+
+# whether a name has a part LAW, the part so far kept reversed
+def name.law(xs: List<&2, U32>, +cur: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}:
+      same(cur, codes("WAL"))
+    case Con{+h, +t}:
+      when(Bool, U32.is_eq(h, 46), u => same(cur, codes("WAL")) || name.law(t, Nil{}), u => name.law(t, Con{h, cur}))
+
+# whether a file holds a law, or a definition named with a part LAW, a
+# proof or a witness (check.sh's test)
+def lns.laws(ls: List<&2, Ln>) -> Bool:
+  match ls:
+    case Nil{}:
+      False{}
+    case Con{l, t}:
+      match l:
+        case Ln{+no, +ind, +txt}:
+          (U32.is_eq(ind, 0) && (starts.s(txt, "law ") || (starts.s(txt, "def ") && name.law(hd.name(List.drop(&2, U32, txt, 4n)), Nil{})))) || lns.laws(t)
+
+# a module written, the check's test finding its laws where it holds any
+# (its laws' or proofs' part holding a unit): `checks` runs Bend on the
+# files `lns.laws` finds laws in, so that a law written where that test
+# would miss it is a fault of Blend's, reported, never a law left
+# unchecked (law checks.detect, `blend-no-silent-failures`)
+def emit.found(+lawful: Bool, +path: List<&2, U32>, +bs: List<&2, U32>) -> Out:
+  match lawful:
+    case False{}:
+      Outs{[Fo{path, bs}]}
+    case True{}:
+      when(Out, lns.laws(lines(bs)), u => Outs{[Fo{path, bs}]},
+        u => Out{False{}, "blend: " ++ text(path) ++ " holds laws its check would not find, a fault of Blend's"})
+
+# whether each file of an output holds laws the check's test finds (law
+# checks.detect)
+def fos.found(fs: List<&2, Fo>) -> Bool:
+  match fs:
+    case Nil{}:
+      True{}
+    case Con{f, t}:
+      match f:
+        case Fo{name, bs}:
+          lns.laws(lines(bs)) && fos.found(t)
+
+def outs.found(o: Out) -> Bool:
+  match o:
+    case Out{ok, text}:
+      True{}
+    case Outs{fs}:
+      fos.found(fs)
+
 # the files, or the errors of any: the module's, its code, then its laws,
 # then their proofs, lemmas and witnesses (`blend-laws-in-module`)
 def emit.out(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +e: Ec, +order: List<&2, U32>, +tree: List<&2, Node>, +more: List<&2, U32>, +lw: Pf, +pf: Pf, es: List<&2, Er>) -> Out:
   match es:
     case Nil{}:
-      Outs{[Fo{root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf)}]}
+      emit.found(pf.has(lw) || pf.has(pf), root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf))
     case Con{x, t}:
       ers.out(files, srcs, Con{x, t})
 
@@ -8463,33 +8521,6 @@ def wrs.of(ws: List<&2, Wm>, +fs: List<&2, Fo>) -> List<&2, Wr>:
       match w:
         case Wm{+file, src, tree}:
           Con{Wr{file, src, tree, lines(fos.find(fs, file))}, wrs.of(t, fs)}
-
-# a header's name, up to its parameters or type
-def hd.name(xs: List<&2, U32>) -> List<&2, U32>:
-  match xs:
-    case Nil{}:
-      Nil{}
-    case Con{+h, +t}:
-      when(List<&2, U32>, U32.is_eq(h, 40) || U32.is_eq(h, 58) || U32.is_eq(h, 32) || U32.is_eq(h, 60), u => Nil{}, u => Con{h, hd.name(t)})
-
-# whether a name has a part LAW, the part so far kept reversed
-def name.law(xs: List<&2, U32>, +cur: List<&2, U32>) -> Bool:
-  match xs:
-    case Nil{}:
-      same(cur, codes("WAL"))
-    case Con{+h, +t}:
-      when(Bool, U32.is_eq(h, 46), u => same(cur, codes("WAL")) || name.law(t, Nil{}), u => name.law(t, Con{h, cur}))
-
-# whether a file holds a law, or a definition named with a part LAW, a
-# proof or a witness (check.sh's test)
-def lns.laws(ls: List<&2, Ln>) -> Bool:
-  match ls:
-    case Nil{}:
-      False{}
-    case Con{l, t}:
-      match l:
-        case Ln{+no, +ind, +txt}:
-          (U32.is_eq(ind, 0) && (starts.s(txt, "law ") || (starts.s(txt, "def ") && name.law(hd.name(List.drop(&2, U32, txt, 4n)), Nil{})))) || lns.laws(t)
 
 def wr.laws(w: Wr) -> Bool:
   match w:

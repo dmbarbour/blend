@@ -1,5 +1,5 @@
 # Written by Blend from monoid.blend; do not edit.
-# blend stamp: 39266ebcdffa 28481470ac589d74
+# blend stamp: 98d50b3ccce3 27093a7593b69d39
 import Base
 
 # blend: monoid.blend:11

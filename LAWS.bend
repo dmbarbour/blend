@@ -1343,6 +1343,26 @@ law checks.cover:
   for +ls: List<&2, B.Wr>
   {B.wrs.checked(ls, B.checks.files(ls), ls) == True{} : Bool}
 
+# LAW: and a module written with a law, a proof, a lemma or a witness
+# (its laws' or proofs' part holding a unit) holds them where the check's
+# test finds them (`lns.laws`, over its bytes read again, as `checks`
+# reads the files written), else its emission fails, a fault of Blend's
+# reported: no law is written that the check would pass over
+# (`blend-laws2.checks-detect`).
+# Record: blend-laws-in-module, blend-no-silent-failures
+law checks.detect:
+  for +files: List<&2, List<&2, U32>>
+  for +srcs: List<&2, List<&2, U32>>
+  for +e: B.Ec
+  for +order: List<&2, U32>
+  for +tree: List<&2, B.Node>
+  for +more: List<&2, U32>
+  for +lw: B.Pf
+  for +pf: B.Pf
+  for +es: List<&2, B.Er>
+  for +hp: {Bool.or(B.pf.has(lw), B.pf.has(pf)) == True{} : Bool}
+  {B.outs.found(B.emit.out(files, srcs, e, order, tree, more, lw, pf, es)) == True{} : Bool}
+
 # LAW: and the errors emission writes its files under are each of their
 # parts' (`emitted.k`, `emitted.ers`): where it writes them, the walk
 # reported none, nor the dispositions, the laws' check, the names',
