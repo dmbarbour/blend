@@ -38,14 +38,16 @@ done
 m=0
 # each invalid and refused sample emitted from a copy in results/ (out of
 # git, overwritten each run), so that one emitting by mistake writes
-# nothing beside the samples
+# nothing beside the samples; an invalid one forced, so that a file a
+# Blend before wrote there, stamped as this one (a build of sources not
+# yet stamped, `blend-stamps`), never passes for current
 out=../results/invalid
 mkdir -p "$out" && cp invalid/*.blend "$out/" || exit 1
 for src in invalid/*.blend; do
   m=$((m + 1))
   err=${src%.blend}.err
   [ -f "$err" ] || { echo "blend: $src has no .err"; status=1; continue; }
-  if got=$(cd "$out" && "$CAPPED" 500 30 "$BLEND" emit --alone "${src#invalid/}" 2>&1); then
+  if got=$(cd "$out" && "$CAPPED" 500 30 "$BLEND" emit --alone --force "${src#invalid/}" 2>&1); then
     echo "blend: $src emits, where it must fail with $(cat "$err")"
     status=1
   elif [ "$got" != "$(cat "$err")" ]; then
