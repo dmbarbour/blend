@@ -10978,6 +10978,40 @@ def lo_il_u(k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>, +hps: {B.i
       lok_il(B.resolve(List.length(&2, B.Ob, B.cx.obs(cx)), B.cx.als(cx), B.cx.obs(cx), q, List.take(&2, List<&2, U32>, ps, 1n+j)), j, 1n+j, cx, q, ps, hps,
         lo_il_u(j, cx, q, ps, hps))
 
+# the same of o's own nested objects (`look.own`)
+def lwx_k(+c: Bool, +x: U32, +j: Nat, +k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>) -> Maybe<&2, B.Rf>:
+  B.when(Maybe<&2, B.Rf>, c, v => Some{B.Rf{x, B.dots(List.drop(&2, List<&2, U32>, ps, k)), False{}, x}}, v => B.look.own(j, cx, q, ps))
+
+def lwx_il(c: Bool, +x: U32, +j: Nat, +k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>, +hps: {B.inlines(ps) == True{} : Bool},
+    +ih: {mrfil(B.look.own(j, cx, q, ps)) == True{} : Bool}) -> {mrfil(lwx_k(c, x, j, k, cx, q, ps)) == True{} : Bool}:
+  match c:
+    case True{}:
+      il_dots(List.drop(&2, List<&2, U32>, ps, k), ils_ldrop(ps, k, hps))
+    case False{}:
+      ih
+
+def lwk(+m: Maybe<&2, U32>, +j: Nat, +k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>) -> Maybe<&2, B.Rf>:
+  B.on.maybe(U32, Maybe<&2, B.Rf>, m, u => B.look.own(j, cx, q, ps),
+    +x => B.when(Maybe<&2, B.Rf>, B.cx.has(cx, x, B.dots(List.drop(&2, List<&2, U32>, ps, k))),
+      v => Some{B.Rf{x, B.dots(List.drop(&2, List<&2, U32>, ps, k)), False{}, x}},
+      v => B.look.own(j, cx, q, ps)))
+
+def lwk_il(m: Maybe<&2, U32>, +j: Nat, +k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>, +hps: {B.inlines(ps) == True{} : Bool},
+    +ih: {mrfil(B.look.own(j, cx, q, ps)) == True{} : Bool}) -> {mrfil(lwk(m, j, k, cx, q, ps)) == True{} : Bool}:
+  match m:
+    case None{}:
+      ih
+    case Some{+x}:
+      lwx_il(B.cx.has(cx, x, B.dots(List.drop(&2, List<&2, U32>, ps, k))), x, j, k, cx, q, ps, hps, ih)
+
+def lw_il_u(k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>, +hps: {B.inlines(ps) == True{} : Bool}) -> {mrfil(B.look.own(k, cx, q, ps)) == True{} : Bool}:
+  match k:
+    case 0n:
+      {==}
+    case 1n+(+j):
+      lwk_il(B.find.path(B.cx.obs(cx), B.loc.mod(B.ob.no(B.ob.at(B.cx.obs(cx), q))), List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(B.cx.obs(cx), q)), List.take(&2, List<&2, U32>, ps, 1n+j))), j, 1n+j, cx, q, ps, hps,
+        lw_il_u(j, cx, q, ps, hps))
+
 def rf_il(+cx: B.Cx, +mark: U32, +t: B.Tok, +no: B.Loc, f: B.Rf, +ht: {B.inline(B.tok.bytes(t)) == True{} : Bool}, +hf: {B.inline(B.rf.name(f)) == True{} : Bool}) ->
     {rril(B.rr.rf(cx, mark, t, no, f)) == True{} : Bool}:
   match f:
@@ -10996,20 +11030,31 @@ def rd_il(m: Maybe<&2, B.Rf>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>,
     case Some{f}:
       rf_il(cx, mark, t, no, f, ht, hm)
 
-def dotted_il(+cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc, +ht: {B.inline(B.tok.bytes(t)) == True{} : Bool},
-    +hn: {B.inline(n) == True{} : Bool}) -> {rril(B.rr.dotted(cx, q, mark, n, t, no)) == True{} : Bool}:
-  rd_il(B.look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, B.parts(n)), cx, q, mark, n, t, no,
-    lo_il_u(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, B.parts(n), ils_parts(n, hn)), ht, hn)
-
-# rr.plain.k's lookup mirrored
-def rpk(+m: Maybe<&2, U32>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc) -> B.Rr:
-  B.on.maybe(U32, B.Rr, m, v => B.rr.dotted(cx, q, mark, n, t, no), +h => B.rr.final(cx, h, mark, n, t, no))
-
-def rp_il(m: Maybe<&2, U32>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc, +ht: {B.inline(B.tok.bytes(t)) == True{} : Bool},
-    +hn: {B.inline(n) == True{} : Bool}) -> {rril(rpk(m, cx, q, mark, n, t, no)) == True{} : Bool}:
+# a lookup from the concrete object first, then from where the name is
+# written (`look.late`): what holds of each holds of it
+def ll_il(m: Maybe<&2, B.Rf>, +other: Maybe<&2, B.Rf>, hm: {mrfil(m) == True{} : Bool}, ho: {mrfil(other) == True{} : Bool}) ->
+    {mrfil(B.on.maybe(B.Rf, Maybe<&2, B.Rf>, m, u => other, f => Some{f})) == True{} : Bool}:
   match m:
     case None{}:
-      dotted_il(cx, q, mark, n, t, no, ht, hn)
+      ho
+    case Some{f}:
+      hm
+
+def dotted_il(+cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc, +ht: {B.inline(B.tok.bytes(t)) == True{} : Bool},
+    +hn: {B.inline(n) == True{} : Bool}) -> {rril(B.rr.dotted(cx, o, q, mark, n, t, no)) == True{} : Bool}:
+  rd_il(B.look.late(cx, o, q, B.parts(n)), cx, q, mark, n, t, no,
+    ll_il(B.look.own(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, o, B.parts(n)), B.look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, B.parts(n)),
+      lw_il_u(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, o, B.parts(n), ils_parts(n, hn)), lo_il_u(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, B.parts(n), ils_parts(n, hn))), ht, hn)
+
+# rr.plain.k's lookup mirrored
+def rpk(+m: Maybe<&2, U32>, +cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc) -> B.Rr:
+  B.on.maybe(U32, B.Rr, m, v => B.rr.dotted(cx, o, q, mark, n, t, no), +h => B.rr.final(cx, h, mark, n, t, no))
+
+def rp_il(m: Maybe<&2, U32>, +cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc, +ht: {B.inline(B.tok.bytes(t)) == True{} : Bool},
+    +hn: {B.inline(n) == True{} : Bool}) -> {rril(rpk(m, cx, o, q, mark, n, t, no)) == True{} : Bool}:
+  match m:
+    case None{}:
+      dotted_il(cx, o, q, mark, n, t, no, ht, hn)
     case Some{+h}:
       final_il(cx, h, mark, n, t, no, ht, hn)
 
@@ -11019,7 +11064,7 @@ def plaink_il(local: Bool, +cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2,
     case True{}:
       tok_il(t, ht)
     case False{}:
-      rp_il(B.look(cx, Con{o, B.hosts(B.cx.obs(cx), q)}, n), cx, q, mark, n, t, no, ht, hn)
+      rp_il(B.look(cx, Con{o, B.hosts(B.cx.obs(cx), q)}, n), cx, o, q, mark, n, t, no, ht, hn)
 
 def plain_ril(+cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc,
     +ht: {B.inline(B.tok.bytes(t)) == True{} : Bool}, +hn: {B.inline(n) == True{} : Bool}) -> {rril(B.rr.plain(cx, o, q, locals, mark, n, t, no)) == True{} : Bool}:
@@ -12584,13 +12629,13 @@ def rd_fd(m: Maybe<&2, B.Rf>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>,
     case Some{f}:
       rf_fd(cx, mark, t, no, f)
 
-def dotted_fd(+cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc) -> {rrfd(B.rr.dotted(cx, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
-  rd_fd(B.look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, B.parts(n)), cx, q, mark, n, t, no)
+def dotted_fd(+cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc) -> {rrfd(B.rr.dotted(cx, o, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+  rd_fd(B.look.late(cx, o, q, B.parts(n)), cx, q, mark, n, t, no)
 
-def rp_fd(m: Maybe<&2, U32>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc) -> {rrfd(rpk(m, cx, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
+def rp_fd(m: Maybe<&2, U32>, +cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc) -> {rrfd(rpk(m, cx, o, q, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
   match m:
     case None{}:
-      dotted_fd(cx, q, mark, n, t, no)
+      dotted_fd(cx, o, q, mark, n, t, no)
     case Some{+h}:
       final_fd(cx, h, mark, n, t, no)
 
@@ -12600,7 +12645,7 @@ def plaink_fd(local: Bool, +cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2,
     case True{}:
       {==}
     case False{}:
-      rp_fd(B.look(cx, Con{o, B.hosts(B.cx.obs(cx), q)}, n), cx, q, mark, n, t, no)
+      rp_fd(B.look(cx, Con{o, B.hosts(B.cx.obs(cx), q)}, n), cx, o, q, mark, n, t, no)
 
 def plain_fd(+cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc) ->
     {rrfd(B.rr.plain(cx, o, q, locals, mark, n, t, no), B.cx.obs(cx)) == True{} : Bool}:
@@ -13522,6 +13567,34 @@ def lo_n(+k: Nat, +cx: B.Cx, +q: U32, +n: List<&2, U32>) -> {mrfmk(B.look.obj(k,
   %Laws.names.dots_parts(n) : {mrfmk(B.look.obj(k, cx, q, B.parts(n)), _) == True{} : Bool}
   lo_mk(k, cx, q, B.parts(n))
 
+# the same of o's own nested objects (`look.own`)
+def lwx_mk(c: Bool, +x: U32, +j: Nat, +k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>, +ih: {mrfmk(B.look.own(j, cx, q, ps), B.dots(ps)) == True{} : Bool}) ->
+    {mrfmk(lwx_k(c, x, j, k, cx, q, ps), B.dots(ps)) == True{} : Bool}:
+  match c:
+    case True{}:
+      suffix_dots(ps, k)
+    case False{}:
+      ih
+
+def lwk_mk(m: Maybe<&2, U32>, +j: Nat, +k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>, +ih: {mrfmk(B.look.own(j, cx, q, ps), B.dots(ps)) == True{} : Bool}) ->
+    {mrfmk(lwk(m, j, k, cx, q, ps), B.dots(ps)) == True{} : Bool}:
+  match m:
+    case None{}:
+      ih
+    case Some{+x}:
+      lwx_mk(B.cx.has(cx, x, B.dots(List.drop(&2, List<&2, U32>, ps, k))), x, j, k, cx, q, ps, ih)
+
+def lw_mk(k: Nat, +cx: B.Cx, +q: U32, +ps: List<&2, List<&2, U32>>) -> {mrfmk(B.look.own(k, cx, q, ps), B.dots(ps)) == True{} : Bool}:
+  match k:
+    case 0n:
+      {==}
+    case 1n+(+j):
+      lwk_mk(B.find.path(B.cx.obs(cx), B.loc.mod(B.ob.no(B.ob.at(B.cx.obs(cx), q))), List.append(&2, List<&2, U32>, B.ob.path(B.ob.at(B.cx.obs(cx), q)), List.take(&2, List<&2, U32>, ps, 1n+j))), j, 1n+j, cx, q, ps, lw_mk(j, cx, q, ps))
+
+def lw_n(+k: Nat, +cx: B.Cx, +q: U32, +n: List<&2, U32>) -> {mrfmk(B.look.own(k, cx, q, B.parts(n)), n) == True{} : Bool}:
+  %Laws.names.dots_parts(n) : {mrfmk(B.look.own(k, cx, q, B.parts(n)), _) == True{} : Bool}
+  lw_mk(k, cx, q, B.parts(n))
+
 def rf_mk(+cx: B.Cx, +mark: U32, +t: B.Tok, +no: B.Loc, f: B.Rf, +hf: {B.suffix(B.rf.name(f), B.tok.bytes(t)) == True{} : Bool}) -> {B.rr.made(B.rr.rf(cx, mark, t, no, f), t) == True{} : Bool}:
   match f:
     case B.Rf{+obj, +name, +prior, +origin}:
@@ -13535,16 +13608,24 @@ def rd_mk(m: Maybe<&2, B.Rf>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>,
     case Some{+f}:
       rf_mk(cx, mark, t, no, f, suffix_trans(B.rf.name(f), n, B.tok.bytes(t), hm, hn))
 
-def dotted_mk(+cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
-    {B.rr.made(B.rr.dotted(cx, q, mark, n, t, no), t) == True{} : Bool}:
-  rd_mk(B.look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, B.parts(n)), cx, q, mark, n, t, no,
-    lo_n(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, n), hn)
-
-def rp_mk(m: Maybe<&2, U32>, +cx: B.Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
-    {B.rr.made(rpk(m, cx, q, mark, n, t, no), t) == True{} : Bool}:
+def ll_mk(m: Maybe<&2, B.Rf>, +other: Maybe<&2, B.Rf>, +n: List<&2, U32>, hm: {mrfmk(m, n) == True{} : Bool}, ho: {mrfmk(other, n) == True{} : Bool}) ->
+    {mrfmk(B.on.maybe(B.Rf, Maybe<&2, B.Rf>, m, u => other, f => Some{f}), n) == True{} : Bool}:
   match m:
     case None{}:
-      dotted_mk(cx, q, mark, n, t, no, hn)
+      ho
+    case Some{f}:
+      hm
+
+def dotted_mk(+cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(B.rr.dotted(cx, o, q, mark, n, t, no), t) == True{} : Bool}:
+  rd_mk(B.look.late(cx, o, q, B.parts(n)), cx, q, mark, n, t, no,
+    ll_mk(B.look.own(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, o, B.parts(n)), B.look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, B.parts(n)), n, lw_n(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, o, n), lo_n(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, B.parts(n))), cx, q, n)), hn)
+
+def rp_mk(m: Maybe<&2, U32>, +cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc, +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) ->
+    {B.rr.made(rpk(m, cx, o, q, mark, n, t, no), t) == True{} : Bool}:
+  match m:
+    case None{}:
+      dotted_mk(cx, o, q, mark, n, t, no, hn)
     case Some{+h}:
       final_mk(cx, h, mark, n, t, no, hn)
 
@@ -13554,7 +13635,7 @@ def plaink_mk(local: Bool, +cx: B.Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2,
     case True{}:
       tok_mk(t)
     case False{}:
-      rp_mk(B.look(cx, Con{o, B.hosts(B.cx.obs(cx), q)}, n), cx, q, mark, n, t, no, hn)
+      rp_mk(B.look(cx, Con{o, B.hosts(B.cx.obs(cx), q)}, n), cx, o, q, mark, n, t, no, hn)
 
 def plain_mk(+cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: B.Tok, +no: B.Loc,
     +hn: {B.suffix(n, B.tok.bytes(t)) == True{} : Bool}) -> {B.rr.made(B.rr.plain(cx, o, q, locals, mark, n, t, no), t) == True{} : Bool}:

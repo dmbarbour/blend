@@ -99,6 +99,9 @@ its modules, namespaces and emitted names are Bend's.
   an error where no order keeps every list it merges.
 - [`blend-frozen-host`](decisions/blend-frozen-host.md): `^` sees the host a
   nested object is made for, and inheritance never binds it again.
+- [`blend-nested-late`](decisions/blend-nested-late.md): a dotted name
+  through a nested object binds late, the concrete object's own nested
+  objects looked at first.
 - [`blend-copies-keep-their-name`](decisions/blend-copies-keep-their-name.md):
   a copied definition is always emitted by its own name, and once more
   for each use.

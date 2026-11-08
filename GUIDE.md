@@ -87,7 +87,9 @@ def main() -> IO(Unit):
 - A bare name binds late, to the final definition of the concrete
   object written, so that an update reaches every definition calling
   it; a name the object lacks, to its hosts' (Nested objects), then the
-  module's, then Bend's. `Obj.f` names `Obj`'s.
+  module's, then Bend's. `Obj.f` names `Obj`'s; where `Obj` is a nested
+  object, it too binds late, to the concrete object's own `Obj`
+  (Nested objects).
 - `_f`, the prior, is the definition an update replaces: the next along
   the C3 linearization (`blend-c3`). `BoldLoud`'s is BoldLoud, Bold,
   Loud, Plain, so `Bold`'s `_tag` there is `Loud`'s: `*plain!*`.
@@ -246,6 +248,13 @@ the child (`blend-frozen-host`). `extend Inner with` is `upd` for a
 nested object, `extend abstract Inner` keeps it abstract; neither is
 allowed at the top level. The samples `family-nested` and `nested-reach`
 show them.
+
+A dotted name through a nested object binds late, as a bare name does:
+in a family, `Inner.k` names the family's own `Inner`, made for it, so
+that an update in `extend Inner` reaches the bodies the family
+inherits, and an abstract object can call into a nested object its
+families fill in. A top-level object's name is the same everywhere.
+The sample `nested-late` shows it.
 
 ## Laws and proofs
 

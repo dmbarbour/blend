@@ -1,0 +1,48 @@
+# A dotted name through a nested object binds late, as a bare name does:
+# a family gets its own nested object, made for it, and the bodies it
+# inherits reach that one, through the object itself (`Inner.k`, deeper
+# `Mid.Deep.k`) or through a host (`Sub` reaching its sibling `Inner`);
+# so that an abstract object can call into a nested object its families
+# fill in (`Shape`). A top-level object's name is the same everywhere.
+import Base
+
+object Lib with
+  shared def v() -> U32:
+    100
+
+object Outer with
+  object Inner with
+    shared def k() -> U32:
+      1
+  object Mid with
+    object Deep with
+      shared def k() -> U32:
+        10
+  def f() -> U32:
+    (Inner.k() + Mid.Deep.k() + Lib.v() : U32)
+  object Sub with
+    def g() -> U32:
+      Inner.k()
+
+object Outer2 extends Outer with
+  extend Inner with
+    shared upd k() -> U32:
+      2
+  extend Mid with
+    extend Deep with
+      shared upd k() -> U32:
+        20
+
+abstract object Shape with
+  abstract object Side with
+    declare size
+  def area() -> U32:
+    (Side.size() * Side.size() : U32)
+
+object Square extends Shape with
+  extend Side with
+    shared def size() -> U32:
+      3
+
+def main() -> IO(Unit):
+  IO.print(U32.show(Outer.f()) ++ " " ++ U32.show(Outer2.f()) ++ " " ++ U32.show(Outer.Sub.g()) ++ " " ++ U32.show(Outer2.Sub.g()) ++ " " ++ U32.show(Square.area()))
