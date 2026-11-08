@@ -5644,19 +5644,19 @@ def pr_ok(c1: Bool, c2: Bool, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, 
     case False{} _:
       {==}
 
-def proofr_ok(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
-    +hb: {B.ln.from(body, B.loc.next(no)) == True{} : Bool}) -> {B.item.ok(B.proof.r(p, upd, txt, body, no, ind)) == True{} : Bool}:
+def proofr_ok(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +lemma: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
+    +hb: {B.ln.from(body, B.loc.next(no)) == True{} : Bool}) -> {B.item.ok(B.proof.r(p, upd, lemma, txt, body, no, ind)) == True{} : Bool}:
   match p:
     case (+name, +rest):
-      pr_ok(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), B.holds(rest, B.codes(") ->")), upd, name, rest, txt, body, no, ind, hb)
+      pr_ok(Bool.and(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), Bool.not(Bool.xor(lemma, B.holds(rest, B.codes(") ->"))))), lemma, upd, name, rest, txt, body, no, ind, hb)
 
 def proof_ok(+txt: List<&2, U32>, upd: Bool, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hb: {B.ln.from(body, B.loc.next(no)) == True{} : Bool}) ->
     {B.item.ok(B.proof.item(txt, upd, body, no, ind)) == True{} : Bool}:
   match upd:
     case True{}:
-      proofr_ok(B.until(B.drop(10n, txt), 40), True{}, txt, body, no, ind, hb)
+      proofr_ok(B.until(B.drop(10n, txt), 40), True{}, B.is.lemma(txt), txt, body, no, ind, hb)
     case False{}:
-      proofr_ok(B.until(B.drop(6n, txt), 40), False{}, txt, body, no, ind, hb)
+      proofr_ok(B.until(B.drop(6n, txt), 40), False{}, B.is.lemma(txt), txt, body, no, ind, hb)
 
 # a definition's header through its sharing and keyword to its item
 def named_ok(ok: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +xs: List<&2, U32>, +share: U32, +upd: Bool, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
@@ -5718,7 +5718,7 @@ def fb_ok(c1: Bool, c2: Bool, c3: Bool, c4: Bool, +txt: List<&2, U32>, +body: Li
 # a definition's item keeps its body, numbered on from its line
 def block_ok(+txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hb: {B.ln.from(body, B.loc.next(no)) == True{} : Bool}) ->
     {B.item.ok(B.flat.block(txt, body, no, ind)) == True{} : Bool}:
-  fb_ok(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), Bool.or(B.starts.s(txt, "proof "), B.starts.s(txt, "upd proof ")), txt, body, no, ind, hb)
+  fb_ok(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), B.proof.kw(txt), txt, body, no, ind, hb)
 
 # Lines no header claims: items without a body, or a type member's on its
 # own line
@@ -9639,20 +9639,20 @@ def pr_il(c1: Bool, c2: Bool, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, 
     case False{} _:
       {==}
 
-def proofr_il(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hp: {pil(p) == True{} : Bool},
-    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(B.proof.r(p, upd, txt, body, no, ind)) == True{} : Bool}:
+def proofr_il(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +lemma: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hp: {pil(p) == True{} : Bool},
+    +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(B.proof.r(p, upd, lemma, txt, body, no, ind)) == True{} : Bool}:
   match p:
     case (+name, +rest):
-      pr_il(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), B.holds(rest, B.codes(") ->")), upd, name, rest, txt, body, no, ind,
+      pr_il(Bool.and(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), Bool.not(Bool.xor(lemma, B.holds(rest, B.codes(") ->"))))), lemma, upd, name, rest, txt, body, no, ind,
         and_l(B.inline(name), B.inline(rest), hp), and_r(B.inline(name), B.inline(rest), hp), hb)
 
 def proof_il(+txt: List<&2, U32>, upd: Bool, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hx: {B.inline(txt) == True{} : Bool},
     +hb: {B.lns.inline(body) == True{} : Bool}) -> {B.item.inline(B.proof.item(txt, upd, body, no, ind)) == True{} : Bool}:
   match upd:
     case True{}:
-      proofr_il(B.until(B.drop(10n, txt), 40), True{}, txt, body, no, ind, il_until(B.drop(10n, txt), 40, il_drop(10n, txt, hx)), hb)
+      proofr_il(B.until(B.drop(10n, txt), 40), True{}, B.is.lemma(txt), txt, body, no, ind, il_until(B.drop(10n, txt), 40, il_drop(10n, txt, hx)), hb)
     case False{}:
-      proofr_il(B.until(B.drop(6n, txt), 40), False{}, txt, body, no, ind, il_until(B.drop(6n, txt), 40, il_drop(6n, txt, hx)), hb)
+      proofr_il(B.until(B.drop(6n, txt), 40), False{}, B.is.lemma(txt), txt, body, no, ind, il_until(B.drop(6n, txt), 40, il_drop(6n, txt, hx)), hb)
 
 def named_il(ok: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +xs: List<&2, U32>, +share: U32, +upd: Bool, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
     +hn: {B.inline(name) == True{} : Bool}, +hr: {B.inline(rest) == True{} : Bool}, +hb: {B.lns.inline(body) == True{} : Bool}) ->
@@ -9707,7 +9707,7 @@ def fb_il(c1: Bool, c2: Bool, c3: Bool, c4: Bool, +txt: List<&2, U32>, +body: Li
 
 def block_il(+txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hx: {B.inline(txt) == True{} : Bool}, +hb: {B.lns.inline(body) == True{} : Bool}) ->
     {B.item.inline(B.flat.block(txt, body, no, ind)) == True{} : Bool}:
-  fb_il(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), Bool.or(B.starts.s(txt, "proof "), B.starts.s(txt, "upd proof ")), txt, body, no, ind, hx, hb)
+  fb_il(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), B.proof.kw(txt), txt, body, no, ind, hx, hb)
 
 def onamed_il(ok: Bool, +with: Bool, +ext: Bool, +name: List<&2, U32>, +ps: List<&2, List<&2, U32>>, +xs: List<&2, U32>, +abs: Bool, +no: B.Loc, +ind: U32,
     +hn: {B.inline(name) == True{} : Bool}) -> {B.item.inline(B.obj.named(ok, with, ext, name, ps, xs, abs, no, ind)) == True{} : Bool}:
@@ -14505,19 +14505,19 @@ def dp_pr(c1: Bool, c2: Bool, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, 
     case False{} _:
       {==}
 
-def dp_proofr(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
-    +hb: {B.ln.deep(body, no, ind, False{}) == True{} : Bool}) -> {B.item.deep(B.proof.r(p, upd, txt, body, no, ind)) == True{} : Bool}:
+def dp_proofr(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +lemma: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
+    +hb: {B.ln.deep(body, no, ind, False{}) == True{} : Bool}) -> {B.item.deep(B.proof.r(p, upd, lemma, txt, body, no, ind)) == True{} : Bool}:
   match p:
     case (+name, +rest):
-      dp_pr(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), B.holds(rest, B.codes(") ->")), upd, name, rest, txt, body, no, ind, hb)
+      dp_pr(Bool.and(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), Bool.not(Bool.xor(lemma, B.holds(rest, B.codes(") ->"))))), lemma, upd, name, rest, txt, body, no, ind, hb)
 
 def dp_proof(+txt: List<&2, U32>, upd: Bool, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hb: {B.ln.deep(body, no, ind, False{}) == True{} : Bool}) ->
     {B.item.deep(B.proof.item(txt, upd, body, no, ind)) == True{} : Bool}:
   match upd:
     case True{}:
-      dp_proofr(B.until(B.drop(10n, txt), 40), True{}, txt, body, no, ind, hb)
+      dp_proofr(B.until(B.drop(10n, txt), 40), True{}, B.is.lemma(txt), txt, body, no, ind, hb)
     case False{}:
-      dp_proofr(B.until(B.drop(6n, txt), 40), False{}, txt, body, no, ind, hb)
+      dp_proofr(B.until(B.drop(6n, txt), 40), False{}, B.is.lemma(txt), txt, body, no, ind, hb)
 
 def dp_named(ok: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +xs: List<&2, U32>, +share: U32, +upd: Bool, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
     +hb: {B.ln.deep(body, no, ind, False{}) == True{} : Bool}) -> {B.item.deep(B.def.named(ok, name, rest, xs, share, upd, body, no, ind)) == True{} : Bool}:
@@ -14569,7 +14569,7 @@ def dp_fb(c1: Bool, c2: Bool, c3: Bool, c4: Bool, +txt: List<&2, U32>, +body: Li
 
 def dp_block(+txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hb: {B.ln.deep(body, no, ind, False{}) == True{} : Bool}) ->
     {B.item.deep(B.flat.block(txt, body, no, ind)) == True{} : Bool}:
-  dp_fb(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), Bool.or(B.starts.s(txt, "proof "), B.starts.s(txt, "upd proof ")), txt, body, no, ind, hb)
+  dp_fb(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), B.proof.kw(txt), txt, body, no, ind, hb)
 
 def dp_onamed(ok: Bool, +with: Bool, +ext: Bool, +name: List<&2, U32>, +ps: List<&2, List<&2, U32>>, +xs: List<&2, U32>, +abs: Bool, +no: B.Loc, +ind: U32) ->
     {B.item.deep(B.obj.named(ok, with, ext, name, ps, xs, abs, no, ind)) == True{} : Bool}:
@@ -15538,19 +15538,19 @@ def bi_pr(c1: Bool, c2: Bool, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, 
     case False{} _:
       {==}
 
-def bi_proofr(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
-    +hb: {B.ln.from(body, B.loc.next(no)) == True{} : Bool}) -> {B.item.bend(B.proof.r(p, upd, txt, body, no, ind)) == True{} : Bool}:
+def bi_proofr(p: List<&2, U32> & List<&2, U32>, +upd: Bool, +lemma: Bool, +txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
+    +hb: {B.ln.from(body, B.loc.next(no)) == True{} : Bool}) -> {B.item.bend(B.proof.r(p, upd, lemma, txt, body, no, ind)) == True{} : Bool}:
   match p:
     case (+name, +rest):
-      bi_pr(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), B.holds(rest, B.codes(") ->")), upd, name, rest, txt, body, no, ind, hb)
+      bi_pr(Bool.and(Bool.and(B.name.ok(B.trim(name)), Bool.not(B.blank(rest))), Bool.not(Bool.xor(lemma, B.holds(rest, B.codes(") ->"))))), lemma, upd, name, rest, txt, body, no, ind, hb)
 
 def bi_proof(+txt: List<&2, U32>, upd: Bool, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hb: {B.ln.from(body, B.loc.next(no)) == True{} : Bool}) ->
     {B.item.bend(B.proof.item(txt, upd, body, no, ind)) == True{} : Bool}:
   match upd:
     case True{}:
-      bi_proofr(B.until(B.drop(10n, txt), 40), True{}, txt, body, no, ind, hb)
+      bi_proofr(B.until(B.drop(10n, txt), 40), True{}, B.is.lemma(txt), txt, body, no, ind, hb)
     case False{}:
-      bi_proofr(B.until(B.drop(6n, txt), 40), False{}, txt, body, no, ind, hb)
+      bi_proofr(B.until(B.drop(6n, txt), 40), False{}, B.is.lemma(txt), txt, body, no, ind, hb)
 
 def bi_named(ok: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +xs: List<&2, U32>, +share: U32, +upd: Bool, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32,
     +hb: {B.ln.from(body, B.loc.next(no)) == True{} : Bool}) -> {B.item.bend(B.def.named(ok, name, rest, xs, share, upd, body, no, ind)) == True{} : Bool}:
@@ -15791,7 +15791,7 @@ def bi_fb(c1: Bool, c2: Bool, c3: Bool, c4: Bool, +txt: List<&2, U32>, +body: Li
 def bi_block(+txt: List<&2, U32>, +body: List<&2, B.Ln>, +no: B.Loc, +ind: U32, +hb: {B.ln.from(body, B.loc.next(no)) == True{} : Bool},
     +hti: {B.inline(txt) == True{} : Bool}, +hd: {B.ln.deep(body, no, ind, False{}) == True{} : Bool}, +hbi: {B.lns.inline(body) == True{} : Bool}) ->
     {B.item.bend(B.flat.block(txt, body, no, ind)) == True{} : Bool}:
-  bi_fb(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), Bool.or(B.starts.s(txt, "proof "), B.starts.s(txt, "upd proof ")), txt, body, no, ind, hb, {==}, hti, hd, hbi)
+  bi_fb(B.is.datatype(txt), B.starts.s(txt, "law "), B.starts.s(txt, "upd law "), B.proof.kw(txt), txt, body, no, ind, hb, {==}, hti, hd, hbi)
 
 # the items read from lines numbered one more each, within a line
 def bi_flat(n: Nat, ls: List<&2, B.Ln>, +out: List<&2, B.Item>, +hc: {chain(ls) == True{} : Bool}, +hi: {B.lns.inline(ls) == True{} : Bool}, +ho: {B.items.bend(out) == True{} : Bool}) ->

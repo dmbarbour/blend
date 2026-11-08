@@ -117,7 +117,7 @@ its modules, namespaces and emitted names are Bend's.
 - [`blend-laws-in-module`](decisions/blend-laws-in-module.md): a module's
   laws and proofs written into its own file after its code, `Obj.LAW.name`
   and `LAW.name`; a law a claim stated once, its proof a member `upd
-  proof` may replace, a typed proof a lemma, a law unproven only an
+  proof` may replace, a lemma its own keyword, a law unproven only an
   abstract object's.
 - [`blend-no-shadowing`](decisions/blend-no-shadowing.md): within a
   `.blend` file or object, a bare name is a local or a definition, never

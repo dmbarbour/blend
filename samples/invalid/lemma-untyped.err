@@ -1,0 +1,5 @@
+Error: a lemma states what it proves, `lemma name(params) -> T:`; a law's proof is untyped, `proof name(params):`
+Location: lemma-untyped.blend:8
+7 |     x
+8>|   lemma same(x):
+9 |     {==}

@@ -1,0 +1,12 @@
+# A lemma states what it proves; one untyped is refused, with the cure,
+# a proof where it proves a law.
+import Base
+
+object A with
+  def id(+x: Nat) -> Nat:
+    x
+  lemma same(x):
+    {==}
+
+def main() -> Nat:
+  A.id(1n)

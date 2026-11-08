@@ -1,6 +1,6 @@
 # A module's laws and proofs are written into its own file
 
-`blend-laws-in-module` · maintainer · rev bd20dd9
+`blend-laws-in-module` · maintainer · rev a5dc50e
 
 **Context.** Laws and proofs are object members (`blend-object-laws`,
 `blend-adds-no-bend-logic`): a law stated in an abstract family holds for
@@ -44,14 +44,18 @@ a module's proofs at each load costs seconds: Blend's code 0.8 s alone,
    and a top-level law, which cannot be abstract, is proven. Blend
    reports a law unproven there as its own error, before Bend would stop
    every run loading the file.
-5. A typed proof, `proof name(params) -> T:`, is a lemma: it states what
-   it proves and is named by proofs, never by code. `_name` in a proof,
+5. A lemma, `lemma name(params) -> T:`, states what it proves and is
+   named by proofs and lemmas, never by code; a law's proof is untyped,
+   `proof name(params):`, as Bend parses one, typing it by its law. A
+   typed proof and an untyped lemma are refused (the maintainer,
+   2026-11-08: the keyword, where a typed proof had been a lemma, its
+   signature alone the cue). `_name` in a proof,
    of a law (which has no prior), is its proof's prior. A prior no proof
    names is not written; one named is written as a def proving the law
    for the family's finals, its law stated again by the prior's name,
    since Bend types an untyped def by the law of its name. A member keeps
    its kind down the linearization: `upd` updates a definition, `upd
-   proof` a proof or a lemma, and neither a law.
+   proof` a proof, `upd lemma` a lemma, and none a law.
 6. A project keeps its own `LAWS.bend` and `PROOF.bend` where it wants.
 
 **Consequences.**
@@ -82,6 +86,6 @@ a module's proofs at each load costs seconds: Blend's code 0.8 s alone,
   `law-reserved-object`,
   `proof-no-law`, `law-named`, `upd-law`, `proof-twice`,
   `upd-proof-undefined`, `law-updated`, `law-shadowed`, `lemma-named`,
-  `upd-proof-def`.
+  `upd-lemma-def`, `lemma-law-named`, `proof-typed`, `lemma-untyped`.
 
 **Rule lives in:** `GUIDE.md`, Laws and proofs and What Blend writes.

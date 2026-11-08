@@ -1,5 +1,5 @@
-# A law is a claim, not a definition: only a proof may name it, which
-# Bend reads as the law's proof.
+# A law is a claim, not a definition: only a proof or a lemma may name
+# it, which Bend reads as the law's proof.
 import Base
 
 object Counter with
