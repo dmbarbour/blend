@@ -1320,6 +1320,17 @@ law hosts.walked:
   for +h: {B.out.ok(B.objects(cmd, files, srcs, q, paths, trees)) == True{} : Bool}
   {B.hosts.go(Nat.add(k, 1n+U32.to_nat(id)), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), id) == B.hosts(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), id) : List<&2, U32>}
 
+# LAW: every written module holding laws is checked: the files the check
+# runs on (`checks.files`, which `checks.go` gives `ck.all`) hold its
+# file, or one of them is one of the modules whose tree holds it, Bend
+# checking with a file every module it imports; whatever the modules'
+# trees, a module the picks miss is checked by a file added for it, so
+# that no law emitted goes unchecked (`blend-laws2.checks-cover`).
+# Record: blend-laws-in-module, blend-no-silent-failures
+law checks.cover:
+  for +ls: List<&2, B.Wr>
+  {B.wrs.checked(ls, B.checks.files(ls), ls) == True{} : Bool}
+
 # LAW: and the errors emission writes its files under are each of their
 # parts' (`emitted.k`, `emitted.ers`): where it writes them, the walk
 # reported none, nor the dispositions, the laws' check, the names',

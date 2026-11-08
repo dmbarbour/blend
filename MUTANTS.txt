@@ -1205,3 +1205,33 @@ the first module's imports checked alone, the later modules' unseen
       List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), List.append(&2, Er, ims.fresh(ims.of(x), Nil{}, x), trees.plain.ers(t))))
 +++
       List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), List.append(&2, Er, ims.fresh(ims.of(x), Nil{}, x), Nil{})))
+
+=== checks_no_missed checks.cover
+the files a check of the picks would miss never added, so that a module
+holding laws whose trees are not closed goes unchecked
+--- blend.bend
+  List.append(&2, List<&2, U32>, fs, wrs.missed(ls, fs, ls))
++++
+  fs
+
+=== missed_none checks.cover
+no file found missed, whatever the picks reach
+--- blend.bend
+            u => Con{file, wrs.missed(t, fs, all)})
++++
+            u => wrs.missed(t, fs, all))
+
+=== missed_test_true checks.cover
+every module taken as reached by the picks, the fallback's own test
+always passing
+--- blend.bend
+          when(List<&2, List<&2, U32>>, names.has(fs, file) || wrs.reach.picked(all, fs, src), u => wrs.missed(t, fs, all),
++++
+          when(List<&2, List<&2, U32>>, True{}, u => wrs.missed(t, fs, all),
+
+=== reach_unpicked checks.cover
+a module taken as reached by one whose file is not checked
+--- blend.bend
+          (names.has(fs, file) && names.has(tree, p)) || wrs.reach.picked(t, fs, p)
++++
+          names.has(tree, p) || wrs.reach.picked(t, fs, p)
