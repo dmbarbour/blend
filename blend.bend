@@ -3768,8 +3768,34 @@ def rr.bend(+cx: Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) 
     u => when(Rr, starts.s(n, "Blend_"), v => rr.er(t, no, text(n) ++ ": names beginning Blend_ are Blend's own"), v => rr.tok(t)),
     u => rr.foreign(cx, loc.mod(ob.no(ob.at(cx.obs(cx), q))), mark, n, t))
 
-def rr.dotted(+cx: Cx, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
-  on.maybe(Rf, Rr, look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, parts(n))), cx, q, parts(n)),
+# a dotted name as one of o's own nested objects and one of its
+# definitions, the longest path first; no scope outward of o, as a bare
+# name looks at o's own members alone before the scopes it is written in
+def look.own(k: Nat, +cx: Cx, +o: U32, +ps: List<&2, List<&2, U32>>) -> Maybe<&2, Rf>:
+  match k:
+    case 0n:
+      None{}
+    case 1n++j:
+      on.maybe(U32, Maybe<&2, Rf>, find.path(cx.obs(cx), loc.mod(ob.no(ob.at(cx.obs(cx), o))), List.append(&2, List<&2, U32>, ob.path(ob.at(cx.obs(cx), o)), List.take(&2, List<&2, U32>, ps, k))),
+        u => look.own(j, cx, o, ps),
+        +x => when(Maybe<&2, Rf>, cx.has(cx, x, dots(List.drop(&2, List<&2, U32>, ps, k))),
+          v => Some{Rf{x, dots(List.drop(&2, List<&2, U32>, ps, k)), False{}, x}},
+          v => look.own(j, cx, o, ps)))
+
+# a dotted name's object and definition: one of the concrete object o's
+# own nested objects first, then as found from q, where the name is
+# written, outward: a nested object binds late, as a bare name does, the
+# family's own, made for it, the one its inherited bodies reach; a
+# top-level object, the module's member, the same for every family; and
+# a body inherited by a path keeps the hosts it was bound to
+# (`blend-frozen-host`)
+def look.late(+cx: Cx, +o: U32, +q: U32, +ps: List<&2, List<&2, U32>>) -> Maybe<&2, Rf>:
+  on.maybe(Rf, Maybe<&2, Rf>, look.own(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, ps)), cx, o, ps),
+    u => look.obj(List.length(&2, List<&2, U32>, List.tail(&2, List<&2, U32>, ps)), cx, q, ps),
+    f => Some{f})
+
+def rr.dotted(+cx: Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:
+  on.maybe(Rf, Rr, look.late(cx, o, q, parts(n)),
     u => rr.bend(cx, q, mark, n, t, no),
     f => rr.rf(cx, mark, t, no, f))
 
@@ -3782,7 +3808,7 @@ def rr.plain.k(+local: Bool, +cx: Cx, +o: U32, +q: U32, +mark: U32, +n: List<&2,
       rr.tok(t)
     case False{}:
       on.maybe(U32, Rr, look(cx, Con{o, hosts(cx.obs(cx), q)}, n),
-        v => rr.dotted(cx, q, mark, n, t, no),
+        v => rr.dotted(cx, o, q, mark, n, t, no),
         +h => rr.final(cx, h, mark, n, t, no))
 
 def rr.plain(+cx: Cx, +o: U32, +q: U32, +locals: List<&2, List<&2, U32>>, +mark: U32, +n: List<&2, U32>, +t: Tok, +no: Loc) -> Rr:

@@ -517,8 +517,20 @@ a reference resolved to a name its token does not hold
 a dotted name's definition named by its first parts, not its last
 --- blend.bend
           v => Some{Rf{x, dots(List.drop(&2, List<&2, U32>, ps, k)), False{}, x}},
+          v => look.obj(j, cx, q, ps)))
 +++
           v => Some{Rf{x, dots(List.take(&2, List<&2, U32>, ps, k)), False{}, x}},
+          v => look.obj(j, cx, q, ps)))
+
+=== dotted_own_first resolve.names
+a dotted name through the concrete object's own nested object named by
+its first parts, not its last
+--- blend.bend
+          v => Some{Rf{x, dots(List.drop(&2, List<&2, U32>, ps, k)), False{}, x}},
+          v => look.own(j, cx, o, ps)))
++++
+          v => Some{Rf{x, dots(List.take(&2, List<&2, U32>, ps, k)), False{}, x}},
+          v => look.own(j, cx, o, ps)))
 
 === prior_bang resolve.names
 a prior reached named with a byte its token does not end with

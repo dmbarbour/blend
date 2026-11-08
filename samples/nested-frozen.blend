@@ -1,0 +1,28 @@
+# Late binding of a dotted name looks at the concrete object's own nested
+# objects first, then where the name is written, outward, as a bare name
+# does: so that a body inherited by a path keeps the hosts it was bound
+# to (`blend-frozen-host`), `Y`'s `Tag` Outer2's, never the top-level
+# `Tag` a lookup outward from `Y` would find.
+import Base
+
+object Tag with
+  shared def t() -> U32:
+    7
+
+object Outer with
+  object Tag with
+    shared def t() -> U32:
+      5
+  object Inner with
+    def u() -> U32:
+      Tag.t()
+
+object Outer2 extends Outer with
+  extend Tag with
+    shared upd t() -> U32:
+      6
+
+object Y extends Outer2.Inner
+
+def main() -> IO(Unit):
+  IO.print(U32.show(Outer.Inner.u()) ++ " " ++ U32.show(Outer2.Inner.u()) ++ " " ++ U32.show(Y.u()) ++ " " ++ U32.show(Tag.t()))

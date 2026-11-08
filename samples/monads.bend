@@ -1,5 +1,5 @@
 # Written by Blend from monads.blend; do not edit.
-# blend stamp: 5291f54add10 76d386aac49f8848
+# blend stamp: 763442a0527c 132b6b54f3aa8832
 import Base
 
 # blend: monads.blend:19

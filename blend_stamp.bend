@@ -3,4 +3,4 @@ import Base
 # blend.bend's hash, Blend's version stamp (blend-stamps): generated
 # by blend_stamp.sh, never edited
 def hash() -> String:
-  "5291f54add10"
+  "763442a0527c"
