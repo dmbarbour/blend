@@ -1,0 +1,5 @@
+Error: do self: Opt.bind is copied, where a do over it wants it shared, Bend writing one name for every step (shared def bind)
+Location: do-copied.blend:16
+15 |   def one(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+16>|     do self<U32>:
+17 |       x : U32 <- a

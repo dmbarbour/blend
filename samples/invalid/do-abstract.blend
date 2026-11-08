@@ -1,0 +1,15 @@
+# A `do` header naming an abstract object names nothing emitted; in the
+# object's own definitions, `do self<R>:` names the concrete object
+# (`blend-do-self`).
+import Base
+
+abstract object Monad with
+  declare pure, bind
+
+def one(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  do Monad<U32>:
+    x : U32 <- a
+    return x
+
+def main() -> IO(Unit):
+  IO.print("")

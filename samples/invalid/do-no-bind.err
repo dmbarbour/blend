@@ -1,0 +1,5 @@
+Error: do self: Opt has no bind, which a do over it calls
+Location: do-no-bind.blend:9
+ 8 |   def one(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+ 9>|     do self<U32>:
+10 |       x : U32 <- a
