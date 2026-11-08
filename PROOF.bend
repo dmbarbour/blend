@@ -16808,6 +16808,117 @@ def Laws.hosts.walked(cmd, files, srcs, q, paths, trees, id, k, h):
         Bool.and(List.is_empty(&2, B.Er, B.er.endless(B.cx.pss(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), Bool.and(List.is_empty(&2, B.Er, B.er.cycles(B.als.all(trees, 0, paths, B.obs(trees)), B.als.all(trees, 0, paths, B.obs(trees)))), Bool.and(List.is_empty(&2, B.Er, B.chains(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.pss(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), Bool.and(List.is_empty(&2, B.Er, B.er.obs(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.als.all(trees, 0, paths, B.obs(trees)), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), Bool.and(List.is_empty(&2, B.Er, B.er.made.parents(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.als.all(trees, 0, paths, B.obs(trees)), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.ls(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), Bool.and(List.is_empty(&2, B.Er, B.er.lins(B.cx.pss(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.ls(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), 0, B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.ls(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), List.is_empty(&2, B.Er, B.er.defs(B.cx.pss(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.fs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.ls(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), 0, B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.fs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))))))))),
         Laws.objects.checked(B.als.all(trees, 0, paths, B.obs(trees)), B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees)), Laws.errors.objects(cmd, files, srcs, q, paths, trees, h)))))
 
+# Checks cover (`checks.cover`)
+# -----------------------------
+#
+# A module the picks miss is among the files added after them
+# (`wrs.missed`), a containment kept as a `Bool` (`nms_in`), so that each
+# module is checked by a file of the picks or one added; a name of a
+# list is one of the list it begins or ends (`nhas_app_l`,
+# `nhas_app_r`), and a module reached by one picked is reached by one
+# among more files (`reach_mono`)
+
+# every name of xs among ys
+def nms_in(xs: List<&2, List<&2, U32>>, +ys: List<&2, List<&2, U32>>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{x, t}:
+      Bool.and(B.names.has(ys, x), nms_in(t, ys))
+
+def nms_cons(xs: List<&2, List<&2, U32>>, +y: List<&2, U32>, +ys: List<&2, List<&2, U32>>, +h: {nms_in(xs, ys) == True{} : Bool}) -> {nms_in(xs, Con{y, ys}) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(B.names.has(Con{y, ys}, x), nms_in(t, Con{y, ys}),
+        or_r_true(B.same(y, x), B.names.has(ys, x), and_l(B.names.has(ys, x), nms_in(t, ys), h)),
+        nms_cons(t, y, ys, and_r(B.names.has(ys, x), nms_in(t, ys), h)))
+
+def nms_refl(xs: List<&2, List<&2, U32>>) -> {nms_in(xs, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      and_intro(B.names.has(Con{x, t}, x), nms_in(t, Con{x, t}),
+        or_l_true(B.same(x, x), B.names.has(t, x), Laws.names.same_refl(x)), nms_cons(t, x, t, nms_refl(t)))
+
+def nhas_app_l(xs: List<&2, List<&2, U32>>, +ys: List<&2, List<&2, U32>>, +n: List<&2, U32>, h: {B.names.has(xs, n) == True{} : Bool}) ->
+    {B.names.has(List.append(&2, List<&2, U32>, xs, ys), n) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      Empty.absurd({B.names.has(ys, n) == True{} : Bool}, MB.false_ne_true()(h))
+    case Con{+x, +t}:
+      or_map(B.same(x, n), B.names.has(t, n), B.same(x, n), B.names.has(List.append(&2, List<&2, U32>, t, ys), n), h,
+        hx => hx, ht => nhas_app_l(t, ys, n, ht))
+
+def nhas_app_r(xs: List<&2, List<&2, U32>>, +ys: List<&2, List<&2, U32>>, +n: List<&2, U32>, h: {B.names.has(ys, n) == True{} : Bool}) ->
+    {B.names.has(List.append(&2, List<&2, U32>, xs, ys), n) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      or_r_true(B.same(x, n), B.names.has(List.append(&2, List<&2, U32>, t, ys), n), nhas_app_r(t, ys, n, h))
+
+# a module one picked reaches, among the picks and more
+def rmo_k(c: Bool, +file: List<&2, U32>, +tree: List<&2, List<&2, U32>>, +t: List<&2, B.Wr>, +fs: List<&2, List<&2, U32>>, +ms: List<&2, List<&2, U32>>, +p: List<&2, U32>,
+    ec: {B.names.has(List.append(&2, List<&2, U32>, fs, ms), file) == c : Bool},
+    h: {Bool.or(Bool.and(B.names.has(fs, file), B.names.has(tree, p)), B.wrs.reach.picked(t, fs, p)) == True{} : Bool},
+    ih: @h2:{B.wrs.reach.picked(t, fs, p) == True{} : Bool} -> {B.wr.checked.by(t, List.append(&2, List<&2, U32>, fs, ms), p) == True{} : Bool}) ->
+    {B.when(Bool, c, u => Bool.or(B.names.has(tree, p), B.wr.checked.by(t, List.append(&2, List<&2, U32>, fs, ms), p)), u => B.wr.checked.by(t, List.append(&2, List<&2, U32>, fs, ms), p)) == True{} : Bool}:
+  match c:
+    case True{}:
+      or_map(Bool.and(B.names.has(fs, file), B.names.has(tree, p)), B.wrs.reach.picked(t, fs, p), B.names.has(tree, p), B.wr.checked.by(t, List.append(&2, List<&2, U32>, fs, ms), p), h,
+        ha => and_r(B.names.has(fs, file), B.names.has(tree, p), ha), hr => ih(hr))
+    case False{}:
+      or_cases(Bool.and(B.names.has(fs, file), B.names.has(tree, p)), B.wrs.reach.picked(t, fs, p), B.wr.checked.by(t, List.append(&2, List<&2, U32>, fs, ms), p), h,
+        ha => Empty.absurd({B.wr.checked.by(t, List.append(&2, List<&2, U32>, fs, ms), p) == True{} : Bool},
+          MB.false_ne_true()(Equal.trans(Bool, False{}, B.names.has(List.append(&2, List<&2, U32>, fs, ms), file), True{}, Equal.sym(Bool, B.names.has(List.append(&2, List<&2, U32>, fs, ms), file), False{}, ec),
+            nhas_app_l(fs, ms, file, and_l(B.names.has(fs, file), B.names.has(tree, p), ha))))),
+        hr => ih(hr))
+
+def reach_mono(all: List<&2, B.Wr>, +fs: List<&2, List<&2, U32>>, +ms: List<&2, List<&2, U32>>, +p: List<&2, U32>, h: {B.wrs.reach.picked(all, fs, p) == True{} : Bool}) ->
+    {B.wr.checked.by(all, List.append(&2, List<&2, U32>, fs, ms), p) == True{} : Bool}:
+  match all:
+    case Nil{}:
+      Empty.absurd({B.wr.checked.by(Nil{}, List.append(&2, List<&2, U32>, fs, ms), p) == True{} : Bool}, MB.false_ne_true()(h))
+    case Con{v, +t}:
+      match v:
+        case B.Wr{+file, src, +tree, ls}:
+          rmo_k(B.names.has(List.append(&2, List<&2, U32>, fs, ms), file), file, tree, t, fs, ms, p, {==}, h, h2 => reach_mono(t, fs, ms, p, h2))
+
+# a module checked: covered by the picks, or its file among those added
+def ck_k(c: Bool, +file: List<&2, U32>, +src: List<&2, U32>, +t: List<&2, B.Wr>, +fs: List<&2, List<&2, U32>>, +ms: List<&2, List<&2, U32>>, +all: List<&2, B.Wr>,
+    +hm: {nms_in(B.when(List<&2, List<&2, U32>>, c, u => B.wrs.missed(t, fs, all), u => Con{file, B.wrs.missed(t, fs, all)}), ms) == True{} : Bool},
+    ec: {Bool.or(B.names.has(fs, file), B.wrs.reach.picked(all, fs, src)) == c : Bool},
+    ih: @h2:{nms_in(B.wrs.missed(t, fs, all), ms) == True{} : Bool} -> {B.wrs.checked(t, List.append(&2, List<&2, U32>, fs, ms), all) == True{} : Bool}) ->
+    {Bool.and(Bool.or(B.names.has(List.append(&2, List<&2, U32>, fs, ms), file), B.wr.checked.by(all, List.append(&2, List<&2, U32>, fs, ms), src)), B.wrs.checked(t, List.append(&2, List<&2, U32>, fs, ms), all)) == True{} : Bool}:
+  match c:
+    case True{}:
+      and_intro(Bool.or(B.names.has(List.append(&2, List<&2, U32>, fs, ms), file), B.wr.checked.by(all, List.append(&2, List<&2, U32>, fs, ms), src)), B.wrs.checked(t, List.append(&2, List<&2, U32>, fs, ms), all),
+        or_map(B.names.has(fs, file), B.wrs.reach.picked(all, fs, src), B.names.has(List.append(&2, List<&2, U32>, fs, ms), file), B.wr.checked.by(all, List.append(&2, List<&2, U32>, fs, ms), src), ec,
+          hx => nhas_app_l(fs, ms, file, hx), hr => reach_mono(all, fs, ms, src, hr)),
+        ih(hm))
+    case False{}:
+      and_intro(Bool.or(B.names.has(List.append(&2, List<&2, U32>, fs, ms), file), B.wr.checked.by(all, List.append(&2, List<&2, U32>, fs, ms), src)), B.wrs.checked(t, List.append(&2, List<&2, U32>, fs, ms), all),
+        or_l_true(B.names.has(List.append(&2, List<&2, U32>, fs, ms), file), B.wr.checked.by(all, List.append(&2, List<&2, U32>, fs, ms), src),
+          nhas_app_r(fs, ms, file, and_l(B.names.has(ms, file), nms_in(B.wrs.missed(t, fs, all), ms), hm))),
+        ih(and_r(B.names.has(ms, file), nms_in(B.wrs.missed(t, fs, all), ms), hm)))
+
+def ck_go(xs: List<&2, B.Wr>, +fs: List<&2, List<&2, U32>>, +ms: List<&2, List<&2, U32>>, +all: List<&2, B.Wr>, +hm: {nms_in(B.wrs.missed(xs, fs, all), ms) == True{} : Bool}) ->
+    {B.wrs.checked(xs, List.append(&2, List<&2, U32>, fs, ms), all) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{w, +t}:
+      match w:
+        case B.Wr{+file, +src, tree, wls}:
+          ck_k(Bool.or(B.names.has(fs, file), B.wrs.reach.picked(all, fs, src)), file, src, t, fs, ms, all, hm, {==},
+            h2 => ck_go(t, fs, ms, all, h2))
+
+def Laws.checks.cover(ls):
+  ck_go(ls, B.wrs.pick(ls, ls), B.wrs.missed(ls, B.wrs.pick(ls, ls), ls), ls, nms_refl(B.wrs.missed(ls, B.wrs.pick(ls, ls), ls)))
+
 # law emitted.checked: the Ce taken apart, emit.out's errors none
 # (`errors.emitted`), then each part's in turn as for the objects, in a
 # lemma over the parts' records, so that a mutant's mismatch is a small

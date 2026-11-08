@@ -8491,6 +8491,10 @@ def wrs.reach(ws: List<&2, Wr>, +p: List<&2, U32>) -> Bool:
     case Con{w, t}:
       wr.reaches(w, p) || wrs.reach(t, p)
 
+# the written modules holding laws (`lns.laws`)
+def wrs.lawful(ws: List<&2, Wr>) -> List<&2, Wr>:
+  List.filter(Wr, v => wr.laws(v), ws)
+
 # the files to check: each holding laws that no other holding them
 # reaches
 def wrs.pick(ws: List<&2, Wr>, +all: List<&2, Wr>) -> List<&2, List<&2, U32>>:
@@ -8732,8 +8736,63 @@ def ck.bend(r: Result<&1, &1, U32 & String, String>) -> String:
     case Fail{e}:
       "bend"
 
+# whether a check of the files fs checks the module at p: one of ws
+# whose file is among them holds p in its tree, Bend checking with a
+# file every module it imports
+def wrs.reach.picked(ws: List<&2, Wr>, +fs: List<&2, List<&2, U32>>, +p: List<&2, U32>) -> Bool:
+  match ws:
+    case Nil{}:
+      False{}
+    case Con{w, t}:
+      match w:
+        case Wr{+file, src, tree, ls}:
+          (names.has(fs, file) && names.has(tree, p)) || wrs.reach.picked(t, fs, p)
+
+# the files of ws a check of fs would miss: neither among fs nor reached
+# by one of all among them
+def wrs.missed(ws: List<&2, Wr>, +fs: List<&2, List<&2, U32>>, +all: List<&2, Wr>) -> List<&2, List<&2, U32>>:
+  match ws:
+    case Nil{}:
+      Nil{}
+    case Con{w, +t}:
+      match w:
+        case Wr{+file, +src, tree, ls}:
+          when(List<&2, List<&2, U32>>, names.has(fs, file) || wrs.reach.picked(all, fs, src), u => wrs.missed(t, fs, all),
+            u => Con{file, wrs.missed(t, fs, all)})
+
+# the files the check runs on: each holding laws that no other holding
+# them reaches (`wrs.pick`), then any a check of those would miss, none
+# where each module's tree holds its imports' and none its own, as the
+# reading makes them, so that every written module holding laws is
+# checked (law checks.cover)
+def checks.files(+ls: List<&2, Wr>) -> List<&2, List<&2, U32>>:
+  +fs = wrs.pick(ls, ls)
+  List.append(&2, List<&2, U32>, fs, wrs.missed(ls, fs, ls))
+
+# whether each of ls is checked by a check of the files fs: its file
+# among them, or its module in the tree of one of all whose file is;
+# written apart from `wrs.missed`'s test, so that a fault in that test
+# shows (law checks.cover)
+def wr.checked.by(all: List<&2, Wr>, +fs: List<&2, List<&2, U32>>, +p: List<&2, U32>) -> Bool:
+  match all:
+    case Nil{}:
+      False{}
+    case Con{v, +t}:
+      match v:
+        case Wr{+file, src, tree, ls}:
+          when(Bool, names.has(fs, file), u => names.has(tree, p) || wr.checked.by(t, fs, p), u => wr.checked.by(t, fs, p))
+
+def wrs.checked(ls: List<&2, Wr>, +fs: List<&2, List<&2, U32>>, +all: List<&2, Wr>) -> Bool:
+  match ls:
+    case Nil{}:
+      True{}
+    case Con{w, t}:
+      match w:
+        case Wr{+file, +src, tree, ws}:
+          (names.has(fs, file) || wr.checked.by(all, fs, src)) && wrs.checked(t, fs, all)
+
 def checks.go(+bend: String, +mode: U32, +ws: List<&2, Wr>) -> IO(Unit):
-  ck.all(wrs.pick(List.filter(Wr, v => wr.laws(v), ws), List.filter(Wr, v => wr.laws(v), ws)), bend, mode, ws, True{})
+  ck.all(checks.files(wrs.lawful(ws)), bend, mode, ws, True{})
 
 # the files written checked, unless mode 0
 def checks(+fs: List<&2, Fo>, +mode: U32, ws: List<&2, Wm>) -> IO(Unit):
