@@ -4323,6 +4323,23 @@ def rds.defs(rs: List<&2, Rd>) -> Bool:
         case Rd{inst, node, hd, ls}:
           rd.def(inst, node) && rds.defs(t)
 
+# whether a copy's body resolved with no error
+def rb.clean(b: Rb) -> Bool:
+  match b:
+    case Rb{ls, es, more}:
+      List.is_empty(&2, Er, es)
+
+# whether each copy among rs resolved its body with no error, each made
+# again to see (law copies.reported)
+def rds.reported(+cx: Cx, +o: U32, rs: List<&2, Rd>) -> Bool:
+  match rs:
+    case Nil{}:
+      True{}
+    case Con{r, t}:
+      match r:
+        case Rd{+inst, node, hd, ls}:
+          rb.clean(Pair.snd(Rd, Rb, copy.of(cx, o, inst))) && rds.reported(cx, o, t)
+
 # whether a copy of instance i is among rs (law copies.embodied)
 def rds.has(rs: List<&2, Rd>, +i: In) -> Bool:
   match rs:
