@@ -1183,3 +1183,25 @@ the dispositions' errors left out of emission's
   List.append(&2, Er, dse, List.append(&2, Er, mse, List.append(&2, Er, er.laws.if(units.lawful(all), all),
 +++
   List.append(&2, Er, dse, List.append(&2, Er, Nil{}, List.append(&2, Er, er.laws.if(units.lawful(all), all),
+
+=== read_unread_dropped read.checked
+the modules none could read left out of the reading's errors
+--- blend.bend
+  List.append(&2, Er, mds.ers(t, md.path(r)), trees.plain.ers(mds.trees(Con{r, t}, 0)))
++++
+  trees.plain.ers(mds.trees(Con{r, t}, 0))
+
+=== trees_fresh_dropped trees.checked
+an alias naming an earlier import or a name the module defines left
+unreported, the shadowing unseen
+--- blend.bend
+      List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), List.append(&2, Er, ims.fresh(ims.of(x), Nil{}, x), trees.plain.ers(t))))
++++
+      List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), trees.plain.ers(t)))
+
+=== trees_first_alone trees.checked
+the first module's imports checked alone, the later modules' unseen
+--- blend.bend
+      List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), List.append(&2, Er, ims.fresh(ims.of(x), Nil{}, x), trees.plain.ers(t))))
++++
+      List.append(&2, Er, ims.plain.ers(ims.of(x)), List.append(&2, Er, ims.bare(x), List.append(&2, Er, ims.fresh(ims.of(x), Nil{}, x), Nil{})))

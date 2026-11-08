@@ -306,7 +306,10 @@ it alone taught. Add to this file what a new proof teaches.
   written out) failed by exhausting the checker's memory, 3 GB in 37 s,
   rather than by a refutation; the part it breaks moved into a small
   lemma over a variable (`eown_il`) fails there, cleanly
-  (`markers.inline`).
+  (`markers.inline`). Likewise where a law over a named build splits
+  what the build computes: name that computation in the code (a
+  function of its own, one caller, no cost), and split it in a lemma
+  over its records (`emitted.ers`, `eers_parts`).
 - **A walk naming the code's own states**: a law that follows a fold
   step by step (`wr.at`) calls the code's own step on the code's own
   state, and ends by comparing with the code's own result (its `fin`),

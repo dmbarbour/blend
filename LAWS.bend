@@ -1327,3 +1327,32 @@ law emitted.checked:
     Bool.and(List.is_empty(&2, B.Er, B.pf.ers(B.proof.parts(2, files, cx, all, res))),
     List.is_empty(&2, B.Er, B.er.reserved(B.names.all(List.reverse(&2, U32, B.ce.order(ce)), B.ce.e(ce)))))))))) == True{} : Bool}
 
+# LAW: and each of the reading's checks among its errors (`load.ers`):
+# where the reading reports none, no module an import reached went
+# unread (`mds.ers`), and no module's imports have errors
+# (`trees.plain.ers`), so that no check drops out of the reading unseen
+# (`blend-laws2.errors-reach`).
+# Record: blend-no-silent-failures
+law read.checked:
+  for +r: B.Md
+  for +t: List<&2, B.Md>
+  for +h: {B.load.ers(r, t) == Nil{} : List<&2, B.Er>}
+  {Bool.and(List.is_empty(&2, B.Er, B.mds.ers(t, B.md.path(r))),
+    List.is_empty(&2, B.Er, B.trees.plain.ers(B.mds.trees(Con{r, t}, 0)))) == True{} : Bool}
+
+# LAW: and a module's imports checked each way (`trees.plain.ers`):
+# where its imports and the later modules' report none, no path is one
+# Bend would refuse (`ims.plain.ers`), no Blend module is imported
+# without an alias (`ims.bare`), no alias names an earlier import or a
+# name the module defines (`ims.fresh`), and the later modules' report
+# none.
+# Record: blend-no-silent-failures, blend-no-shadowing
+law trees.checked:
+  for +x: List<&2, B.Node>
+  for +ts: List<&2, List<&2, B.Node>>
+  for +h: {B.trees.plain.ers(Con{x, ts}) == Nil{} : List<&2, B.Er>}
+  {Bool.and(List.is_empty(&2, B.Er, B.ims.plain.ers(B.ims.of(x))),
+    Bool.and(List.is_empty(&2, B.Er, B.ims.bare(x)),
+    Bool.and(List.is_empty(&2, B.Er, B.ims.fresh(B.ims.of(x), Nil{}, x)),
+    List.is_empty(&2, B.Er, B.trees.plain.ers(ts))))) == True{} : Bool}
+
