@@ -939,7 +939,7 @@ a member table's lookup takes the first definition, whatever its name
 +++
           when(Maybe<&2, Node>, True{}, u => Some{NDef{share, upd, name, rest, params, body, no, ind, what}}, u => mem.find(t, n))
 
-=== copies_errors_lost copies.defined
+=== copies_errors_lost copies.defined copies.reported
 a copy's errors are lost when it is added
 --- blend.bend
       Cp{Con{rd, rds}, List.append(&2, Er, ers, es), done}
@@ -1235,3 +1235,25 @@ a module taken as reached by one whose file is not checked
           (names.has(fs, file) && names.has(tree, p)) || wrs.reach.picked(t, fs, p)
 +++
           names.has(tree, p) || wrs.reach.picked(t, fs, p)
+
+=== copies_defined_errors_lost copies.reported
+a copy's errors kept only where it is no definition, a defined copy's
+shadowing or unresolved name lost: copies.defined still holds
+--- blend.bend
+def cp.add(rd: Rd, b: Rb, c: Cp) -> Cp:
+  match b c:
+    case Rb{ls, es, more} Cp{rds, ers, done}:
+      Cp{Con{rd, rds}, List.append(&2, Er, ers, es), done}
++++
+def cp.add(rd: Rd, b: Rb, c: Cp) -> Cp:
+  match rd b c:
+    case Rd{+inst, +nd, +hd, +ls} Rb{lb, es, more} Cp{rds, ers, done}:
+      Cp{Con{Rd{inst, nd, hd, ls}, rds}, List.append(&2, Er, ers, when(List<&2, Er>, node.def(nd), u => Nil{}, u => es)), done}
+
+=== copies_step_errors_anew copies.reported
+each copy added to the copies with their errors begun anew, those before
+it lost
+--- blend.bend
+                  rd => +b => copies.go(k, cx, o, ins.then(t, rb.ins(b)), cp.add(rd, b, Cp{rds, ers, done.put(done, i)}))))
++++
+                  rd => +b => copies.go(k, cx, o, ins.then(t, rb.ins(b)), cp.add(rd, b, Cp{rds, Nil{}, done.put(done, i)}))))

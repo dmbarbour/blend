@@ -534,6 +534,18 @@ law copies.defined:
   for +he: {B.cp.ers(B.copies(cx, o)) == Nil{} : List<&2, B.Er>}
   {B.rds.defs(B.cp.rds(B.copies(cx, o))) == True{} : Bool}
 
+# LAW: and where the copies report no error, each copy resolved its body
+# with none: no resolution error in a copied body, a shadowing, an
+# unresolved name, a step past the module, dropped on its way to the
+# copies' errors (`cp.add`), whatever the copy holds; `copies.defined`
+# claims only that each is a definition (`blend-laws2.copies-reported`).
+# Record: blend-no-silent-failures
+law copies.reported:
+  for +cx: B.Cx
+  for +o: U32
+  for +he: {B.cp.ers(B.copies(cx, o)) == Nil{} : List<&2, B.Er>}
+  {B.rds.reported(cx, o, B.cp.rds(B.copies(cx, o))) == True{} : Bool}
+
 # LAW: an object's member table finds what a search of its members
 # finds, the first definition of the name sought, or none: a leaf keeps
 # its entries in their order, and holds every definition whose name

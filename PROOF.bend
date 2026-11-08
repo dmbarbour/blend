@@ -7143,6 +7143,128 @@ def Laws.copies.defined(cx, o, he):
   pdef_rds(B.copies(cx, o),
     dg_go(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)), B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, {==}, he))
 
+# The copies reported (`copies.reported`)
+# ---------------------------------------
+#
+# Where the copies report no error, each copy's body resolved with none:
+# the walk of `copies.defined` again (`dg_go`), its predicate each
+# copy's body's errors none, a copy's instance its own (`rd_inst`)
+
+def prep(+cx: B.Cx, +o: U32, c: B.Cp) -> Bool:
+  match c:
+    case B.Cp{rds, ers, done}:
+      B.rds.reported(cx, o, rds)
+
+def short_prep(todo: List<&2, B.In>, +cx: B.Cx, +o: U32, c: B.Cp, hc: {prep(cx, o, c) == True{} : Bool}) ->
+    {prep(cx, o, B.cp.short(todo, cx, o, c)) == True{} : Bool}:
+  match todo:
+    case Nil{}:
+      hc
+    case Con{i, t}:
+      match c:
+        case B.Cp{rds, ers, done}:
+          hc
+
+def cpadd_prep(+cx: B.Cx, +o: U32, rd: B.Rd, b: B.Rb, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +d: B.Ht<B.In>) ->
+    {B.rds.reported(cx, o, Con{rd, rds}) == prep(cx, o, B.cp.add(rd, b, B.Cp{rds, ers, d})) : Bool}:
+  match b:
+    case B.Rb{ls, es, more}:
+      {==}
+
+# a body's errors none: it resolved clean
+def rb_clean(b: B.Rb, h: {rbe(b) == Nil{} : List<&2, B.Er>}) -> {B.rb.clean(b) == True{} : Bool}:
+  match b:
+    case B.Rb{ls, es, more}:
+      match es:
+        case Nil{}:
+          {==}
+        case Con{+x, +t}:
+          Empty.absurd({B.rb.clean(B.Rb{ls, Con{x, t}, more}) == True{} : Bool},
+            (%Equal.sym(List<&2, B.Er>, Con{x, t}, Nil{}, h) : nil_disc(B.Er, _)
+            Unit{}))
+
+def rrep_cons(rd: B.Rd, +rds: List<&2, B.Rd>, +cx: B.Cx, +o: U32,
+    h1: {B.rb.clean(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, rd_in(rd)))) == True{} : Bool}, h2: {B.rds.reported(cx, o, rds) == True{} : Bool}) ->
+    {B.rds.reported(cx, o, Con{rd, rds}) == True{} : Bool}:
+  match rd:
+    case B.Rd{+inst, nd, hd, ls}:
+      and_intro(B.rb.clean(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, inst))), B.rds.reported(cx, o, rds), h1, h2)
+
+# a copy added where the result reports no error: its own errors none
+def dr_add(+k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    hc: {B.rds.reported(cx, o, rds) == True{} : Bool},
+    he: {B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>}) ->
+    {prep(cx, o, B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) == True{} : Bool}:
+  %cpadd_prep(cx, o, Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds, ers, B.done.put(done, i)) : {_ == True{} : Bool}
+  rrep_cons(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), rds, cx, o,
+    (%rd_inst(cx, o, i) : {B.rb.clean(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, _))) == True{} : Bool}
+    rb_clean(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)),
+      cpe_nil_r(ers, rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i))),
+        (%Equal.sym(List<&2, B.Er>, List.append(&2, B.Er, B.cp.ers(B.Cp{rds, ers, B.done.put(done, i)}), rbe(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.ers(B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})),
+            cpadd_ers(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) : {_ == Nil{} : List<&2, B.Er>}
+        ers_back(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), he))))),
+    hc)
+
+def dr_step(c: Bool, +k: Nat, +cx: B.Cx, +o: U32, +i: B.In, +t: List<&2, B.In>, +rds: List<&2, B.Rd>, +ers: List<&2, B.Er>, +done: B.Ht<B.In>,
+    hc: {B.rds.reported(cx, o, rds) == True{} : Bool},
+    +he: {B.cp.ers(cgk(c, k, cx, o, i, t, rds, ers, done)) == Nil{} : List<&2, B.Er>},
+    ft: @hc2:{B.rds.reported(cx, o, rds) == True{} : Bool} -> @he2:{B.cp.ers(B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == Nil{} : List<&2, B.Er>} ->
+      {prep(cx, o, B.copies.go(k, cx, o, t, B.Cp{rds, ers, done})) == True{} : Bool},
+    ff: @hc2:{prep(cx, o, B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})) == True{} : Bool} ->
+      @he2:{B.cp.ers(B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == Nil{} : List<&2, B.Er>} ->
+      {prep(cx, o, B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}))) == True{} : Bool}) ->
+    {prep(cx, o, cgk(c, k, cx, o, i, t, rds, ers, done)) == True{} : Bool}:
+  match c:
+    case True{}:
+      ft(hc, he)
+    case False{}:
+      %Equal.sym(B.Cp, B.on.pair(B.Rd, B.Rb, B.Cp, B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))), B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)})), pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)})))) : {prep(cx, o, _) == True{} : Bool}
+      ff(dr_add(k, cx, o, i, t, rds, ers, done, hc,
+          (%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+          he)),
+        (%pair_eta_rd(B.copy.of(cx, o, i), rd => +b => B.copies.go(k, cx, o, B.ins.then(t, B.rb.ins(b)), B.cp.add(rd, b, B.Cp{rds, ers, B.done.put(done, i)}))) : {B.cp.ers(_) == Nil{} : List<&2, B.Er>}
+        he))
+
+# by induction on the fuel: where the result reports no error, every copy
+# resolved with none, as every one before it was
+def dr_go(n: Nat, +cx: B.Cx, +o: U32, todo: List<&2, B.In>, +c: B.Cp,
+    hc: {prep(cx, o, c) == True{} : Bool}, he: {B.cp.ers(B.copies.go(n, cx, o, todo, c)) == Nil{} : List<&2, B.Er>}) ->
+    {prep(cx, o, B.copies.go(n, cx, o, todo, c)) == True{} : Bool}:
+  match n:
+    case 0n:
+      short_prep(todo, cx, o, c, hc)
+    case 1n+(+k):
+      match todo:
+        case Nil{}:
+          hc
+        case Con{+i, +t}:
+          match c:
+            case B.Cp{+rds, +ers, +done}:
+              dr_step(B.done.has(done, i), k, cx, o, i, t, rds, ers, done, hc, he,
+                hc2 => he2 => dr_go(k, cx, o, t, B.Cp{rds, ers, done}, hc2, he2),
+                hc2 => he2 => dr_go(k, cx, o, B.ins.then(t, B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)))), B.cp.add(Pair.fst(B.Rd, B.Rb, B.copy.of(cx, o, i)), Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, i)), B.Cp{rds, ers, B.done.put(done, i)}), hc2, he2))
+
+# the copies read reversed: still every one reported clean
+def rev_rep(+cx: B.Cx, +o: U32, xs: List<&2, B.Rd>, +acc: List<&2, B.Rd>, +hx: {B.rds.reported(cx, o, xs) == True{} : Bool},
+    ha: {B.rds.reported(cx, o, acc) == True{} : Bool}) -> {B.rds.reported(cx, o, List.reverse.go(&2, B.Rd, xs, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{x, +t}:
+      match x:
+        case B.Rd{+inst, +nd, +hd, +ls}:
+          rev_rep(cx, o, t, Con{B.Rd{inst, nd, hd, ls}, acc}, MB.eq_true_of_and_right(B.rb.clean(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, inst))), B.rds.reported(cx, o, t), hx),
+            and_intro(B.rb.clean(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, inst))), B.rds.reported(cx, o, acc), MB.eq_true_of_and_left(B.rb.clean(Pair.snd(B.Rd, B.Rb, B.copy.of(cx, o, inst))), B.rds.reported(cx, o, t), hx), ha))
+
+def prep_rds(+cx: B.Cx, +o: U32, c: B.Cp, h: {prep(cx, o, c) == True{} : Bool}) -> {B.rds.reported(cx, o, B.cp.rds(c)) == True{} : Bool}:
+  match c:
+    case B.Cp{rds, ers, done}:
+      rev_rep(cx, o, rds, Nil{}, h, {==})
+
+def Laws.copies.reported(cx, o, he):
+  prep_rds(cx, o, B.copies(cx, o),
+    dr_go(B.copies.fuel(), cx, o, B.ins.finals(B.cx.map(cx, o)), B.Cp{Nil{}, Nil{}, B.copies.room(cx)}, {==}, he))
+
 # The member tables indexed (`members.indexed`)
 # ---------------------------------------------
 #

@@ -1,5 +1,5 @@
 # Written by Blend from templates.blend; do not edit.
-# blend stamp: c2332520f07f 28ce05ab1a238df5
+# blend stamp: 39266ebcdffa 36146a49493c2c97
 import Base
 
 # blend: templates.blend:23
