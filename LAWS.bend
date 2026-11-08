@@ -1304,3 +1304,26 @@ law objects.checked:
     Bool.and(List.is_empty(&2, B.Er, B.er.lins(B.cx.pss(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.ls(cx))),
     List.is_empty(&2, B.Er, B.er.defs(B.cx.pss(cx), B.cx.fs(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.fs(cx)))))))))) == True{} : Bool}
 
+# LAW: and the errors emission writes its files under are each of their
+# parts' (`emitted.k`, `emitted.ers`): where it writes them, the walk
+# reported none, nor the dispositions, the laws' check, the names',
+# the laws' part, the proofs' part, nor a name Bend reserves, so that
+# no part's errors drop out of emission unseen
+# (`blend-laws2.errors-reach`).
+# Record: blend-no-silent-failures
+law emitted.checked:
+  for +files: List<&2, List<&2, U32>>
+  for +srcs: List<&2, List<&2, U32>>
+  for +cx: B.Cx
+  for +all: List<&2, B.Un>
+  for +res: List<&2, List<&2, U32>>
+  for +ce: B.Ce
+  for +h: {B.out.ok(B.emitted.k(files, srcs, cx, all, res, ce)) == True{} : Bool}
+  {Bool.and(List.is_empty(&2, B.Er, B.ce.wers(ce)),
+    Bool.and(List.is_empty(&2, B.Er, B.ce.mers(ce)),
+    Bool.and(List.is_empty(&2, B.Er, B.er.laws.if(B.units.lawful(all), all)),
+    Bool.and(List.is_empty(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, B.ce.order(ce)), B.ce.e(ce)))),
+    Bool.and(List.is_empty(&2, B.Er, B.pf.ers(B.proof.parts(1, files, cx, all, res))),
+    Bool.and(List.is_empty(&2, B.Er, B.pf.ers(B.proof.parts(2, files, cx, all, res))),
+    List.is_empty(&2, B.Er, B.er.reserved(B.names.all(List.reverse(&2, U32, B.ce.order(ce)), B.ce.e(ce)))))))))) == True{} : Bool}
+

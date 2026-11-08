@@ -1160,3 +1160,26 @@ errors
     List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), er.defs(pss, fs, ls, 0, obs, fs))))))))
 +++
     List.append(&2, Er, er.lins(pss, ls, 0, obs, ls), Nil{}))))))))
+
+=== emitted_walk_dropped emitted.checked
+the walk's errors left out where emission gathers its errors, a cycle
+or a missing definition then written unseen
+--- blend.bend
+  emit.ers(wers, mers, all, order, e, pf.ers(lw), List.append(&2, Er, pf.ers(pf), er.reserved(names.all(List.reverse(&2, U32, order), e))))
++++
+  emit.ers(Nil{}, mers, all, order, e, pf.ers(lw), List.append(&2, Er, pf.ers(pf), er.reserved(names.all(List.reverse(&2, U32, order), e))))
+
+=== emitted_reserved_dropped emitted.checked
+a name Bend reserves left unreported, the proofs' part's errors alone
+passed on
+--- blend.bend
+  emit.ers(wers, mers, all, order, e, pf.ers(lw), List.append(&2, Er, pf.ers(pf), er.reserved(names.all(List.reverse(&2, U32, order), e))))
++++
+  emit.ers(wers, mers, all, order, e, pf.ers(lw), pf.ers(pf))
+
+=== emit_ers_dispositions_dropped emitted.checked
+the dispositions' errors left out of emission's
+--- blend.bend
+  List.append(&2, Er, dse, List.append(&2, Er, mse, List.append(&2, Er, er.laws.if(units.lawful(all), all),
++++
+  List.append(&2, Er, dse, List.append(&2, Er, Nil{}, List.append(&2, Er, er.laws.if(units.lawful(all), all),
