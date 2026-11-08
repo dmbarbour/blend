@@ -38,9 +38,8 @@ done
 m=0
 # each invalid and refused sample emitted from a copy in results/ (out of
 # git, overwritten each run), so that one emitting by mistake writes
-# nothing beside the samples; an invalid one forced, so that a file a
-# Blend before wrote there, stamped as this one (a build of sources not
-# yet stamped, `blend-stamps`), never passes for current
+# nothing beside the samples; an invalid one forced, so that no file left
+# there passes for current
 out=../results/invalid
 mkdir -p "$out" && cp invalid/*.blend "$out/" || exit 1
 for src in invalid/*.blend; do

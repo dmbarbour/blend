@@ -1,14 +1,14 @@
 #!/bin/sh
-# Before git records a commit, Blend's version stamp made blend.bend's
-# hash as staged, blend_stamp.bend written and staged where it moved,
-# refused where it has changes the script did not make (blend_stamp.sh,
-# `blend-stamps`); then the gate's quick checks, a dozen seconds at most:
+# Before git records a commit, Blend's version stamp verified, never
+# written: blend_stamp.bend as staged blend.bend's hash as staged, the
+# commit refused where it is not (blend_stamp.sh, `blend-stamps`); then
+# the gate's quick checks, a dozen seconds at most:
 # the docs (links, decision records and their index, plan steps and
 # their dispositions), the law history, the generated samples matching
 # what Blend writes (check_generated.sh), and the staged Bend files
 # typechecking, with the proofs where they import a staged file
-# (scripts/check_staged.py). Checks the work tree, regenerating
-# blend_stamp.bend alone. The full gate, check.sh, still runs before
+# (scripts/check_staged.py). Checks the work tree and the index, writing
+# nothing. The full gate, check.sh, still runs before
 # every commit. Enable once per clone: git config core.hooksPath .githooks
 cd "$(git rev-parse --show-toplevel)" || exit 1
 # no update check: Bend's notice of a newer release would print beside

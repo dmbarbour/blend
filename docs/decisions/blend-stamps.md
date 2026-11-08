@@ -1,6 +1,6 @@
 # A stamp in each written file says whether it is current
 
-`blend-stamps` · maintainer · rev 766d76c
+`blend-stamps` · maintainer · rev f2d2903
 
 **Context.** Knowing whether a written `.bend` is current cost its
 emission again, in memory, compared byte for byte: `deps` did so for
@@ -10,13 +10,21 @@ and of Blend, read in its place (`blend-cli.stamps`).
 
 **Decision.** The maintainer (2026-11-07): the stamp records Blend's
 version stamp, blend.bend's hash, written into `blend_stamp.bend` by
-`blend_stamp.sh`, which the pre-commit hook runs on blend.bend as staged.
+`blend_stamp.sh`.
 Every change to blend.bend moves it, erring toward too many updates: a
 format bumped by hand was missed when a fix changed what Blend writes
 for inputs no sample showed (`blend-scale.copies-fuel`), and the files
-the Blend before wrote stayed current. The script never overwrites a
-change to the file it did not make: it refuses, the gate with it, so
-that the change is reviewed. Named for a version stamp, not a format,
+the Blend before wrote stayed current. Revised (the maintainer,
+2026-11-08): a build stamps the very source it compiles, `build.sh`
+staging a copy of Blend's sources and writing their stamp beside it,
+and the pre-commit hook and the gate verify the work tree's
+`blend_stamp.bend`, never write it. Stamped at commit, by a hook that
+wrote it, a build of sources not yet committed wrote files stamped as
+the Blend committed, which that Blend then took as current: a mutant
+tried by hand left three invalid samples emitted so. With nothing
+writing the file but its script, run by hand, the guard that refused to
+overwrite a change it did not make went with the hook's writing. Named
+for a version stamp, not a format,
 which reads as an auto-formatter's. A stamp resting on more than the
 tool's source may come later. `blend version` reports the version
 stamp.
@@ -43,7 +51,11 @@ The rest is the agent's:
 - The gate (`check_generated.sh`) checks `blend_stamp.bend` against
   blend.bend and runs `deps --bytes` over the samples, so that every
   change to blend.bend writes them again in the same commit. `blend
-  --version-stamp` prints the tool's.
+  --version-stamp` prints the tool's; `blend version` names it as a
+  build of the checkout carries it, blend.bend's hash. Run through bend
+  where no native build can be made, the launcher runs the sources a
+  build would stage (`build.sh --stage`); only `bend blend.bend` run by
+  hand reads the work tree's stamp.
 
 **Consequences.**
 - Updating Blend leaves every file it wrote stale: each is written again
@@ -57,4 +69,5 @@ The rest is the agent's:
 - Packages can be told stale by their stamps (`blend-packages`).
 
 **Rule lives in:** `blend.bend`, Stamps (`blend.version`); `blend_stamp.sh`;
+`build.sh`;
 `GUIDE.md`, What Blend writes.

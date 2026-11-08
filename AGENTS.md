@@ -66,11 +66,13 @@ Contingent:
 - Commits that advance a plan step end with `Plan-Step: <name>` trailers,
   before attribution lines.
 - When removing a check, tell redundant work from a deliberate boundary.
-- Blend's version stamp is blend.bend's hash, in `blend_stamp.bend`,
-  which `blend_stamp.sh` writes and the pre-commit hook runs; it refuses,
-  and the gate with it, where the file has changes it did not make:
-  every change to blend.bend leaves the samples stale, to be written
-  again in the same commit (`blend-stamps`).
+- Blend's version stamp is blend.bend's hash. A build stamps the very
+  source it compiles (`build.sh` stages a copy); the work tree's
+  `blend_stamp.bend` is verified by the pre-commit hook and the gate,
+  never written by them: after a change to blend.bend, run
+  `./blend_stamp.sh` and stage it. Every change to blend.bend leaves the
+  samples stale, to be written again in the same commit
+  (`blend-stamps`).
 
 ## Laws
 

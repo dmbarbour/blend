@@ -5,7 +5,7 @@
 # module's one file, its laws and proofs in it (`blend-laws-in-module`),
 # a laws or proofs file of the Blend before, left beside a sample, stale
 # too; and blend_stamp.bend, blend.bend's hash (blend_stamp.sh,
-# `blend-stamps`), so
+# `blend-stamps`), verified as the hook does, so
 # that every change to Blend leaves each sample stale until written
 # again. Checks, never writes: a stale file fails, and regenerating it is
 # the developer's step. Run by
