@@ -86,6 +86,7 @@ a module's proofs at each load costs seconds: Blend's code 0.8 s alone,
   `law-reserved-object`,
   `proof-no-law`, `law-named`, `upd-law`, `proof-twice`,
   `upd-proof-undefined`, `law-updated`, `law-shadowed`, `lemma-named`,
-  `upd-lemma-def`, `lemma-law-named`, `proof-typed`, `lemma-untyped`.
+  `upd-lemma-def`, `lemma-law-named`, `proof-typed`, `lemma-untyped`,
+  `upd-proof-lemma`.
 
 **Rule lives in:** `GUIDE.md`, Laws and proofs and What Blend writes.

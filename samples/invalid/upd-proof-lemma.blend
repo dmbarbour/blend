@@ -1,0 +1,17 @@
+# `upd proof` replaces a law's proof; meeting a lemma of the name, it is
+# refused, with the cure, `upd lemma`, which replaces a lemma.
+import Base
+
+abstract object Sized with
+  declare size
+  lemma size_eq(n: Nat) -> {size(n) == size(n) : Nat}:
+    {==}
+
+object One extends Sized with
+  def size(+n: Nat) -> Nat:
+    1n
+  upd proof size_eq(n):
+    {==}
+
+def main() -> Nat:
+  One.size(0n)

@@ -1,0 +1,5 @@
+Error: upd proof size_eq: One has no proof of size_eq to update, but lemma size_eq (update it with upd lemma)
+Location: upd-proof-lemma.blend:13
+12 |     1n
+13>|   upd proof size_eq(n):
+14 |     {==}

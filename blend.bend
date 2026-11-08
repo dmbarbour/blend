@@ -2753,7 +2753,22 @@ def twice.cure(+what: U32, +was: U32) -> String:
     u => "a lemma proves no law, so name it anew, or prove the law with `proof`",
     u => "name one anew")
 
-def fe.msg(+obs: List<&2, Ob>, +id: U32, f: Fe) -> Er:
+# whether an entry found is a lemma's
+def en.is.lemma(m: Maybe<&2, En>) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{e}:
+      match e:
+        case En{name, chain, +no, +what}:
+          U32.is_eq(what, 3)
+
+# whether the object's members hold a lemma of the name: an update of a
+# proof meeting none is told where `upd lemma` was meant
+def en.lemma(+map: List<&2, En>, +n: List<&2, U32>) -> Bool:
+  en.is.lemma(en.find(map, n))
+
+def fe.msg(+obs: List<&2, Ob>, +id: U32, +map: List<&2, En>, f: Fe) -> Er:
   match f:
     case Fe{+q, +mno, +kind, +name, +upd, +origin, +ono, +what, +was}:
       match kind:
@@ -2765,7 +2780,9 @@ def fe.msg(+obs: List<&2, Ob>, +id: U32, f: Fe) -> Er:
         case 2:
           when(Er, is.root(obs, q),
             u => Er{mno, mem.kw(upd, name, what) ++ ": the module is no object, so it has nothing to update (introduce it with " ++ intro.kw(what) ++ ")"},
-            u => Er{mno, mem.kw(upd, name, what) ++ ": " ++ ob.name(obs, q) ++ " has " ++ mem.no(name, what) ++ " to update (introduce it with " ++ intro.kw(what) ++ ")"})
+            u => when(Er, U32.is_eq(what, 2) && en.lemma(map, name.plain(name)),
+              v => Er{mno, mem.kw(upd, name, what) ++ ": " ++ ob.name(obs, q) ++ " has " ++ mem.no(name, what) ++ " to update, but lemma " ++ text(name.plain(name)) ++ " (update it with upd lemma)"},
+              v => Er{mno, mem.kw(upd, name, what) ++ ": " ++ ob.name(obs, q) ++ " has " ++ mem.no(name, what) ++ " to update (introduce it with " ++ intro.kw(what) ++ ")"}))
         case 3:
           when(Er, U32.is_eq(was, 1),
             u => Er{mno, mem.kw(upd, name, what) ++ ": " ++ text(name) ++ " is a law, from " ++ ob.name(obs, origin) ++
@@ -2777,15 +2794,15 @@ def fe.msg(+obs: List<&2, Ob>, +id: U32, f: Fe) -> Er:
             u => Er{ob.no(ob.at(obs, id)), ob.name(obs, id) ++ " has " ++ text(name) ++ " from both " ++ ob.say(obs, origin) ++
               " and " ++ ob.say(obs, q) ++ ", each introducing it with " ++ intro.kw(was)})
 
-def er.fes(fes: List<&2, Fe>, +skip: List<&2, Loc>, +obs: List<&2, Ob>, +id: U32) -> List<&2, Er>:
+def er.fes(fes: List<&2, Fe>, +skip: List<&2, Loc>, +obs: List<&2, Ob>, +id: U32, +map: List<&2, En>) -> List<&2, Er>:
   match fes:
     case Nil{}:
       Nil{}
     case Con{+f, +t}:
       match f:
         case Fe{+q, +mno, +kind, +name, +upd, +origin, +ono, +what, +was}:
-          when(List<&2, Er>, locs.has(skip, mno), u => er.fes(t, skip, obs, id),
-            u => Con{fe.msg(obs, id, Fe{q, mno, kind, name, upd, origin, ono, what, was}), er.fes(t, skip, obs, id)})
+          when(List<&2, Er>, locs.has(skip, mno), u => er.fes(t, skip, obs, id, map),
+            u => Con{fe.msg(obs, id, map, Fe{q, mno, kind, name, upd, origin, ono, what, was}), er.fes(t, skip, obs, id, map)})
 
 # Declarations
 # ------------
@@ -2855,7 +2872,7 @@ def er.def.k(+obs: List<&2, Ob>, +id: U32, +ps: List<&2, U32>, +fds: List<&2, Ma
     case Some{d}:
       match d:
         case Fd{+map, fes, ix}:
-          List.append(&2, Er, er.fes(fes, seen(ps, fds), obs, id), er.decls(obs, id, ord, map))
+          List.append(&2, Er, er.fes(fes, seen(ps, fds), obs, id, map), er.decls(obs, id, ord, map))
 
 # each object's errors of definition and declaration
 def er.defs(ps: List<&2, List<&2, U32>>, fs: List<&2, Maybe<&2, Fd>>, ls: List<&2, Maybe<&2, Lz>>, +id: U32, +obs: List<&2, Ob>, +fds: List<&2, Maybe<&2, Fd>>) -> List<&2, Er>:
