@@ -1,4 +1,4 @@
-Error: law grows is a claim, not a definition: only a proof may name it
+Error: law grows is a claim, not a definition: only a proof or a lemma may name it
 Location: law-named.blend:14
 13 |   def twice(+n: Nat) -> Nat:
 14>|     grows(n)

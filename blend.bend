@@ -742,9 +742,32 @@ def def.share.s(+s: Bool, +c: Bool, xs: List<&2, U32>, body: List<&2, Ln>, +no: 
 def def.share(+xs: List<&2, U32>, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   def.share.s(starts.s(xs, "shared "), starts.s(xs, "copied "), xs, body, no, ind)
 
+# a header's keyword told by its first byte, so that a line read tests
+# one keyword or two, not each: `||` evaluates both sides in a native
+# build (bench/andor.bend)
+def is_def.k(+h: U32, +xs: List<&2, U32>) -> Bool:
+  match h:
+    case 100:
+      starts.s(xs, "def ")
+    case 117:
+      starts.s(xs, "upd ")
+    case 115:
+      starts.s(xs, "shared ")
+    case 99:
+      starts.s(xs, "copied ")
+    case 108:
+      starts.s(xs, "law ") || starts.s(xs, "lemma ")
+    case 112:
+      starts.s(xs, "proof ")
+    case _:
+      False{}
+
 def is_def(+xs: List<&2, U32>) -> Bool:
-  starts.s(xs, "def ") || starts.s(xs, "upd ") || starts.s(xs, "shared ") || starts.s(xs, "copied ") ||
-    starts.s(xs, "law ") || starts.s(xs, "proof ")
+  match xs:
+    case Nil{}:
+      False{}
+    case Con{+h, +t}:
+      is_def.k(h, Con{h, t})
 
 def obj.with.s(+w: Bool, rx: List<&2, U32>) -> List<&2, U32>:
   match w:
@@ -1036,25 +1059,36 @@ def law.r(r: List<&2, U32> & List<&2, U32>, +txt: List<&2, U32>, body: List<&2, 
 def law.item(+txt: List<&2, U32>, body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   law.r(until(drop(4n, txt), 58), txt, body, no, ind)
 
-def proof.r(r: List<&2, U32> & List<&2, U32>, +upd: Bool, +txt: List<&2, U32>, +body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
+# a proof untyped, Bend typing it by its law; a lemma typed, stating what
+# it proves; else a line Blend cannot read (`er.mems` says which)
+def proof.r(r: List<&2, U32> & List<&2, U32>, +upd: Bool, +lemma: Bool, +txt: List<&2, U32>, +body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   (+name, +rest) = r
-  when(Item, name.ok(trim(name)) && Bool.not(blank(rest)),
-    u => when(Item, holds(rest, codes(") ->")),
+  when(Item, (name.ok(trim(name)) && Bool.not(blank(rest))) && Bool.not(Bool.xor(lemma, holds(rest, codes(") ->")))),
+    u => when(Item, lemma,
       v => IDef{0, upd, trim(name), Con{40, rest}, params.go(commas(parens(rest))), body, no, ind, 3},
       v => IDef{0, upd, List.append(&2, U32, trim(name), [35]), Con{40, rest}, params.go(commas(parens(rest))), body, no, ind, 2}),
     u => IBad{txt, no, ind})
 
-# `proof NAME(params):`, a law's proof, or `upd proof`; typed,
-# `proof NAME(params) -> T:`, a lemma, stating what it proves
+# a lemma's header, `lemma` or `upd lemma`
+def is.lemma(+txt: List<&2, U32>) -> Bool:
+  starts.s(txt, "lemma ") || starts.s(txt, "upd lemma ")
+
+# a proof's header or a lemma's
+def proof.kw(+txt: List<&2, U32>) -> Bool:
+  starts.s(txt, "proof ") || starts.s(txt, "upd proof ") || is.lemma(txt)
+
+# `proof NAME(params):`, a law's proof, or `upd proof`; `lemma
+# NAME(params) -> T:`, a lemma, stating what it proves, or `upd lemma`:
+# the keywords of a length, so that the name starts where it does
 def proof.item(+txt: List<&2, U32>, +upd: Bool, +body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
-  when(Item, upd, u => proof.r(until(drop(10n, txt), 40), True{}, txt, body, no, ind),
-    u => proof.r(until(drop(6n, txt), 40), False{}, txt, body, no, ind))
+  when(Item, upd, u => proof.r(until(drop(10n, txt), 40), True{}, is.lemma(txt), txt, body, no, ind),
+    u => proof.r(until(drop(6n, txt), 40), False{}, is.lemma(txt), txt, body, no, ind))
 
 def flat.block(+txt: List<&2, U32>, +body: List<&2, Ln>, +no: Loc, +ind: U32) -> Item:
   when(Item, is.datatype(txt), u => IBend{Con{Ln{no, ind, txt}, body}, no, ind},
     u => when(Item, starts.s(txt, "law "), v => law.item(txt, body, no, ind),
      v => when(Item, starts.s(txt, "upd law "), x => IBad{txt, no, ind},
-      v => when(Item, starts.s(txt, "proof ") || starts.s(txt, "upd proof "), w => proof.item(txt, starts.s(txt, "upd "), body, no, ind),
+      v => when(Item, proof.kw(txt), w => proof.item(txt, starts.s(txt, "upd "), body, no, ind),
         w => def.share(txt, body, no, ind)))))
 
 # the items: a line a turn, or a definition's header with its body;
@@ -1967,7 +2001,11 @@ def er.mems(ns: List<&2, Node>, +top: Bool) -> List<&2, Er>:
             u => "a law is stated once, never updated: state a new law, or update its proof (upd proof)",
             u => when(String, starts.s(txt, "declare ") && holds(txt, codes("(")),
               v => text(txt) ++ ": a typed declaration states its parameters and what it returns, `declare def f(params) -> T`",
-              v => "Blend cannot read this line: " ++ text(txt)))}, er.mems(t, top)}
+              v => when(String, proof.kw(txt) && Bool.not(is.lemma(txt)) && holds(txt, codes(") ->")),
+                w => "a proof is untyped, Bend typing it by its law, `proof name(params):`; a lemma states what it proves, `lemma name(params) -> T:`",
+                w => when(String, is.lemma(txt) && Bool.not(holds(txt, codes(") ->"))),
+                  x => "a lemma states what it proves, `lemma name(params) -> T:`; a law's proof is untyped, `proof name(params):`",
+                  x => "Blend cannot read this line: " ++ text(txt)))))}, er.mems(t, top)}
         case NErr{msg, +no}:
           Con{Er{no, text(msg)}, er.mems(t, top)}
         case NBend{lines, +no}:
@@ -2651,7 +2689,7 @@ def mem.say(+name: List<&2, U32>, +what: U32) -> String:
     case 2:
       "a proof of " ++ text(name.plain(name))
     case 3:
-      "proof " ++ text(name)
+      "lemma " ++ text(name)
     case 4:
       "a declaration of " ++ text(name.plain(name))
     case _:
@@ -2664,7 +2702,7 @@ def mem.no(+name: List<&2, U32>, +what: U32) -> String:
     case 2:
       "no proof of " ++ text(name.plain(name))
     case 3:
-      "no proof " ++ text(name)
+      "no lemma " ++ text(name)
     case 4:
       "no declaration of " ++ text(name.plain(name))
     case _:
@@ -2677,6 +2715,8 @@ def intro.kw(+what: U32) -> String:
       "def"
     case 1:
       "law"
+    case 3:
+      "lemma"
     case 4:
       "declare"
     case _:
@@ -2686,6 +2726,8 @@ def upd.kw(+what: U32) -> String:
   match what:
     case 0:
       "upd"
+    case 3:
+      "upd lemma"
     case _:
       "upd proof"
 
@@ -2705,10 +2747,10 @@ def fe.met(+obs: List<&2, Ob>, +q: U32, +mno: Loc, +name: List<&2, U32>, +upd: B
       ob.name(obs, origin) ++ " (update it with " ++ upd.kw(what) ++ ")"}))
 
 # two members of one object of one name and of kinds unlike: a law and
-# a typed proof, which is a lemma proving none, or any other two
+# a lemma, which proves none, or any other two
 def twice.cure(+what: U32, +was: U32) -> String:
   when(String, (U32.is_eq(what, 1) && U32.is_eq(was, 3)) || (U32.is_eq(what, 3) && U32.is_eq(was, 1)),
-    u => "a typed proof is a lemma, proving no law, so name it anew, or prove the law untyped",
+    u => "a lemma proves no law, so name it anew, or prove the law with `proof`",
     u => "name one anew")
 
 def fe.msg(+obs: List<&2, Ob>, +id: U32, f: Fe) -> Er:
@@ -6942,7 +6984,7 @@ def er.law.rts(ts: List<&2, Rt>, +ut: Ht<Pk<Un>>, +ux: Ht<Xe>, +no: Loc) -> List
           on.maybe(U32, List<&2, Er>, ux.find(ux, ref), v => er.law.rts(r, ut, ux, no),
             +x => when(List<&2, Er>, U32.is_eq(ut.what(ut, x), 0), v => er.law.rts(r, ut, ux, no),
               v => Con{Er{no, when(String, U32.is_eq(ut.what(ut, x), 1), w => "law " ++ text(rf.name(ref)) ++ " is a claim, not a definition",
-                w => "proof " ++ text(name.plain(rf.name(ref))) ++ " belongs to the proofs, not the code") ++ ": only a proof may name it"}, er.law.rts(r, ut, ux, no)}))
+                w => "lemma " ++ text(name.plain(rf.name(ref))) ++ " belongs to the proofs, not the code") ++ ": only a proof or a lemma may name it"}, er.law.rts(r, ut, ux, no)}))
         case _:
           er.law.rts(r, ut, ux, no)
 

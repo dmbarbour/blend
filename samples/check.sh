@@ -194,7 +194,7 @@ fi
 # definition refused; a view a flag, never a name (`read` one), and
 # `--objects NAME` that object alone, NAME refused where a view takes
 # none
-want="AnyOf.double (def): AnyOf < Monoid, laws.blend:60
+want="AnyOf.double (def): AnyOf < Monoid, laws.blend:63
   upd def double(+x: T()) -> T():
     x"
 got=$("$CAPPED" 500 30 "$BLEND" show laws.blend AnyOf.double 2>&1) || { echo "blend: show of a name fails"; status=1; }
@@ -212,6 +212,7 @@ want="AnyOf: AnyOf, Monoid
   double: AnyOf < Monoid
   right_id: Monoid
   double_op: Monoid
+  op_double: AnyOf < Monoid
   double_op#: AnyOf < Monoid
   T: AnyOf
   zero: AnyOf

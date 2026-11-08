@@ -1,5 +1,5 @@
-# A typed proof is a lemma, proving no law: named as a law of its own
-# object, it is refused, with the cure, an untyped proof proving the law.
+# A lemma proves no law: named as a law of its own object, it is
+# refused, with the cure, a proof proving the law.
 import Base
 
 object A with
@@ -8,7 +8,7 @@ object A with
   law same:
     for +x: Nat
     {id(x) == x : Nat}
-  proof same(x: Nat) -> {id(x) == x : Nat}:
+  lemma same(x: Nat) -> {id(x) == x : Nat}:
     {==}
 
 def main() -> Nat:

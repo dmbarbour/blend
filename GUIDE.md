@@ -288,9 +288,11 @@ it after the code, where Bend checks it. A program built carries none.
   concrete object must have a proof of every law it has; a law not yet
   proven lives only in an abstract object.
 - Inside a proof, the law's own name is the proof itself, for induction;
-  another law's name is that law's proof. A typed proof, `proof
-  name(a: Nat, -b: Nat) -> {...}:`, is a lemma, with no law.
-- A law is never updated, and code names no law or proof.
+  another law's name is that law's proof.
+- `lemma name(a: Nat, -b: Nat) -> {...}:` is a lemma: it states what it
+  proves, proves no law, and is named by proofs and lemmas; `upd lemma`
+  proves it again. A law's proof is untyped, Bend typing it by its law.
+- A law is never updated, and code names no law, proof or lemma.
 - The module's own laws, at its top level, are written `LAW.name`
   (`blend-laws-in-module`).
 
@@ -362,7 +364,7 @@ object or definition of the module takes it (`blend-no-shadowing`).
 - Callees first, as Bend requires.
 - Before each definition, a marker naming its source, `# blend:
   FILE:LINE`; the lines below it follow the source from LINE.
-- The laws, proofs and witnesses after the code.
+- The laws, proofs, lemmas and witnesses after the code.
 - After the header, a stamp, `# blend stamp: VERSION HASH`: Blend's
   version stamp, which every change to Blend moves, and a hash of the
   module and every `.blend` it imports. A file whose stamp is what its sources give is current;

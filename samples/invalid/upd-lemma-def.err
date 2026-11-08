@@ -1,0 +1,5 @@
+Error: upd lemma size: D has size from D0, which upd lemma cannot update (update it with upd)
+Location: upd-lemma-def.blend:10
+ 9 | object D extends D0 with
+10>|   upd lemma size(n: Nat) -> {1n == 1n : Nat}:
+11 |     {==}

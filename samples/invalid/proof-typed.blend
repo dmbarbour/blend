@@ -1,0 +1,15 @@
+# A law's proof is untyped, Bend typing it by its law; a typed one is
+# refused, with the cure, a lemma where it states what it proves.
+import Base
+
+object A with
+  def id(+x: Nat) -> Nat:
+    x
+  law same:
+    for +x: Nat
+    {id(x) == x : Nat}
+  proof same(x: Nat) -> {id(x) == x : Nat}:
+    {==}
+
+def main() -> Nat:
+  A.id(1n)
