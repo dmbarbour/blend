@@ -16815,3 +16815,14 @@ def Laws.emitted.checked(files, srcs, cx, all, res, ce, h):
           B.proof.parts(1, files, cx, all, res), B.proof.parts(2, files, cx, all, res),
           B.emitted.ers(all, order, wers, mers, e, B.proof.parts(1, files, cx, all, res), B.proof.parts(2, files, cx, all, res)), h))
 
+# laws read.checked, trees.checked: as objects.checked
+def Laws.read.checked(r, t, h):
+  and_nil(B.mds.ers(t, B.md.path(r)), B.trees.plain.ers(B.mds.trees(Con{r, t}, 0)), List.is_empty(&2, B.Er, B.trees.plain.ers(B.mds.trees(Con{r, t}, 0))), h, h1 =>
+    nil_empty(B.trees.plain.ers(B.mds.trees(Con{r, t}, 0)), h1))
+
+def Laws.trees.checked(x, ts, h):
+  and_nil(B.ims.plain.ers(B.ims.of(x)), List.append(&2, B.Er, B.ims.bare(x), List.append(&2, B.Er, B.ims.fresh(B.ims.of(x), Nil{}, x), B.trees.plain.ers(ts))), Bool.and(List.is_empty(&2, B.Er, B.ims.bare(x)), Bool.and(List.is_empty(&2, B.Er, B.ims.fresh(B.ims.of(x), Nil{}, x)), List.is_empty(&2, B.Er, B.trees.plain.ers(ts)))), h, h1 =>
+    and_nil(B.ims.bare(x), List.append(&2, B.Er, B.ims.fresh(B.ims.of(x), Nil{}, x), B.trees.plain.ers(ts)), Bool.and(List.is_empty(&2, B.Er, B.ims.fresh(B.ims.of(x), Nil{}, x)), List.is_empty(&2, B.Er, B.trees.plain.ers(ts))), h1, h2 =>
+      and_nil(B.ims.fresh(B.ims.of(x), Nil{}, x), B.trees.plain.ers(ts), List.is_empty(&2, B.Er, B.trees.plain.ers(ts)), h2, h3 =>
+        nil_empty(B.trees.plain.ers(ts), h3))))
+
