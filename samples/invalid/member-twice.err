@@ -1,0 +1,5 @@
+Error: size is given twice in A, at lines 6 and 8
+Location: member-twice.blend:8
+7 |     1n
+8>|   def size(+n: Nat) -> Nat:
+9 |     2n

@@ -1,0 +1,15 @@
+# A typed proof is a lemma, proving no law: named as a law of its own
+# object, it is refused, with the cure, an untyped proof proving the law.
+import Base
+
+object A with
+  def id(+x: Nat) -> Nat:
+    x
+  law same:
+    for +x: Nat
+    {id(x) == x : Nat}
+  proof same(x: Nat) -> {id(x) == x : Nat}:
+    {==}
+
+def main() -> Nat:
+  A.id(1n)

@@ -2704,12 +2704,22 @@ def fe.met(+obs: List<&2, Ob>, +q: U32, +mno: Loc, +name: List<&2, U32>, +upd: B
     u => Er{mno, mem.kw(upd, name, what) ++ ": " ++ ob.name(obs, q) ++ " has " ++ mem.say(name, was) ++ " already, from " ++
       ob.name(obs, origin) ++ " (update it with " ++ upd.kw(what) ++ ")"}))
 
+# two members of one object of one name and of kinds unlike: a law and
+# a typed proof, which is a lemma proving none, or any other two
+def twice.cure(+what: U32, +was: U32) -> String:
+  when(String, (U32.is_eq(what, 1) && U32.is_eq(was, 3)) || (U32.is_eq(what, 3) && U32.is_eq(was, 1)),
+    u => "a typed proof is a lemma, proving no law, so name it anew, or prove the law untyped",
+    u => "name one anew")
+
 def fe.msg(+obs: List<&2, Ob>, +id: U32, f: Fe) -> Er:
   match f:
     case Fe{+q, +mno, +kind, +name, +upd, +origin, +ono, +what, +was}:
       match kind:
         case 1:
-          Er{mno, mem.say(name, what) ++ " is given twice in " ++ ob.name(obs, q) ++ ", at lines " ++ U32.show(loc.line(ono)) ++ " and " ++ U32.show(loc.line(mno))}
+          when(Er, U32.is_eq(what, was),
+            u => Er{mno, mem.say(name, what) ++ " is given twice in " ++ ob.name(obs, q) ++ ", at lines " ++ U32.show(loc.line(ono)) ++ " and " ++ U32.show(loc.line(mno))},
+            u => Er{mno, mem.kw(False{}, name, was) ++ ", at line " ++ U32.show(loc.line(ono)) ++ ", and " ++ mem.kw(False{}, name, what) ++ ", at line " ++
+              U32.show(loc.line(mno)) ++ ", share a name in " ++ ob.name(obs, q) ++ ": " ++ twice.cure(what, was)})
         case 2:
           when(Er, is.root(obs, q),
             u => Er{mno, mem.kw(upd, name, what) ++ ": the module is no object, so it has nothing to update (introduce it with " ++ intro.kw(what) ++ ")"},

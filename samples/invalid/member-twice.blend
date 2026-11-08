@@ -1,0 +1,12 @@
+# An object names each member once: a definition given twice in one
+# object is refused at its second line, both lines named.
+import Base
+
+object A with
+  def size(+n: Nat) -> Nat:
+    1n
+  def size(+n: Nat) -> Nat:
+    2n
+
+def main() -> Nat:
+  A.size(0n)

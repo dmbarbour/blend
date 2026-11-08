@@ -1,0 +1,18 @@
+# A law, a definition and a proof of an object are named apart: a
+# definition named as a law of its own object is refused, the kinds of
+# both members said.
+import Base
+
+object A with
+  def id(+x: Nat) -> Nat:
+    x
+  def same(+x: Nat) -> Nat:
+    x
+  law same:
+    for +x: Nat
+    {id(x) == x : Nat}
+  proof same(x):
+    {==}
+
+def main() -> Nat:
+  A.id(1n)

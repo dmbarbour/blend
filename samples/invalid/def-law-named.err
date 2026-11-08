@@ -1,0 +1,5 @@
+Error: def same, at line 9, and law same, at line 11, share a name in A: name one anew
+Location: def-law-named.blend:11
+10 |     x
+11>|   law same:
+12 |     for +x: Nat

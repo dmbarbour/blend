@@ -1,0 +1,5 @@
+Error: law same, at line 8, and proof same, at line 11, share a name in A: a typed proof is a lemma, proving no law, so name it anew, or prove the law untyped
+Location: lemma-law-named.blend:11
+10 |     {id(x) == x : Nat}
+11>|   proof same(x: Nat) -> {id(x) == x : Nat}:
+12 |     {==}
