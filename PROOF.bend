@@ -16792,6 +16792,22 @@ def Laws.objects.checked(als, cx, h):
               and_nil(B.er.lins(B.cx.pss(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.ls(cx)), B.er.defs(B.cx.pss(cx), B.cx.fs(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.fs(cx)), List.is_empty(&2, B.Er, B.er.defs(B.cx.pss(cx), B.cx.fs(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.fs(cx))), h6, h7 =>
                 nil_empty(B.er.defs(B.cx.pss(cx), B.cx.fs(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.fs(cx)), h7))))))))
 
+# law hosts.walked: the stage's errors none, so the hosts' check's
+# (`objects.checked`'s first term), so the fuel enough
+def empty_nil(a: List<&2, B.Er>, h: {List.is_empty(&2, B.Er, a) == True{} : Bool}) -> {a == Nil{} : List<&2, B.Er>}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      Empty.absurd({Con{x, t} == Nil{} : List<&2, B.Er>}, MB.false_ne_true()(h))
+
+def Laws.hosts.walked(cmd, files, srcs, q, paths, trees, id, k, h):
+  Laws.hosts.fuel(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), id, k,
+    empty_nil(B.er.hosts(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), 0n),
+      MB.eq_true_of_and_left(List.is_empty(&2, B.Er, B.er.hosts(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), 0n)),
+        Bool.and(List.is_empty(&2, B.Er, B.er.endless(B.cx.pss(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), Bool.and(List.is_empty(&2, B.Er, B.er.cycles(B.als.all(trees, 0, paths, B.obs(trees)), B.als.all(trees, 0, paths, B.obs(trees)))), Bool.and(List.is_empty(&2, B.Er, B.chains(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.pss(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), Bool.and(List.is_empty(&2, B.Er, B.er.obs(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.als.all(trees, 0, paths, B.obs(trees)), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), Bool.and(List.is_empty(&2, B.Er, B.er.made.parents(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.als.all(trees, 0, paths, B.obs(trees)), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.ls(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), Bool.and(List.is_empty(&2, B.Er, B.er.lins(B.cx.pss(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.ls(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), 0, B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.ls(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))), List.is_empty(&2, B.Er, B.er.defs(B.cx.pss(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.fs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.ls(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), 0, B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), B.cx.fs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))))))))))),
+        Laws.objects.checked(B.als.all(trees, 0, paths, B.obs(trees)), B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees)), Laws.errors.objects(cmd, files, srcs, q, paths, trees, h)))))
+
 # law emitted.checked: the Ce taken apart, emit.out's errors none
 # (`errors.emitted`), then each part's in turn as for the objects, in a
 # lemma over the parts' records, so that a mutant's mismatch is a small
