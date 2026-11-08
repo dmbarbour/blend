@@ -308,7 +308,8 @@ it alone taught. Add to this file what a new proof teaches.
   lemma over a variable (`eown_il`) fails there, cleanly
   (`markers.inline`). Likewise where a law over a named build splits
   what the build computes: name that computation in the code (a
-  function of its own, one caller, no cost), and split it in a lemma
+  function of its own, one caller, its instructions unchanged on the
+  bench), and split it in a lemma
   over its records (`emitted.ers`, `eers_parts`).
 - **A walk naming the code's own states**: a law that follows a fold
   step by step (`wr.at`) calls the code's own step on the code's own
