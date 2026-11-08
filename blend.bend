@@ -7148,6 +7148,11 @@ def ce.order(c: Ce) -> List<&2, U32>:
     case Ce{order, wers, mers, e}:
       order
 
+def ce.wers(c: Ce) -> List<&2, Er>:
+  match c:
+    case Ce{order, wers, mers, e}:
+      wers
+
 def ce.mers(c: Ce) -> List<&2, Er>:
   match c:
     case Ce{order, wers, mers, e}:
@@ -7158,6 +7163,12 @@ def ce.e(c: Ce) -> Ec:
     case Ce{order, wers, mers, e}:
       e
 
+# the errors emission writes its files under: emit.ers's, the laws'
+# part's and the proofs' its own, a name Bend reserves among the
+# proofs' (law emitted.checked)
+def emitted.ers(+all: List<&2, Un>, +order: List<&2, U32>, wers: List<&2, Er>, mers: List<&2, Er>, +e: Ec, lw: Pf, pf: Pf) -> List<&2, Er>:
+  emit.ers(wers, mers, all, order, e, pf.ers(lw), List.append(&2, Er, pf.ers(pf), er.reserved(names.all(List.reverse(&2, U32, order), e))))
+
 # the module emitted from its code part taken apart: its file, or its
 # errors and the laws' and proofs' parts'
 def emitted.k(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx: Cx, +all: List<&2, Un>, +res: List<&2, List<&2, U32>>, ce: Ce) -> Out:
@@ -7165,8 +7176,7 @@ def emitted.k(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +
     case Ce{+order, wers, mers, +e}:
       +lw = proof.parts(1, files, cx, all, res)
       +pf = proof.parts(2, files, cx, all, res)
-      emit.out(files, srcs, e, order, ob.mems(ob.at(cx.obs(cx), 0)), res.lines(path.at(cx.paths(cx), 0), res, 1), lw, pf,
-        emit.ers(wers, mers, all, order, e, pf.ers(lw), List.append(&2, Er, pf.ers(pf), er.reserved(names.all(List.reverse(&2, U32, order), e)))))
+      emit.out(files, srcs, e, order, ob.mems(ob.at(cx.obs(cx), 0)), res.lines(path.at(cx.paths(cx), 0), res, 1), lw, pf, emitted.ers(all, order, wers, mers, e, lw, pf))
 
 def emitted(+files: List<&2, List<&2, U32>>, +srcs: List<&2, List<&2, U32>>, +cx: Cx, +os: List<&2, Oc>) -> Out:
   +obs = cx.obs(cx)

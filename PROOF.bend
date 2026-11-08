@@ -16792,3 +16792,26 @@ def Laws.objects.checked(als, cx, h):
               and_nil(B.er.lins(B.cx.pss(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.ls(cx)), B.er.defs(B.cx.pss(cx), B.cx.fs(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.fs(cx)), List.is_empty(&2, B.Er, B.er.defs(B.cx.pss(cx), B.cx.fs(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.fs(cx))), h6, h7 =>
                 nil_empty(B.er.defs(B.cx.pss(cx), B.cx.fs(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.fs(cx)), h7))))))))
 
+# law emitted.checked: the Ce taken apart, emit.out's errors none
+# (`errors.emitted`), then each part's in turn as for the objects, in a
+# lemma over the parts' records, so that a mutant's mismatch is a small
+# term (`eers_parts`)
+def eers_parts(+all: List<&2, B.Un>, +order: List<&2, U32>, +wers: List<&2, B.Er>, +mers: List<&2, B.Er>, +e: B.Ec, +lw: B.Pf, +pf: B.Pf,
+    h: {B.emitted.ers(all, order, wers, mers, e, lw, pf) == Nil{} : List<&2, B.Er>}) ->
+    {Bool.and(List.is_empty(&2, B.Er, wers), Bool.and(List.is_empty(&2, B.Er, mers), Bool.and(List.is_empty(&2, B.Er, B.er.laws.if(B.units.lawful(all), all)), Bool.and(List.is_empty(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e))), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(lw)), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(pf)), List.is_empty(&2, B.Er, B.er.reserved(B.names.all(List.reverse(&2, U32, order), e))))))))) == True{} : Bool}:
+  and_nil(wers, List.append(&2, B.Er, mers, List.append(&2, B.Er, B.er.laws.if(B.units.lawful(all), all), List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, B.pf.ers(lw), List.append(&2, B.Er, B.pf.ers(pf), B.er.reserved(B.names.all(List.reverse(&2, U32, order), e))))))), Bool.and(List.is_empty(&2, B.Er, mers), Bool.and(List.is_empty(&2, B.Er, B.er.laws.if(B.units.lawful(all), all)), Bool.and(List.is_empty(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e))), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(lw)), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(pf)), List.is_empty(&2, B.Er, B.er.reserved(B.names.all(List.reverse(&2, U32, order), e)))))))), h, h1 =>
+    and_nil(mers, List.append(&2, B.Er, B.er.laws.if(B.units.lawful(all), all), List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, B.pf.ers(lw), List.append(&2, B.Er, B.pf.ers(pf), B.er.reserved(B.names.all(List.reverse(&2, U32, order), e)))))), Bool.and(List.is_empty(&2, B.Er, B.er.laws.if(B.units.lawful(all), all)), Bool.and(List.is_empty(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e))), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(lw)), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(pf)), List.is_empty(&2, B.Er, B.er.reserved(B.names.all(List.reverse(&2, U32, order), e))))))), h1, h2 =>
+      and_nil(B.er.laws.if(B.units.lawful(all), all), List.append(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, B.pf.ers(lw), List.append(&2, B.Er, B.pf.ers(pf), B.er.reserved(B.names.all(List.reverse(&2, U32, order), e))))), Bool.and(List.is_empty(&2, B.Er, B.er.names.of(B.names.all(List.reverse(&2, U32, order), e))), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(lw)), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(pf)), List.is_empty(&2, B.Er, B.er.reserved(B.names.all(List.reverse(&2, U32, order), e)))))), h2, h3 =>
+        and_nil(B.er.names.of(B.names.all(List.reverse(&2, U32, order), e)), List.append(&2, B.Er, B.pf.ers(lw), List.append(&2, B.Er, B.pf.ers(pf), B.er.reserved(B.names.all(List.reverse(&2, U32, order), e)))), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(lw)), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(pf)), List.is_empty(&2, B.Er, B.er.reserved(B.names.all(List.reverse(&2, U32, order), e))))), h3, h4 =>
+          and_nil(B.pf.ers(lw), List.append(&2, B.Er, B.pf.ers(pf), B.er.reserved(B.names.all(List.reverse(&2, U32, order), e))), Bool.and(List.is_empty(&2, B.Er, B.pf.ers(pf)), List.is_empty(&2, B.Er, B.er.reserved(B.names.all(List.reverse(&2, U32, order), e)))), h4, h5 =>
+            and_nil(B.pf.ers(pf), B.er.reserved(B.names.all(List.reverse(&2, U32, order), e)), List.is_empty(&2, B.Er, B.er.reserved(B.names.all(List.reverse(&2, U32, order), e))), h5, h6 =>
+              nil_empty(B.er.reserved(B.names.all(List.reverse(&2, U32, order), e)), h6)))))))
+
+def Laws.emitted.checked(files, srcs, cx, all, res, ce, h):
+  match ce:
+    case B.Ce{+order, +wers, +mers, +e}:
+      eers_parts(all, order, wers, mers, e, B.proof.parts(1, files, cx, all, res), B.proof.parts(2, files, cx, all, res),
+        Laws.errors.emitted(files, srcs, e, order, B.ob.mems(B.ob.at(B.cx.obs(cx), 0)), B.res.lines(B.path.at(B.cx.paths(cx), 0), res, 1),
+          B.proof.parts(1, files, cx, all, res), B.proof.parts(2, files, cx, all, res),
+          B.emitted.ers(all, order, wers, mers, e, B.proof.parts(1, files, cx, all, res), B.proof.parts(2, files, cx, all, res)), h))
+
