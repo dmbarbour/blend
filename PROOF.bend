@@ -17070,6 +17070,57 @@ def Laws.checks.detect(files, srcs, e, order, tree, more, lw, pf, es, hp):
     case Con{x, t}:
       {==}
 
+# Imports complete (`deps.complete`)
+# ----------------------------------
+#
+# An import of a tree is named, already kept, or kept now: by induction
+# over the imports with those kept so far (`seen`); a name the same as
+# another is it (`names.same_eq`)
+
+# one more of seen, held after the step: named, seen before, the import
+# just kept, or kept after it
+def dpc_f(+named: List<&2, List<&2, U32>>, +seen: List<&2, List<&2, U32>>, +x: List<&2, U32>, +t: List<&2, List<&2, U32>>, +d: List<&2, U32>,
+    hi: {Bool.or(Bool.or(B.names.has(named, d), Bool.or(B.same(x, d), B.names.has(seen, d))), B.names.has(B.deps.missed(t, named, Con{x, seen}), d)) == True{} : Bool}) ->
+    {Bool.or(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d)) == True{} : Bool}:
+  or_cases(Bool.or(B.names.has(named, d), Bool.or(B.same(x, d), B.names.has(seen, d))), B.names.has(B.deps.missed(t, named, Con{x, seen}), d), Bool.or(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d)), hi,
+    f1 => or_cases(B.names.has(named, d), Bool.or(B.same(x, d), B.names.has(seen, d)), Bool.or(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d)), f1,
+      hn => or_l_true(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d), or_l_true(B.names.has(named, d), B.names.has(seen, d), hn)),
+      hxs => or_cases(B.same(x, d), B.names.has(seen, d), Bool.or(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d)), hxs,
+        hs => or_r_true(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d), or_l_true(B.same(x, d), B.names.has(B.deps.missed(t, named, Con{x, seen}), d), hs)),
+        hse => or_l_true(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d), or_r_true(B.names.has(named, d), B.names.has(seen, d), hse)))),
+    hm => or_r_true(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d), or_r_true(B.same(x, d), B.names.has(B.deps.missed(t, named, Con{x, seen}), d), hm)))
+
+def dpc_k(c: Bool, +x: List<&2, U32>, +t: List<&2, List<&2, U32>>, +named: List<&2, List<&2, U32>>, +seen: List<&2, List<&2, U32>>, +d: List<&2, U32>,
+    ec: {Bool.or(B.names.has(named, x), B.names.has(seen, x)) == c : Bool},
+    h: {Bool.or(B.same(x, d), B.names.has(t, d)) == True{} : Bool},
+    ih: @s:List<&2, List<&2, U32>> -> @hb:{B.names.has(t, d) == True{} : Bool} -> {Bool.or(Bool.or(B.names.has(named, d), B.names.has(s, d)), B.names.has(B.deps.missed(t, named, s), d)) == True{} : Bool}) ->
+    {Bool.or(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(B.when(List<&2, List<&2, U32>>, c, u => B.deps.missed(t, named, seen), u => Con{x, B.deps.missed(t, named, Con{x, seen})}), d)) == True{} : Bool}:
+  match c:
+    case True{}:
+      or_cases(B.same(x, d), B.names.has(t, d), Bool.or(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(B.deps.missed(t, named, seen), d)), h,
+        hs => (%Laws.names.same_eq(x, d, hs) : {Bool.or(Bool.or(B.names.has(named, _), B.names.has(seen, _)), B.names.has(B.deps.missed(t, named, seen), _)) == True{} : Bool}
+          or_l_true(Bool.or(B.names.has(named, x), B.names.has(seen, x)), B.names.has(B.deps.missed(t, named, seen), x), ec)),
+        hb => ih(seen, hb))
+    case False{}:
+      or_cases(B.same(x, d), B.names.has(t, d), Bool.or(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d)), h,
+        hs => or_r_true(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(Con{x, B.deps.missed(t, named, Con{x, seen})}, d), or_l_true(B.same(x, d), B.names.has(B.deps.missed(t, named, Con{x, seen}), d), hs)),
+        hb => dpc_f(named, seen, x, t, d, ih(Con{x, seen}, hb)))
+
+def dpc_go(ds: List<&2, List<&2, U32>>, +named: List<&2, List<&2, U32>>, +seen: List<&2, List<&2, U32>>, +d: List<&2, U32>, h: {B.names.has(ds, d) == True{} : Bool}) ->
+    {Bool.or(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(B.deps.missed(ds, named, seen), d)) == True{} : Bool}:
+  match ds:
+    case Nil{}:
+      Empty.absurd({Bool.or(Bool.or(B.names.has(named, d), B.names.has(seen, d)), B.names.has(B.deps.missed(Nil{}, named, seen), d)) == True{} : Bool}, MB.false_ne_true()(h))
+    case Con{+x, +t}:
+      dpc_k(Bool.or(B.names.has(named, x), B.names.has(seen, x)), x, t, named, seen, d, {==}, h, s => hb => dpc_go(t, named, s, d, hb))
+
+def Laws.deps.complete(ds, named, d, h):
+  or_map(Bool.or(B.names.has(named, d), B.names.has(Nil{}, d)), B.names.has(B.deps.missed(ds, named, Nil{}), d), B.names.has(named, d), B.names.has(B.deps.missed(ds, named, Nil{}), d),
+    dpc_go(ds, named, Nil{}, d, h),
+    hi => or_cases(B.names.has(named, d), B.names.has(Nil{}, d), B.names.has(named, d), hi, hn => hn,
+      hz => Empty.absurd({B.names.has(named, d) == True{} : Bool}, MB.false_ne_true()(hz))),
+    hm => hm)
+
 # law emitted.checked: the Ce taken apart, emit.out's errors none
 # (`errors.emitted`), then each part's in turn as for the objects, in a
 # lemma over the parts' records, so that a mutant's mismatch is a small

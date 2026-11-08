@@ -1279,3 +1279,25 @@ alone never looked at
       emit.found(pf.has(lw) || pf.has(pf), root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf))
 +++
       emit.found(pf.has(lw), root.file(path.at(ec.paths(e), 0), codes(".bend")), module.bytes(files, e, order, tree, more, lw, pf))
+
+=== deps_dropped deps.complete
+an import no argument names passed over, never written, its file left
+stale
+--- blend.bend
+        u => Con{d, deps.missed(t, named, Con{d, seen})})
++++
+        u => deps.missed(t, named, Con{d, seen}))
+
+=== deps_first_alone deps.complete
+the first import kept, those after it never looked at
+--- blend.bend
+        u => Con{d, deps.missed(t, named, Con{d, seen})})
++++
+        u => [d])
+
+=== deps_all_seen deps.complete
+every import taken as written already
+--- blend.bend
+      when(List<&2, List<&2, U32>>, names.has(named, d) || names.has(seen, d), u => deps.missed(t, named, seen),
++++
+      when(List<&2, List<&2, U32>>, True{}, u => deps.missed(t, named, seen),
