@@ -122,10 +122,10 @@ its modules, namespaces and emitted names are Bend's.
   and `LAW.name`; a law a claim stated once, its proof a member `upd
   proof` may replace, a lemma its own keyword, a law unproven only an
   abstract object's.
-- [`blend-do-self`](decisions/blend-do-self.md): `do self<R>:` is a use
-  of the concrete object's `bind` and `pure`, bound late; a header naming
-  an object, of that object's, bound early; the two `shared`; `self`
-  elsewhere an error.
+- [`blend-do-self`](decisions/blend-do-self.md): `self` and nested
+  objects in a `do` header or an operator annotation are latent, bound
+  late, their members `shared`; a top-level object's name plain, its
+  members' order checked; `self` elsewhere an error.
 - [`blend-no-shadowing`](decisions/blend-no-shadowing.md): within a
   `.blend` file or object, a bare name is a local or a definition, never
   both, as glam's `shadowing-is-an-error` has it.

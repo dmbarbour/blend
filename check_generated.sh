@@ -36,5 +36,5 @@ blend_check() {
 
 ./blend_stamp.sh --check || status=1
 
-blend_check samples family.blend nested.blend override.blend prior.blend sharing.blend choice.blend types.blend imports.blend family-nested.blend nested-reach.blend laws.blend laws-imported.blend declares.blend templates.blend monoid.blend namespaces.blend wide.blend monads.blend nested-late.blend nested-frozen.blend lib/shapes.blend lib/adds.blend lib/dims.blend lib/wide.blend
+blend_check samples family.blend nested.blend override.blend prior.blend sharing.blend choice.blend types.blend imports.blend family-nested.blend nested-reach.blend laws.blend laws-imported.blend declares.blend templates.blend monoid.blend namespaces.blend wide.blend monads.blend nested-late.blend nested-frozen.blend operators.blend lib/shapes.blend lib/adds.blend lib/dims.blend lib/wide.blend
 exit "$status"

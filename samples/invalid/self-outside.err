@@ -1,5 +1,5 @@
-Error: self: self names the concrete object in a do header alone, do self<R>:; an operator annotation over an object waits for Blend's macros
-Location: self-outside.blend:9
- 8 |   def twice(+a: U32) -> U32:
- 9>|     (a + a : self)
-10 | 
+Error: self.add: self names the concrete object in a do header, do self<R>:, and an operator annotation, (a + b : self), alone
+Location: self-outside.blend:10
+ 9 |   def twice(+a: U32) -> U32:
+10>|     self.add(a, a)
+11 | 

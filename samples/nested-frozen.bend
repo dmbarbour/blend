@@ -1,5 +1,5 @@
 # Written by Blend from nested-frozen.blend; do not edit.
-# blend stamp: 763442a0527c decfdd635f66c027
+# blend stamp: f6def9719dcd f4f6f583355f5c67
 import Base
 
 # blend: nested-frozen.blend:9

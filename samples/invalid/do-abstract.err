@@ -1,4 +1,10 @@
-Error: do Monad: Monad is abstract and emits nothing; in its own definitions, do self names the concrete object
+Error: do Monad: Monad writes no bind, which Bend's sugar calls there
+Location: do-abstract.blend:10
+ 9 | def one(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+10>|   do Monad<U32>:
+11 |     x : U32 <- a
+
+Error: do Monad: Monad writes no pure, which Bend's sugar calls there
 Location: do-abstract.blend:10
  9 | def one(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
 10>|   do Monad<U32>:

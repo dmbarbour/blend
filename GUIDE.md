@@ -322,10 +322,10 @@ distinct set of `~` arguments; `copied`, a copy for each use
 # Objects as monads: `do self<R>:` binds a block's steps to the concrete
 # object's `bind` and `pure`, bound late, so that an abstract object
 # writes a `do` over the monad its families give, and a family updating
-# `pure` changes every block over it; `do Opt<R>:` names an object's,
-# bound early. Both are `shared`, Bend writing one name for every step;
-# a block's members may sit below it, Blend writing them first
-# (`blend-do-self`).
+# `pure` changes every block over it, the members `shared`, Bend writing
+# one name for every step, and written first where they sit below the
+# block. `do Opt<R>:`, a top-level object's name, is left as written for
+# Bend, Opt defined above its use (`blend-do-self`).
 import Base
 
 abstract object Monad with
@@ -370,22 +370,21 @@ def main() -> IO(Unit):
     7 none 4
 
 - Bend's `do M<xs.., R>:` calls `M.bind` at each step and `M.pure` at
-  each `return`, by name. `do self<R>:` names the concrete object an
-  object's definitions are copied into: its final `bind` and `pure`,
-  bound late, so that an abstract object can write the block and each
-  family give the monad. `do Opt<R>:` names an object's, bound early,
-  as `Opt.f` is; a name that is no object (`Maybe`, `IO`) is Bend's.
-- `bind` and `pure` reached by a `do` are `shared`: Bend writes one name
-  for every step, so that neither affine nor `copied` can be kept. They
-  may sit below the block; Blend writes them first.
-- Blend writes the header with the object's name and the two members
-  in a comment the line ends with, `do Loud<U32>:  # Loud.bind
-  Loud.pure`, its uses.
-- `self` is Blend's word, for a `do` header alone. Bend's operators over
-  a type, `(a + b : T)`, call `T.add` and its kin by name too; Blend does
-  not follow them (an object named there is bound early and its use not
-  counted), so annotate an object's arithmetic with a Bend type, `: U32`,
-  until Blend's macros take operators up (`blend-do-self`).
+  each `return`, by name, and `(a + b : T)` calls `T.add`, `*` `T.mul`,
+  `<` `T.is_lt` and their kin. Where the name is latent, Blend binds it
+  late: `self`, the concrete object an object's definitions are copied
+  into, and a nested object (`blend-nested-late`); it writes the
+  object's name and the members the sugar calls, `do Loud<U32>:  #
+  Loud.bind Loud.pure`, so that they are written first and counted. The
+  members are `shared`: Bend writes one name for every call.
+- A top-level object's name, as a Bend type's, is left as written for
+  Bend; Blend reads no call through it, and refuses it where the
+  object's members would be written below the definition using them
+  (define the object above, or write `self` in its own definitions).
+- Over a latent name, an operator Blend does not know is refused, Bend
+  perhaps new to it; and an annotation is read on one line.
+- `self` is Blend's word, for a `do` header and an operator annotation
+  alone (`blend-do-self`; the sample `operators`).
 
 ## Imports
 

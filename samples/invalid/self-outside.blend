@@ -1,12 +1,13 @@
-# `self` is Blend's word for a `do` header alone: an operator annotation
-# naming it waits for Blend's macros (`blend-do-self`).
+# `self` is Blend's word for a `do` header and an operator annotation
+# alone: a name `self.f` is refused, the object's own `f` written bare
+# (`blend-do-self`).
 import Base
 
 object Vec with
   shared def add(+a: U32, +b: U32) -> U32:
     (a + b + 1000 : U32)
   def twice(+a: U32) -> U32:
-    (a + a : self)
+    self.add(a, a)
 
 def main() -> IO(Unit):
   IO.print(U32.show(Vec.twice(3)))

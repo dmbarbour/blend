@@ -1,0 +1,5 @@
+Error: (.. : self): its parentheses open on a line before, where Blend reads an annotation over an object it binds late on one line
+Location: op-lines.blend:11
+10 |     (a + a
+11>|       + a : self)
+12 | 

@@ -1,0 +1,11 @@
+Error: do Opt: Opt.bind is written below more, which calls it through Bend's sugar by a top-level object's name, left as written: define Opt above more, or write self in Opt's own definitions
+Location: do-below.blend:9
+ 8 | def more(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+ 9>|   do Opt<U32>:
+10 |     x : U32 <- a
+
+Error: do Opt: Opt.pure is written below more, which calls it through Bend's sugar by a top-level object's name, left as written: define Opt above more, or write self in Opt's own definitions
+Location: do-below.blend:9
+ 8 | def more(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+ 9>|   do Opt<U32>:
+10 |     x : U32 <- a

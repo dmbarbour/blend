@@ -1,0 +1,5 @@
+Error: (.. : self): <+> is an operator Blend does not know, Bend perhaps new to it, so that Blend would neither bind nor write first the member it calls
+Location: op-unknown.blend:10
+ 9 |   def odd(+a: U32, +b: U32) -> U32:
+10>|     (a <+> b : self)
+11 | 

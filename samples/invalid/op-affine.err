@@ -1,0 +1,5 @@
+Error: (.. : self): Vec.add is affine, where an operator over it wants it shared, Bend writing one name for every use (shared def add)
+Location: op-affine.blend:10
+ 9 |   def twice(+a: U32) -> U32:
+10>|     (a + a : self)
+11 | 
