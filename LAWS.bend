@@ -1304,6 +1304,22 @@ law objects.checked:
     Bool.and(List.is_empty(&2, B.Er, B.er.lins(B.cx.pss(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.ls(cx))),
     List.is_empty(&2, B.Er, B.er.defs(B.cx.pss(cx), B.cx.fs(cx), B.cx.ls(cx), 0, B.cx.obs(cx), B.cx.fs(cx)))))))))) == True{} : Bool}
 
+# LAW: and so, where the objects stage succeeds, every object's hosts
+# are walked in full on the fuel `hosts` gives (`errors.objects`,
+# `objects.checked`'s first check, `hosts.fuel`).
+# Record: blend-no-silent-failures
+law hosts.walked:
+  for +cmd: U32
+  for +files: List<&2, List<&2, U32>>
+  for +srcs: List<&2, List<&2, U32>>
+  for +q: List<&2, U32>
+  for +paths: List<&2, List<&2, U32>>
+  for +trees: List<&2, List<&2, B.Node>>
+  for +id: U32
+  for +k: Nat
+  for +h: {B.out.ok(B.objects(cmd, files, srcs, q, paths, trees)) == True{} : Bool}
+  {B.hosts.go(Nat.add(k, 1n+U32.to_nat(id)), B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), id) == B.hosts(B.cx.obs(B.objects.cx(B.als.all(trees, 0, paths, B.obs(trees)), paths, B.obs(trees))), id) : List<&2, U32>}
+
 # LAW: and the errors emission writes its files under are each of their
 # parts' (`emitted.k`, `emitted.ers`): where it writes them, the walk
 # reported none, nor the dispositions, the laws' check, the names',

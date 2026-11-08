@@ -1122,7 +1122,7 @@ the objects made on a fuel one short of the turns
 +++
   obs.go(Nat.sub(wf.turns(st), 1n), st, next, out)
 
-=== hosts_fuel_short hosts.fuel
+=== hosts_fuel_short hosts.fuel hosts.walked
 an object's hosts walked on a turn fewer than the numbers from its own
 down, its outermost host dropped
 --- blend.bend
@@ -1145,7 +1145,7 @@ the first object's host checked alone, the rest passed unseen
 +++
       when(List<&2, Er>, Nat.is_le(U32.to_nat(ob.host(o)), i), u => Nil{}, u => Con{er.host(o), er.hosts(t, 1n+i)})
 
-=== objects_hosts_dropped objects.checked
+=== objects_hosts_dropped objects.checked hosts.walked
 the hosts' check left out of the objects stage's errors, an object's
 host after it then unreported and its hosts cut short
 --- blend.bend
