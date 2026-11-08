@@ -3,13 +3,15 @@
 # install.sh copies this there and names, in $BEND_HOME/blend/home, the
 # checkout it runs. It runs the tool built natively from that checkout,
 # built again when Blend or Bend changes (build.sh); where no native build
-# can be made (no clang, or BLEND_NATIVE=0), `bend blend.bend --`, slower.
+# can be made (no clang, or BLEND_NATIVE=0), `bend blend.bend --`, slower,
+# on the sources a build would stage, stamped as a build's (`build.sh
+# --stage`, `blend-stamps`).
 # Its own words: `guide`, `version`, `rebuild`, `update`; a file first, it runs the
 # module as `bend` runs a .bend; the rest go to the tool.
 #
 #   blend guide      the guide, GUIDE.md
-#   blend version    where it runs from, Blend's source hash and the
-#                    version stamp (blend-stamps), Bend's
+#   blend version    where it runs from, the version stamp a build of
+#                    it carries, blend.bend's hash (blend-stamps), Bend's
 #                    version, and whether natively or through Bend
 #   blend rebuild    the tool built again
 #   blend update     how to take a later Blend
@@ -37,7 +39,8 @@ export BEND
 native=1
 [ "${BLEND_NATIVE:-1}" = 0 ] && native=0
 command -v clang >/dev/null 2>&1 || native=0
-hash() { { sha256sum "$1" 2>/dev/null || shasum -a 256 "$1"; } | cut -c1-8; }
+# the version stamp a build of the checkout carries: blend.bend's hash
+stamp() { { sha256sum "$1" 2>/dev/null || shasum -a 256 "$1"; } | cut -c1-12; }
 case ${1:-} in
   guide)
     exec cat "$src/GUIDE.md" ;;
@@ -45,9 +48,9 @@ case ${1:-} in
     at=$(git -C "$src" rev-parse --short HEAD 2>/dev/null) &&
       { [ -z "$(git -C "$src" status --porcelain -- blend.bend 2>/dev/null)" ] || at="$at, blend.bend changed"; }
     how="natively"; [ "$native" = 1 ] || how="through bend (no native build)"
-    # the version stamp, read from the source rather than the tool, which may want a build
-    vs=$(awk '/^def hash\(\)/ { getline; if (match($0, /"[^"]*"/)) print substr($0, RSTART + 1, RLENGTH - 2); exit }' "$src/blend_stamp.bend")
-    echo "blend from the checkout $src${at:+ ($at)}, blend.bend $(hash "$src/blend.bend"), version stamp ${vs:-unknown}; $("$bend" version), $how"
+    # the version stamp, from the source rather than the tool, which may want a build
+    vs=$(stamp "$src/blend.bend")
+    echo "blend from the checkout $src${at:+ ($at)}, version stamp ${vs:-unknown}; $("$bend" version), $how"
     exit 0 ;;
   rebuild)
     [ "$native" = 1 ] || { echo "blend: no native build to make (no clang, or BLEND_NATIVE=0): blend runs through bend" >&2; exit 1; }
@@ -61,8 +64,13 @@ esac
 if [ "$native" = 1 ]; then
   exe=$(BEND=$bend "$src/build.sh") || { echo "blend: the native build failed; running through bend" >&2; native=0; }
 fi
+# through bend, the sources staged as a build stages them, their stamp
+# their own
+if [ "$native" = 0 ]; then
+  staged=$(BEND=$bend "$src/build.sh" --stage) || exit 1
+fi
 tool() {
-  if [ "$native" = 1 ]; then "$exe" "$@"; else "$bend" "$src/blend.bend" -- "$@"; fi
+  if [ "$native" = 1 ]; then "$exe" "$@"; else "$bend" "$staged" -- "$@"; fi
 }
 # Bend's standard error, each line as it comes; after an error's excerpt
 # whose marked line (` N>| `) is line N of one file of the module's tree
@@ -110,4 +118,4 @@ case ${1:-} in
     exit "$st" ;;
 esac
 if [ "$native" = 1 ]; then exec "$exe" "$@"; fi
-exec "$bend" "$src/blend.bend" -- "$@"
+exec "$bend" "$staged" -- "$@"
