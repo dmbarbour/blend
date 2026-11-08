@@ -1363,6 +1363,18 @@ law checks.detect:
   for +hp: {Bool.or(B.pf.has(lw), B.pf.has(pf)) == True{} : Bool}
   {B.outs.found(B.emit.out(files, srcs, e, order, tree, more, lw, pf, es)) == True{} : Bool}
 
+# LAW: `emit` writes every import the modules named reach that none of
+# them names, each once: an import in the trees read is named, or among
+# those `deps.missed` keeps, which `emit.deps` writes in turn, so that
+# none is left stale unseen (`blend-laws2.tree`).
+# Record: blend-emit-verifies-imports, blend-no-silent-failures
+law deps.complete:
+  for +ds: List<&2, List<&2, U32>>
+  for +named: List<&2, List<&2, U32>>
+  for +d: List<&2, U32>
+  for +h: {B.names.has(ds, d) == True{} : Bool}
+  {Bool.or(B.names.has(named, d), B.names.has(B.deps.missed(ds, named, Nil{}), d)) == True{} : Bool}
+
 # LAW: and the errors emission writes its files under are each of their
 # parts' (`emitted.k`, `emitted.ers`): where it writes them, the walk
 # reported none, nor the dispositions, the laws' check, the names',
