@@ -1,0 +1,21 @@
+# A `do` over an object calls its `bind` at every step and its `pure` at
+# every return, by one name: they are `shared`, and a `copied` one,
+# one copy for each use, is refused at the header's line (`blend-do-self`).
+import Base
+
+object Opt with
+  shared def pure(-A: Data, x: A) -> Maybe<&2, A>:
+    Some{x}
+  copied def bind(-A: Data, -B: Data, m: Maybe<&2, A>, f: A -> Maybe<&2, B>) -> Maybe<&2, B>:
+    match m:
+      case None{}:
+        None{}
+      case Some{x}:
+        f(x)
+  def one(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+    do self<U32>:
+      x : U32 <- a
+      return x
+
+def main() -> IO(Unit):
+  IO.print("")

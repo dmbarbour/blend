@@ -1,0 +1,5 @@
+Error: do self: self names the object a definition is copied into, and a module's own definitions have none, the module being no object
+Location: self-module.blend:6
+5 | def one(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+6>|   do self<U32>:
+7 |     x : U32 <- a

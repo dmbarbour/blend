@@ -4109,6 +4109,328 @@ def copy.k(i: In, nd: Node, h: Rb, b: Rb, sh: List<&2, Er>) -> Rd & Rb:
     case Rb{hl, he, hi} Rb{ls, es, more}:
       (Rd{i, nd, rl.join(hl), ls}, Rb{Nil{}, List.append(&2, Er, sh, List.append(&2, Er, he, es)), List.append(&2, In, hi, more)})
 
+def rf.name(r: Rf) -> List<&2, U32>:
+  match r:
+    case Rf{+obj, name, +prior, +origin}:
+      name
+
+def rts.blank(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{t, r}:
+      False{}
+
+def inline(xs: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{+h, t}:
+      Bool.not(U32.is_eq(h, 10)) && inline(t)
+
+def rt.inline(t: Rt) -> Bool:
+  match t:
+    case RT{tk}:
+      inline(tok.bytes(tk))
+    case RR{+mark, ref}:
+      inline(rf.name(ref))
+    case RX{+mark, path, rest}:
+      inline(rest)
+
+def rts.inline(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{t, r}:
+      rt.inline(t) && rts.inline(r)
+
+# Objects as monads
+# -----------------
+#
+# Bend's `do M<xs.., R>:` calls `M.bind` at each step and `M.pure` at each
+# `return`, by name (docs/reviews/Sugar_2026-11-08.md). A header naming
+# an object is a use of that object's final `bind` and `pure`, bound
+# early, and `do self<R>:` of the concrete object's, bound late
+# (`blend-do-self`): the header's name is written as the object's
+# emitted name, and the uses as references in a comment the header's
+# line ends with, so that Blend writes them first and counts them, with
+# no line added and no writer of their own.
+
+# a resolved token's name as written, none where it is no name
+def rt.name(t: Rt) -> List<&2, U32>:
+  match t:
+    case RT{tk}:
+      tok.txt(tk)
+    case _:
+      Nil{}
+
+def rt.space(t: Rt) -> Bool:
+  match t:
+    case RT{tk}:
+      match tk:
+        case TSp{x}:
+          True{}
+        case _:
+          False{}
+    case _:
+      False{}
+
+def rt.sym(t: Rt, +c: U32) -> Bool:
+  match t:
+    case RT{tk}:
+      match tk:
+        case TSym{+d}:
+          U32.is_eq(c, d)
+        case _:
+          False{}
+    case _:
+      False{}
+
+def rt.or(m: Maybe<&2, Rt>) -> Rt:
+  match m:
+    case None{}:
+      RT{TSp{Nil{}}}
+    case Some{t}:
+      t
+
+# whether a name is Blend's `self`, alone or before a dot
+def is.self(+x: List<&2, U32>) -> Bool:
+  same(x, codes("self")) || starts.s(x, "self.")
+
+# a do header's object: `self` the concrete object o, else an object of
+# o's module the name finds from q; none where the name is no object
+# there, Bend's then, as before
+def do.obj(+cx: Cx, +o: U32, +q: U32, +x: List<&2, U32>) -> Maybe<&2, U32>:
+  when(Maybe<&2, U32>, same(x, codes("self")), u => Some{o},
+    u => on.maybe(U32, Maybe<&2, U32>, resolve(List.length(&2, Ob, cx.obs(cx)), cx.als(cx), cx.obs(cx), q, parts(x)), v => None{},
+      +y => when(Maybe<&2, U32>, U32.is_eq(loc.mod(ob.no(ob.at(cx.obs(cx), y))), loc.mod(ob.no(ob.at(cx.obs(cx), o)))) && Bool.not(is.root(cx.obs(cx), y)),
+        w => Some{y}, w => None{})))
+
+# a member's sharing, 3 where it is no definition
+def nd.share(m: Maybe<&2, Node>) -> U32:
+  match m:
+    case None{}:
+      3
+    case Some{nd}:
+      match nd:
+        case NDef{+share, +upd, name, rest, params, body, +no, +ind, +what}:
+          when(U32, U32.is_eq(what, 0), u => share, u => 3)
+        case _:
+          3
+
+# the sharing of y's final n, 3 where it has none
+def do.share(+cx: Cx, +y: U32, +n: List<&2, U32>) -> U32:
+  on.maybe(En, U32, cx.find(cx, y, n), u => 3, e => nd.share(cx.mem(cx, en.head(en.chain(Some{e})), n)))
+
+# a member a do reaches, shared, else an error at the header's line
+def do.er.m(+s: U32, +cx: Cx, +y: U32, +n: List<&2, U32>, +x: List<&2, U32>, +no: Loc) -> List<&2, Er>:
+  match s:
+    case 1:
+      Nil{}
+    case 3:
+      [Er{no, "do " ++ text(x) ++ ": " ++ ob.name(cx.obs(cx), y) ++ " has no " ++ text(n) ++ ", which a do over it calls"}]
+    case _:
+      [Er{no, "do " ++ text(x) ++ ": " ++ ob.name(cx.obs(cx), y) ++ "." ++ text(n) ++ " is " ++ when(String, U32.is_eq(s, 2), u => "copied", u => "affine") ++
+        ", where a do over it wants it shared, Bend writing one name for every step (shared def " ++ text(n) ++ ")"}]
+
+def do.ers(+cx: Cx, +y: U32, +x: List<&2, U32>, +no: Loc) -> List<&2, Er>:
+  when(List<&2, Er>, is.root(cx.obs(cx), y),
+    u => [Er{no, "do self: self names the object a definition is copied into, and a module's own definitions have none, the module being no object"}],
+    u => when(List<&2, Er>, ob.abs(ob.at(cx.obs(cx), y)),
+      v => [Er{no, "do " ++ text(x) ++ ": " ++ ob.name(cx.obs(cx), y) ++ " is abstract and emits nothing; in its own definitions, do self names the concrete object"}],
+      v => List.append(&2, Er, do.er.m(do.share(cx, y, codes("bind")), cx, y, codes("bind"), x, no), do.er.m(do.share(cx, y, codes("pure")), cx, y, codes("pure"), x, no))))
+
+# `self` outside a do header: an error
+def self.er(+t: Rt, +no: Loc) -> List<&2, Er>:
+  when(List<&2, Er>, is.self(rt.name(t)),
+    u => [Er{no, text(rt.name(t)) ++ ": self names the concrete object in a do header alone, do self<R>:; an operator annotation over an object waits for Blend's macros"}],
+    u => Nil{})
+
+# a line's tokens with its do headers' objects taken: each written as the
+# object's emitted name, its uses gathered for the line's end, its errors
+type Dw is Data:
+  Dw{ts: List<&2, Rt>, uses: List<&2, Rt>, ers: List<&2, Er>}
+
+# a token's step: the tokens it lets go, their uses and errors, and the
+# header in the making after it, k its tokens so far: none, `do`, then a
+# space, then a name
+type Dq is Data:
+  Dq{out: List<&2, Rt>, uses: List<&2, Rt>, ers: List<&2, Er>, +k: U32, pend: List<&2, Rt>}
+
+def dq.k(d: Dq) -> U32:
+  match d:
+    case Dq{out, us, es, +k, pend}:
+      k
+
+def dq.pend(d: Dq) -> List<&2, Rt>:
+  match d:
+    case Dq{out, us, es, +k, pend}:
+      pend
+
+def dw.pre(d: Dq, w: Dw) -> Dw:
+  match d w:
+    case Dq{out, us, es, +k, pend} Dw{ts, us2, es2}:
+      Dw{List.append(&2, Rt, out, ts), List.append(&2, Rt, us, us2), List.append(&2, Er, es, es2)}
+
+def do.selfs(ts: List<&2, Rt>, +no: Loc) -> List<&2, Er>:
+  match ts:
+    case Nil{}:
+      Nil{}
+    case Con{+t, r}:
+      List.append(&2, Er, self.er(t, no), do.selfs(r, no))
+
+# a header complete at its `<`: its object's name written, its uses, its
+# errors; a name that is no object as written, Bend's
+def do.hd(+pend: List<&2, Rt>, +lt: Rt, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> Dq:
+  on.maybe(U32, Dq, do.obj(cx, o, q, rt.name(rt.or(List.get(&2, Rt, pend, 2n)))),
+    u => Dq{List.append(&2, Rt, pend, [lt]), Nil{}, Nil{}, 0, Nil{}},
+    +y => Dq{[rt.or(List.get(&2, Rt, pend, 0n)), rt.or(List.get(&2, Rt, pend, 1n)), RT{TName{dots(ob.path(ob.at(cx.obs(cx), y)))}}, lt],
+      [RR{0, Rf{y, codes("bind"), False{}, y}}, RR{0, Rf{y, codes("pure"), False{}, y}}],
+      do.ers(cx, y, rt.name(rt.or(List.get(&2, Rt, pend, 2n))), no), 0, Nil{}})
+
+def do.step(+k: U32, +t: Rt, +pend: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> Dq:
+  when(Dq, same(rt.name(t), codes("do")),
+    u => Dq{pend, Nil{}, do.selfs(pend, no), 1, [t]},
+    u => when(Dq, U32.is_eq(k, 1) && rt.space(t), v => Dq{Nil{}, Nil{}, Nil{}, 2, List.append(&2, Rt, pend, [t])},
+      v => when(Dq, U32.is_eq(k, 2) && Bool.not(List.is_empty(&2, U32, rt.name(t))), w => Dq{Nil{}, Nil{}, Nil{}, 3, List.append(&2, Rt, pend, [t])},
+        w => when(Dq, U32.is_eq(k, 3) && rt.sym(t, 60), x => do.hd(pend, t, cx, o, q, no),
+          x => Dq{List.append(&2, Rt, pend, [t]), Nil{}, do.selfs(List.append(&2, Rt, pend, [t]), no), 0, Nil{}}))))
+
+def do.ts(ts: List<&2, Rt>, +k: U32, pend: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> Dw:
+  match ts:
+    case Nil{}:
+      Dw{pend, Nil{}, Nil{}}
+    case Con{+t, r}:
+      +d = do.step(k, t, pend, cx, o, q, no)
+      dw.pre(d, do.ts(r, dq.k(d), dq.pend(d), cx, o, q, no))
+
+# the uses gathered, in a comment ending the line
+def do.refs(us: List<&2, Rt>) -> List<&2, Rt>:
+  match us:
+    case Nil{}:
+      Nil{}
+    case Con{u, t}:
+      Con{RT{TSp{[32]}}, Con{u, do.refs(t)}}
+
+def do.comment(us: List<&2, Rt>) -> List<&2, Rt>:
+  match us:
+    case Nil{}:
+      Nil{}
+    case Con{u, t}:
+      Con{RT{TSp{[32, 32]}}, Con{RT{TSym{35}}, do.refs(Con{u, t})}}
+
+def dw.ts(d: Dw) -> List<&2, Rt>:
+  match d:
+    case Dw{ts, us, es}:
+      ts
+
+def dw.uses(d: Dw) -> List<&2, Rt>:
+  match d:
+    case Dw{ts, us, es}:
+      us
+
+def dw.ers(d: Dw) -> List<&2, Er>:
+  match d:
+    case Dw{ts, us, es}:
+      es
+
+# a line's tokens with its headers taken and their uses at its end
+def do.toks(ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> List<&2, Rt>:
+  +d = do.ts(ts, 0, Nil{}, cx, o, q, no)
+  List.append(&2, Rt, dw.ts(d), do.comment(dw.uses(d)))
+
+def do.pick(c: Bool, +a: List<&2, Rt>, +b: List<&2, Rt>) -> List<&2, Rt>:
+  match c:
+    case True{}:
+      b
+    case False{}:
+      a
+
+# whether a name is `do` or Blend's `self`, told by its first byte, so
+# that a line holding neither costs one look at each name
+def do.word.k(+h: U32, +x: List<&2, U32>) -> Bool:
+  match h:
+    case 100:
+      same(x, codes("do"))
+    case 115:
+      is.self(x)
+    case _:
+      False{}
+
+def do.word(+x: List<&2, U32>) -> Bool:
+  match x:
+    case Nil{}:
+      False{}
+    case Con{+h, +t}:
+      do.word.k(h, Con{h, t})
+
+def rt.flag(t: Rt) -> Bool:
+  match t:
+    case RT{tk}:
+      match tk:
+        case TName{+x}:
+          do.word(x)
+        case _:
+          False{}
+    case _:
+      False{}
+
+# whether a line holds a `do` or a `self`, the lines the pass takes
+def rts.flagged(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      False{}
+    case Con{t, r}:
+      rt.flag(t) || rts.flagged(r)
+
+def do.keep.k(+c: Bool, +ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> List<&2, Rt>:
+  match c:
+    case False{}:
+      ts
+    case True{}:
+      +t2 = do.toks(ts, cx, o, q, no)
+      do.pick(rts.inline(t2), ts, t2)
+
+# a line's tokens taken where it holds a `do` or a `self`, unless taking
+# them would leave a newline among them (a fault, `do.es` reporting it):
+# so that a line keeps its depth, its blankness (a blank one holds
+# none) and its one line by construction
+def do.keep(+ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> List<&2, Rt>:
+  do.keep.k(rts.flagged(ts), ts, cx, o, q, no)
+
+def do.ls(ls: List<&2, Rl>, +cx: Cx, +o: U32, +q: U32) -> List<&2, Rl>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, t}:
+      match l:
+        case Rl{+no, +ind, +ts}:
+          Con{Rl{no, ind, do.keep(ts, cx, o, q, no)}, do.ls(t, cx, o, q)}
+
+def do.es.k(+c: Bool, +ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> List<&2, Er>:
+  match c:
+    case False{}:
+      Nil{}
+    case True{}:
+      List.append(&2, Er, dw.ers(do.ts(ts, 0, Nil{}, cx, o, q, no)),
+        when(List<&2, Er>, rts.inline(do.toks(ts, cx, o, q, no)), u => Nil{}, u => [Er{no, "a do header's line taken with a newline in it, a fault of Blend's"}]))
+
+def do.es(ls: List<&2, Rl>, +cx: Cx, +o: U32, +q: U32) -> List<&2, Er>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, t}:
+      match l:
+        case Rl{+no, +ind, +ts}:
+          List.append(&2, Er, do.es.k(rts.flagged(ts), ts, cx, o, q, no), do.es(t, cx, o, q))
+
+# a body's lines with their do headers taken, the priors as they were
+# (`blend-do-self`)
+def do.rb(+cx: Cx, +o: U32, +q: U32, b: Rb) -> Rb:
+  match b:
+    case Rb{+ls, es, more}:
+      Rb{do.ls(ls, cx, o, q), List.append(&2, Er, es, do.es(ls, cx, o, q)), more}
+
 # a member's copy in o: its body bound, the priors it reaches
 def copy.node(+cx: Cx, +o: U32, i: In, +nd: Node) -> Rd & Rb:
   match i:
@@ -4117,7 +4439,7 @@ def copy.node(+cx: Cx, +o: U32, i: In, +nd: Node) -> Rd & Rb:
         case NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
           copy.k(In{n, q, prior}, nd,
             rb.line(no, 0, rb.toks(toks(rest), cx, o, q, List.append(&2, List<&2, U32>, unmarks(params), lc.names(body.binders(body))), no)),
-            rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, unmarks(params), lc.names(body.binders(body)))),
+            do.rb(cx, o, q, rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, unmarks(params), lc.names(body.binders(body))))),
             when(List<&2, Er>, is.root(cx.obs(cx), o), u => Nil{},
               u => List.append(&2, Er, shadow.params(unmarks(params), cx, o, q, text(rf.text(cx.obs(cx), in.ref(o, In{n, q, prior}))), no),
                 shadow.locals(body.binders(body), cx, o, q, text(rf.text(cx.obs(cx), in.ref(o, In{n, q, prior})))))))
@@ -4763,13 +5085,6 @@ def units.ok(us: List<&2, Un>) -> Bool:
       True{}
     case Con{u, t}:
       un.ok(u) && units.ok(t)
-
-def rts.blank(ts: List<&2, Rt>) -> Bool:
-  match ts:
-    case Nil{}:
-      True{}
-    case Con{t, r}:
-      False{}
 
 def rl.deep(ls: List<&2, Rl>, +no: Loc, +ind: U32, +first: Bool) -> Bool:
   match ls:
@@ -6070,11 +6385,6 @@ def args.joined(ps: List<&2, List<&2, U32>>) -> List<&2, U32>:
         case Con{h, r}:
           List.append(&2, U32, arg.of(p), List.append(&2, U32, codes(", "), args.joined(Con{h, r})))
 
-def rf.name(r: Rf) -> List<&2, U32>:
-  match r:
-    case Rf{+obj, name, +prior, +origin}:
-      name
-
 # a witness's line: the object's own definition of the name, called with
 # the declaration's parameters
 def wit.line(+e: Ec, +x: U32) -> List<&2, U32>:
@@ -6161,13 +6471,6 @@ def order.put(xs: List<&2, U32>, +e: Ec, b: Tb) -> Tb:
 # a line (`inline`), no newline in it; a text's newlines, and the text kept reversed from its last
 # newline on, what text holding none written after it leaves alone
 
-def inline(xs: List<&2, U32>) -> Bool:
-  match xs:
-    case Nil{}:
-      True{}
-    case Con{+h, t}:
-      Bool.not(U32.is_eq(h, 10)) && inline(t)
-
 def inlines(xss: List<&2, List<&2, U32>>) -> Bool:
   match xss:
     case Nil{}:
@@ -6237,22 +6540,6 @@ def cis.inline(cs: List<&2, Ci>) -> Bool:
       match c:
         case Ci{alias, path, +no}:
           inline(alias) && cis.inline(t)
-
-def rt.inline(t: Rt) -> Bool:
-  match t:
-    case RT{tk}:
-      inline(tok.bytes(tk))
-    case RR{+mark, ref}:
-      inline(rf.name(ref))
-    case RX{+mark, path, rest}:
-      inline(rest)
-
-def rts.inline(ts: List<&2, Rt>) -> Bool:
-  match ts:
-    case Nil{}:
-      True{}
-    case Con{t, r}:
-      rt.inline(t) && rts.inline(r)
 
 def rls.inline(ls: List<&2, Rl>) -> Bool:
   match ls:

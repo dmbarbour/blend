@@ -307,6 +307,77 @@ is affine like any definition: `shared`, Bend makes a copy for each
 distinct set of `~` arguments; `copied`, a copy for each use
 (`blend-templates-affine`; the sample `templates`).
 
+## Objects as monads
+
+```blend samples/monads.blend
+# Objects as monads: `do self<R>:` binds a block's steps to the concrete
+# object's `bind` and `pure`, bound late, so that an abstract object
+# writes a `do` over the monad its families give, and a family updating
+# `pure` changes every block over it; `do Opt<R>:` names an object's,
+# bound early. Both are `shared`, Bend writing one name for every step;
+# a block's members may sit below it, Blend writing them first
+# (`blend-do-self`).
+import Base
+
+abstract object Monad with
+  declare pure, bind
+  def both(a: Maybe<&2, U32>, b: Maybe<&2, U32>) -> Maybe<&2, U32>:
+    do self<U32>:
+      x : U32 <- a
+      y : U32 <- b
+      return (x + y : U32)
+
+object Opt extends Monad with
+  shared def pure(-A: Data, x: A) -> Maybe<&2, A>:
+    Some{x}
+  shared def bind(-A: Data, -B: Data, m: Maybe<&2, A>, f: A -> Maybe<&2, B>) -> Maybe<&2, B>:
+    match m:
+      case None{}:
+        None{}
+      case Some{x}:
+        f(x)
+
+object Loud extends Opt with
+  shared upd pure(-A: Data, x: A) -> Maybe<&2, A>:
+    None{}
+
+def say(m: Maybe<&2, U32>) -> String:
+  match m:
+    case None{}:
+      "none"
+    case Some{v}:
+      U32.show(v)
+
+def more(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  do Opt<U32>:
+    x : U32 <- a
+    return (x + 3 : U32)
+
+def main() -> IO(Unit):
+  IO.print(say(Opt.both(Some{3}, Some{4})) ++ " " ++ say(Loud.both(Some{3}, Some{4})) ++ " " ++ say(more(Some{1})))
+```
+
+    $ blend monads.blend
+    7 none 4
+
+- Bend's `do M<xs.., R>:` calls `M.bind` at each step and `M.pure` at
+  each `return`, by name. `do self<R>:` names the concrete object an
+  object's definitions are copied into: its final `bind` and `pure`,
+  bound late, so that an abstract object can write the block and each
+  family give the monad. `do Opt<R>:` names an object's, bound early,
+  as `Opt.f` is; a name that is no object (`Maybe`, `IO`) is Bend's.
+- `bind` and `pure` reached by a `do` are `shared`: Bend writes one name
+  for every step, so that neither affine nor `copied` can be kept. They
+  may sit below the block; Blend writes them first.
+- Blend writes the header with the object's name and the two members
+  in a comment the line ends with, `do Loud<U32>:  # Loud.bind
+  Loud.pure`, its uses.
+- `self` is Blend's word, for a `do` header alone. Bend's operators over
+  a type, `(a + b : T)`, call `T.add` and its kin by name too; Blend does
+  not follow them (an object named there is bound early and its use not
+  counted), so annotate an object's arithmetic with a Bend type, `: U32`,
+  until Blend's macros take operators up (`blend-do-self`).
+
 ## Imports
 
 ```blend samples/lib/shapes.blend

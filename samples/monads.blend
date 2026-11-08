@@ -1,0 +1,45 @@
+# Objects as monads: `do self<R>:` binds a block's steps to the concrete
+# object's `bind` and `pure`, bound late, so that an abstract object
+# writes a `do` over the monad its families give, and a family updating
+# `pure` changes every block over it; `do Opt<R>:` names an object's,
+# bound early. Both are `shared`, Bend writing one name for every step;
+# a block's members may sit below it, Blend writing them first
+# (`blend-do-self`).
+import Base
+
+abstract object Monad with
+  declare pure, bind
+  def both(a: Maybe<&2, U32>, b: Maybe<&2, U32>) -> Maybe<&2, U32>:
+    do self<U32>:
+      x : U32 <- a
+      y : U32 <- b
+      return (x + y : U32)
+
+object Opt extends Monad with
+  shared def pure(-A: Data, x: A) -> Maybe<&2, A>:
+    Some{x}
+  shared def bind(-A: Data, -B: Data, m: Maybe<&2, A>, f: A -> Maybe<&2, B>) -> Maybe<&2, B>:
+    match m:
+      case None{}:
+        None{}
+      case Some{x}:
+        f(x)
+
+object Loud extends Opt with
+  shared upd pure(-A: Data, x: A) -> Maybe<&2, A>:
+    None{}
+
+def say(m: Maybe<&2, U32>) -> String:
+  match m:
+    case None{}:
+      "none"
+    case Some{v}:
+      U32.show(v)
+
+def more(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  do Opt<U32>:
+    x : U32 <- a
+    return (x + 3 : U32)
+
+def main() -> IO(Unit):
+  IO.print(say(Opt.both(Some{3}, Some{4})) ++ " " ++ say(Loud.both(Some{3}, Some{4})) ++ " " ++ say(more(Some{1})))

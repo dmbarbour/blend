@@ -6213,7 +6213,7 @@ def cn_held(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node, +ds: List<&2, B.Node>, +hm:
         case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
           ck_held(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
             B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
-            B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+            B.do.rb(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))))),
             B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
               u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
                 B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
@@ -6647,7 +6647,7 @@ def cn_inst(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node) -> {i == rd_in(Pair.fst(B.R
         case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
           ck_inst(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
             B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
-            B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+            B.do.rb(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))))),
             B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
               u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
                 B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))))
@@ -6943,7 +6943,7 @@ def cn_def(+cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, nd: B.N
     case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
       ck_def(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
         B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
-        B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+        B.do.rb(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))))),
         B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
           u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
             B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
@@ -8334,6 +8334,54 @@ def rdm(r: B.Rd) -> Bool:
         case _:
           True{}
 
+# the do pass (`do.rb`, `blend-do-self`): each line kept with its number
+# and depth, a blank one blank, by construction (`do.keep`)
+def keep_blank(ts: List<&2, B.Rt>, +cx: B.Cx, +o: U32, +q: U32, +no: B.Loc, hb: {B.rts.blank(ts) == True{} : Bool}) ->
+    {B.rts.blank(B.do.keep(ts, cx, o, q, no)) == True{} : Bool}:
+  match ts:
+    case Nil{}:
+      {==}
+    case Con{t, r}:
+      Empty.absurd({B.rts.blank(B.do.keep(Con{t, r}, cx, o, q, no)) == True{} : Bool}, MB.false_ne_true()(hb))
+
+def lk_keep(+no: B.Loc, +ind: U32, +ts: List<&2, B.Rt>, b: B.Bl, +cx: B.Cx, +o: U32, +q: U32, +h: {lk(B.Rl{no, ind, ts}, b) == True{} : Bool}) ->
+    {lk(B.Rl{no, ind, B.do.keep(ts, cx, o, q, no)}, b) == True{} : Bool}:
+  match b:
+    case B.Bl{+n2, +i2, +tks}:
+      and_intro(U32.is_eq(ind, i2), Bool.or(Bool.not(B.toks.blank(tks)), B.rts.blank(B.do.keep(ts, cx, o, q, no))),
+        and_l(U32.is_eq(ind, i2), Bool.or(Bool.not(B.toks.blank(tks)), B.rts.blank(ts)), h),
+        or_map(Bool.not(B.toks.blank(tks)), B.rts.blank(ts), Bool.not(B.toks.blank(tks)), B.rts.blank(B.do.keep(ts, cx, o, q, no)),
+          and_r(U32.is_eq(ind, i2), Bool.or(Bool.not(B.toks.blank(tks)), B.rts.blank(ts)), h),
+          x => x, hb => keep_blank(ts, cx, o, q, no, hb)))
+
+def dols_nos(ls: List<&2, B.Rl>, bs: List<&2, B.Bl>, +cx: B.Cx, +o: U32, +q: U32, +h: {nos(ls, bs) == True{} : Bool}) ->
+    {nos(B.do.ls(ls, cx, o, q), bs) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      match bs:
+        case Nil{}:
+          {==}
+        case Con{b, bt}:
+          h
+    case Con{l, +lt}:
+      match l:
+        case B.Rl{+no, +ind, +ts}:
+          match bs:
+            case Nil{}:
+              h
+            case Con{+b, +bt}:
+              and_intro(Bool.and(B.loc.eq(no, blno(b)), lk(B.Rl{no, ind, B.do.keep(ts, cx, o, q, no)}, b)), nos(B.do.ls(lt, cx, o, q), bt),
+                and_intro(B.loc.eq(no, blno(b)), lk(B.Rl{no, ind, B.do.keep(ts, cx, o, q, no)}, b),
+                  and_l(B.loc.eq(no, blno(b)), lk(B.Rl{no, ind, ts}, b), and_l(Bool.and(B.loc.eq(no, blno(b)), lk(B.Rl{no, ind, ts}, b)), nos(lt, bt), h)),
+                  lk_keep(no, ind, ts, b, cx, o, q, and_r(B.loc.eq(no, blno(b)), lk(B.Rl{no, ind, ts}, b), and_l(Bool.and(B.loc.eq(no, blno(b)), lk(B.Rl{no, ind, ts}, b)), nos(lt, bt), h)))),
+                dols_nos(lt, bt, cx, o, q, and_r(Bool.and(B.loc.eq(no, blno(b)), lk(B.Rl{no, ind, ts}, b)), nos(lt, bt), h)))
+
+def dorb_nos(+cx: B.Cx, +o: U32, +q: U32, b: B.Rb, +body: List<&2, B.Bl>, h: {nos(rbls(b), body) == True{} : Bool}) ->
+    {nos(rbls(B.do.rb(cx, o, q, b)), body) == True{} : Bool}:
+  match b:
+    case B.Rb{+ls, es, more}:
+      dols_nos(ls, body, cx, o, q, h)
+
 def ck_m(i: B.In, +share: U32, +upd: Bool, +name: List<&2, U32>, +rest: List<&2, U32>, +params: List<&2, List<&2, U32>>, +body: List<&2, B.Bl>, +no: B.Loc, +ind: U32, +what: U32,
     h: B.Rb, b: B.Rb, sh: List<&2, B.Er>, hb: {nos(rbls(b), body) == True{} : Bool}) ->
     {rdm(Pair.fst(B.Rd, B.Rb, B.copy.k(i, B.NDef{share, upd, name, rest, params, body, no, ind, what}, h, b, sh))) == True{} : Bool}:
@@ -8348,11 +8396,11 @@ def cn_m(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node) -> {rdm(Pair.fst(B.Rd, B.Rb, B
         case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
           ck_m(B.In{n, q, prior}, share, upd, name, rest, params, body, no, ind, what,
             B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
-            B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+            B.do.rb(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))))),
             B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
               u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
                 B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
-            rbl_nos(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))))
+            dorb_nos(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))), body, rbl_nos(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))))))
         case B.NImport{+txt, +no}:
           {==}
         case B.NDecl{+names, +no}:
@@ -11212,6 +11260,40 @@ def cpp_b(p: B.Rd & B.Rb, h: {cpp(p) == True{} : Bool}) -> {insil(B.rb.ins(Pair.
     case (+a, +b):
       and_r(rdil(a), insil(B.rb.ins(b)), h)
 
+# the do pass on one line: a newline never brought in (`do.keep`)
+def dp_il(c: Bool, +ts: List<&2, B.Rt>, +t2: List<&2, B.Rt>, hts: {B.rts.inline(ts) == True{} : Bool},
+    hc: {B.rts.inline(t2) == c : Bool}) -> {B.rts.inline(B.do.pick(c, ts, t2)) == True{} : Bool}:
+  match c:
+    case True{}:
+      hc
+    case False{}:
+      hts
+
+def kk_il(c: Bool, +ts: List<&2, B.Rt>, +cx: B.Cx, +o: U32, +q: U32, +no: B.Loc, hts: {B.rts.inline(ts) == True{} : Bool}) ->
+    {B.rts.inline(B.do.keep.k(c, ts, cx, o, q, no)) == True{} : Bool}:
+  match c:
+    case False{}:
+      hts
+    case True{}:
+      dp_il(B.rts.inline(B.do.toks(ts, cx, o, q, no)), ts, B.do.toks(ts, cx, o, q, no), hts, {==})
+
+def dols_il(ls: List<&2, B.Rl>, +cx: B.Cx, +o: U32, +q: U32, +h: {B.rls.inline(ls) == True{} : Bool}) ->
+    {B.rls.inline(B.do.ls(ls, cx, o, q)) == True{} : Bool}:
+  match ls:
+    case Nil{}:
+      {==}
+    case Con{l, +t}:
+      match l:
+        case B.Rl{+no, +ind, +ts}:
+          and_intro(B.rts.inline(B.do.keep(ts, cx, o, q, no)), B.rls.inline(B.do.ls(t, cx, o, q)),
+            kk_il(B.rts.flagged(ts), ts, cx, o, q, no, and_l(B.rts.inline(ts), B.rls.inline(t), h)),
+            dols_il(t, cx, o, q, and_r(B.rts.inline(ts), B.rls.inline(t), h)))
+
+def dorb_il(+cx: B.Cx, +o: U32, +q: U32, b: B.Rb, +h: {rbil(b) == True{} : Bool}) -> {rbil(B.do.rb(cx, o, q, b)) == True{} : Bool}:
+  match b:
+    case B.Rb{+ls, es, +more}:
+      and_intro(B.rls.inline(B.do.ls(ls, cx, o, q)), insil(more), dols_il(ls, cx, o, q, and_l(B.rls.inline(ls), insil(more), h)), and_r(B.rls.inline(ls), insil(more), h))
+
 def ck_il(+i: B.In, +nd: B.Node, h: B.Rb, b: B.Rb, +sh: List<&2, B.Er>, +hi: {inil(i) == True{} : Bool}, +hh: {rbil(h) == True{} : Bool}, +hb: {rbil(b) == True{} : Bool}) ->
     {cpp(B.copy.k(i, nd, h, b, sh)) == True{} : Bool}:
   match h b:
@@ -11232,7 +11314,7 @@ def cn_il(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node, +hi: {inil(i) == True{} : Boo
         case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
           ck_il(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
             B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
-            B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+            B.do.rb(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))))),
             B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
               u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
                 B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
@@ -11240,8 +11322,8 @@ def cn_il(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node, +hi: {inil(i) == True{} : Boo
             line_rb(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no),
               toks_rb(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no,
                 tt_il(B.toks(rest), il_spell(rest, and_r(B.inline(name), B.inline(rest), and_l(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(body), hn)))))),
-            lines_rb(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))),
-              and_r(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(body), hn)))
+            dorb_il(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))), lines_rb(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))),
+              and_r(Bool.and(B.inline(name), B.inline(rest)), B.bls.inline(body), hn))))
         case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
           bare_il(n, q, prior, B.NObj{abs, ext, name, parents, kids, no}, hi)
         case B.NImport{+txt, +no}:
@@ -12656,6 +12738,12 @@ def lines_fd(bs: List<&2, B.Bl>, +cx: B.Cx, +o: U32, +q: U32, +locals: List<&2, 
             line_fd(no, ind, B.rb.toks(ts, cx, o, q, locals, no), B.cx.obs(cx), toks_fd(ts, cx, o, q, locals, no, hc)),
             lines_fd(t, cx, o, q, locals, hc))
 
+# the do pass keeps the priors as they were
+def dorb_fd(+cx: B.Cx, +o: U32, +q: U32, b: B.Rb, +obs: List<&2, B.Ob>, h: {rbfd(b, obs) == True{} : Bool}) -> {rbfd(B.do.rb(cx, o, q, b), obs) == True{} : Bool}:
+  match b:
+    case B.Rb{+ls, es, more}:
+      h
+
 # a copy's priors found
 def ck_fd(i: B.In, nd: B.Node, h: B.Rb, b: B.Rb, sh: List<&2, B.Er>, +obs: List<&2, B.Ob>, hh: {rbfd(h, obs) == True{} : Bool}, hb: {rbfd(b, obs) == True{} : Bool}) ->
     {insfd(B.rb.ins(Pair.snd(B.Rd, B.Rb, B.copy.k(i, nd, h, b, sh))), obs) == True{} : Bool}:
@@ -12669,12 +12757,12 @@ def cn_fd(+cx: B.Cx, +o: U32, +n: List<&2, U32>, +q: U32, +prior: Bool, nd: B.No
     case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
       ck_fd(B.In{n, q, prior}, B.NDef{share, upd, name, rest, params, body, no, ind, what},
         B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
-        B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+        B.do.rb(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))))),
         B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
           u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
             B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))),
         B.cx.obs(cx), line_fd(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no), B.cx.obs(cx), toks_fd(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no, hc)),
-        lines_fd(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), hc))
+        dorb_fd(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))), B.cx.obs(cx), lines_fd(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), hc)))
     case B.NObj{+abs, +ext, +name, +parents, +kids, +no}:
       {==}
     case B.NImport{+txt, +no}:
@@ -13575,7 +13663,7 @@ def cn_e(+cx: B.Cx, +o: U32, i: B.In, nd: B.Node) -> {rde(Pair.fst(B.Rd, B.Rb, B
         case B.NDef{+share, +upd, +name, +rest, +params, +body, +no, +ind, +what}:
           ck_e(B.In{n, q, prior}, share, upd, name, rest, params, body, no, ind, what,
             B.rb.line(no, 0, B.rb.toks(B.toks(rest), cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))), no)),
-            B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body)))),
+            B.do.rb(cx, o, q, B.rb.lines(body, cx, o, q, List.append(&2, List<&2, U32>, B.unmarks(params), B.lc.names(B.body.binders(body))))),
             B.when(List<&2, B.Er>, B.is.root(B.cx.obs(cx), o), u => Nil{},
               u => List.append(&2, B.Er, B.shadow.params(B.unmarks(params), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior}))), no),
                 B.shadow.locals(B.body.binders(body), cx, o, q, B.text(B.rf.text(B.cx.obs(cx), B.in.ref(o, B.In{n, q, prior})))))))

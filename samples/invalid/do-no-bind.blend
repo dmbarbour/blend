@@ -1,0 +1,14 @@
+# A `do` over an object calls its `bind` and its `pure`: an object with
+# no `bind` is refused at the header's line (`blend-do-self`).
+import Base
+
+object Opt with
+  shared def pure(-A: Data, x: A) -> Maybe<&2, A>:
+    Some{x}
+  def one(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+    do self<U32>:
+      x : U32 <- a
+      return x
+
+def main() -> IO(Unit):
+  IO.print("")

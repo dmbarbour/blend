@@ -1,5 +1,5 @@
 # Written by Blend from laws-imported.blend; do not edit.
-# blend stamp: 98d50b3ccce3 9c0e63e44a702f7a
+# blend stamp: 5291f54add10 c3b6b2ca1abbc97a
 import Base
 import ./lib/adds.bend as A
 
