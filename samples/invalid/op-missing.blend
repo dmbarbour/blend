@@ -1,0 +1,12 @@
+# An operator over an object calls the member its sugar names: an object
+# with no `sub` refused where `-` is written over it (`blend-do-self`).
+import Base
+
+object Vec with
+  shared def add(+a: U32, +b: U32) -> U32:
+    (a + b + 1000 : U32)
+  def diff(+a: U32, +b: U32) -> U32:
+    (a - b : self)
+
+def main() -> IO(Unit):
+  IO.print(U32.show(Vec.diff(3, 1)))

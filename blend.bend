@@ -4223,14 +4223,29 @@ def rt.or(m: Maybe<&2, Rt>) -> Rt:
 def is.self(+x: List<&2, U32>) -> Bool:
   same(x, codes("self")) || starts.s(x, "self.")
 
-# a do header's object: `self` the concrete object o, else an object of
-# o's module the name finds from q; none where the name is no object
-# there, Bend's then, as before
-def do.obj(+cx: Cx, +o: U32, +q: U32, +x: List<&2, U32>) -> Maybe<&2, U32>:
+# one of o's own nested objects by its path from o, none for a module's
+# own definitions
+def sug.own(+cx: Cx, +o: U32, +x: List<&2, U32>) -> Maybe<&2, U32>:
+  when(Maybe<&2, U32>, is.root(cx.obs(cx), o), u => None{},
+    u => find.path(cx.obs(cx), loc.mod(ob.no(ob.at(cx.obs(cx), o))), List.append(&2, List<&2, U32>, ob.path(ob.at(cx.obs(cx), o)), parts(x))))
+
+# a nested object of o's module: neither a module nor a top-level object
+def sug.nested(+cx: Cx, +o: U32, +y: U32) -> Bool:
+  U32.is_eq(loc.mod(ob.no(ob.at(cx.obs(cx), y))), loc.mod(ob.no(ob.at(cx.obs(cx), o)))) && Bool.not(is.root(cx.obs(cx), y)) &&
+    Bool.not(is.root(cx.obs(cx), ob.host(ob.at(cx.obs(cx), y))))
+
+# a sugar's subject, a do header's or an operator annotation's, where it
+# is latent, bound late: `self` the concrete object o; a nested object,
+# o's own or one found where the name is written, outward, as a dotted
+# name binds (`blend-nested-late`); none where the name is a top-level
+# object, a Bend type or anything else, a plain name Bend resolves as
+# written (the maintainer, 2026-11-08)
+def sug.obj(+cx: Cx, +o: U32, +q: U32, +x: List<&2, U32>) -> Maybe<&2, U32>:
   when(Maybe<&2, U32>, same(x, codes("self")), u => Some{o},
-    u => on.maybe(U32, Maybe<&2, U32>, resolve(List.length(&2, Ob, cx.obs(cx)), cx.als(cx), cx.obs(cx), q, parts(x)), v => None{},
-      +y => when(Maybe<&2, U32>, U32.is_eq(loc.mod(ob.no(ob.at(cx.obs(cx), y))), loc.mod(ob.no(ob.at(cx.obs(cx), o)))) && Bool.not(is.root(cx.obs(cx), y)),
-        w => Some{y}, w => None{})))
+    u => on.maybe(U32, Maybe<&2, U32>, sug.own(cx, o, x),
+      v => on.maybe(U32, Maybe<&2, U32>, resolve(List.length(&2, Ob, cx.obs(cx)), cx.als(cx), cx.obs(cx), q, parts(x)), w => None{},
+        +y => when(Maybe<&2, U32>, sug.nested(cx, o, y), w => Some{y}, w => None{})),
+      +y => Some{y}))
 
 # a member's sharing, 3 where it is no definition
 def nd.share(m: Maybe<&2, Node>) -> U32:
@@ -4248,28 +4263,30 @@ def nd.share(m: Maybe<&2, Node>) -> U32:
 def do.share(+cx: Cx, +y: U32, +n: List<&2, U32>) -> U32:
   on.maybe(En, U32, cx.find(cx, y, n), u => 3, e => nd.share(cx.mem(cx, en.head(en.chain(Some{e})), n)))
 
-# a member a do reaches, shared, else an error at the header's line
-def do.er.m(+s: U32, +cx: Cx, +y: U32, +n: List<&2, U32>, +x: List<&2, U32>, +no: Loc) -> List<&2, Er>:
+# a member a sugar reaches, shared, else an error at its line: lbl the
+# sugar as written, via what calls the member, every what each call is
+def do.er.m(+s: U32, +cx: Cx, +y: U32, +n: List<&2, U32>, +lbl: String, +via: String, +every: String, +no: Loc) -> List<&2, Er>:
   match s:
     case 1:
       Nil{}
     case 3:
-      [Er{no, "do " ++ text(x) ++ ": " ++ ob.name(cx.obs(cx), y) ++ " has no " ++ text(n) ++ ", which a do over it calls"}]
+      [Er{no, lbl ++ ": " ++ ob.name(cx.obs(cx), y) ++ " has no " ++ text(n) ++ ", which " ++ via ++ " calls"}]
     case _:
-      [Er{no, "do " ++ text(x) ++ ": " ++ ob.name(cx.obs(cx), y) ++ "." ++ text(n) ++ " is " ++ when(String, U32.is_eq(s, 2), u => "copied", u => "affine") ++
-        ", where a do over it wants it shared, Bend writing one name for every step (shared def " ++ text(n) ++ ")"}]
+      [Er{no, lbl ++ ": " ++ ob.name(cx.obs(cx), y) ++ "." ++ text(n) ++ " is " ++ when(String, U32.is_eq(s, 2), u => "copied", u => "affine") ++
+        ", where " ++ via ++ " wants it shared, Bend writing one name for every " ++ every ++ " (shared def " ++ text(n) ++ ")"}]
 
 def do.ers(+cx: Cx, +y: U32, +x: List<&2, U32>, +no: Loc) -> List<&2, Er>:
   when(List<&2, Er>, is.root(cx.obs(cx), y),
     u => [Er{no, "do self: self names the object a definition is copied into, and a module's own definitions have none, the module being no object"}],
     u => when(List<&2, Er>, ob.abs(ob.at(cx.obs(cx), y)),
       v => [Er{no, "do " ++ text(x) ++ ": " ++ ob.name(cx.obs(cx), y) ++ " is abstract and emits nothing; in its own definitions, do self names the concrete object"}],
-      v => List.append(&2, Er, do.er.m(do.share(cx, y, codes("bind")), cx, y, codes("bind"), x, no), do.er.m(do.share(cx, y, codes("pure")), cx, y, codes("pure"), x, no))))
+      v => List.append(&2, Er, do.er.m(do.share(cx, y, codes("bind")), cx, y, codes("bind"), "do " ++ text(x), "a do over it", "step", no),
+        do.er.m(do.share(cx, y, codes("pure")), cx, y, codes("pure"), "do " ++ text(x), "a do over it", "step", no))))
 
 # `self` outside a do header: an error
 def self.er(+t: Rt, +no: Loc) -> List<&2, Er>:
   when(List<&2, Er>, is.self(rt.name(t)),
-    u => [Er{no, text(rt.name(t)) ++ ": self names the concrete object in a do header alone, do self<R>:; an operator annotation over an object waits for Blend's macros"}],
+    u => [Er{no, text(rt.name(t)) ++ ": self names the concrete object in a do header, do self<R>:, and an operator annotation, (a + b : self), alone"}],
     u => Nil{})
 
 # a line's tokens with its do headers' objects taken: each written as the
@@ -4308,7 +4325,7 @@ def do.selfs(ts: List<&2, Rt>, +no: Loc) -> List<&2, Er>:
 # a header complete at its `<`: its object's name written, its uses, its
 # errors; a name that is no object as written, Bend's
 def do.hd(+pend: List<&2, Rt>, +lt: Rt, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> Dq:
-  on.maybe(U32, Dq, do.obj(cx, o, q, rt.name(rt.or(List.get(&2, Rt, pend, 2n)))),
+  on.maybe(U32, Dq, sug.obj(cx, o, q, rt.name(rt.or(List.get(&2, Rt, pend, 2n)))),
     u => Dq{List.append(&2, Rt, pend, [lt]), Nil{}, Nil{}, 0, Nil{}},
     +y => Dq{[rt.or(List.get(&2, Rt, pend, 0n)), rt.or(List.get(&2, Rt, pend, 1n)), RT{TName{dots(ob.path(ob.at(cx.obs(cx), y)))}}, lt],
       [RR{0, Rf{y, codes("bind"), False{}, y}}, RR{0, Rf{y, codes("pure"), False{}, y}}],
@@ -4360,10 +4377,305 @@ def dw.ers(d: Dw) -> List<&2, Er>:
     case Dw{ts, us, es}:
       es
 
-# a line's tokens with its headers taken and their uses at its end
-def do.toks(ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> List<&2, Rt>:
-  +d = do.ts(ts, 0, Nil{}, cx, o, q, no)
-  List.append(&2, Rt, dw.ts(d), do.comment(dw.uses(d)))
+# Operators over objects
+# ----------------------
+#
+# Bend's `(.. : T)` calls `T.add` for `+` and its kin, by name, inner
+# parentheses inheriting the annotation and an inner annotation claiming
+# its own. Where T is latent (`sug.obj`), Blend binds it as a `do`
+# header's: the annotation's name written as the object's emitted name,
+# a use of each member its operators call in the comment ending the
+# line, each `shared`; an operator Blend does not know there is an error,
+# Bend perhaps having added it; and an annotation over a latent object is
+# read on one line, one whose parentheses open on a line before an
+# error (`blend-do-self`).
+
+# an operator and the member it calls (Bend's guide, Syntax)
+type Om is Data:
+  Om{op: List<&2, U32>, m: List<&2, U32>}
+
+def op.table() -> List<&2, Om>:
+  [Om{codes("+"), codes("add")}, Om{codes("-"), codes("sub")}, Om{codes("*"), codes("mul")}, Om{codes("/"), codes("div")},
+    Om{codes("%"), codes("mod")}, Om{codes(".&."), codes("and")}, Om{codes(".|."), codes("or")}, Om{codes(".^."), codes("xor")},
+    Om{codes("<<"), codes("shl")}, Om{codes(">>"), codes("shr")}, Om{codes("<"), codes("is_lt")}, Om{codes("<="), codes("is_le")},
+    Om{codes(">"), codes("is_gt")}, Om{codes(">="), codes("is_ge")}]
+
+def op.find(t: List<&2, Om>, +x: List<&2, U32>) -> Maybe<&2, List<&2, U32>>:
+  match t:
+    case Nil{}:
+      None{}
+    case Con{e, r}:
+      match e:
+        case Om{op, +m}:
+          when(Maybe<&2, List<&2, U32>>, same(op, x), u => Some{m}, u => op.find(r, x))
+
+# Bend's operators that call no member of T
+def op.neutral(+x: List<&2, U32>) -> Bool:
+  names.has([codes("=>"), codes("&&"), codes("||"), codes("++"), codes("="), codes("<-"), codes("=="), codes(":")], x)
+
+# a line's word: its tokens between spaces, its first one's place
+type Wd is Data:
+  Wd{+at: Nat, ts: List<&2, Rt>}
+
+def wd.end(+at: Nat, cur: List<&2, Rt>, rest: List<&2, Wd>) -> List<&2, Wd>:
+  match cur:
+    case Nil{}:
+      rest
+    case Con{t, r}:
+      Con{Wd{at, Con{t, r}}, rest}
+
+def an.words(ts: List<&2, Rt>, +i: Nat, +at: Nat, +cur: List<&2, Rt>) -> List<&2, Wd>:
+  match ts:
+    case Nil{}:
+      wd.end(at, cur, Nil{})
+    case Con{+t, +r}:
+      when(List<&2, Wd>, rt.space(t), u => wd.end(at, cur, an.words(r, 1n+i, 1n+i, Nil{})),
+        u => an.words(r, 1n+i, at, List.append(&2, Rt, cur, [t])))
+
+# a symbol an operator is made of: no bracket and no comma
+def rt.opsym(t: Rt) -> Bool:
+  match t:
+    case RT{tk}:
+      match tk:
+        case TSym{+c}:
+          Bool.not(U32.is_eq(c, 40) || U32.is_eq(c, 41) || U32.is_eq(c, 91) || U32.is_eq(c, 93) || U32.is_eq(c, 123) || U32.is_eq(c, 125) || U32.is_eq(c, 44))
+        case _:
+          False{}
+    case _:
+      False{}
+
+def wd.opsyms(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      True{}
+    case Con{t, r}:
+      rt.opsym(t) && wd.opsyms(r)
+
+# whether a word is an operator, symbols alone
+def wd.op(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      False{}
+    case Con{t, r}:
+      rt.opsym(t) && wd.opsyms(r)
+
+def rt.bytes(t: Rt) -> List<&2, U32>:
+  match t:
+    case RT{tk}:
+      tok.bytes(tk)
+    case _:
+      Nil{}
+
+def wd.bytes(ts: List<&2, Rt>) -> List<&2, U32>:
+  match ts:
+    case Nil{}:
+      Nil{}
+    case Con{t, r}:
+      List.append(&2, U32, rt.bytes(t), wd.bytes(r))
+
+def wd.colon(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      False{}
+    case Con{t, r}:
+      rt.sym(t, 58) && List.is_empty(&2, Rt, r)
+
+# whether a word ends an annotation, `NAME)`
+def wd.ann(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      False{}
+    case Con{n, r}:
+      match r:
+        case Nil{}:
+          False{}
+        case Con{c, r2}:
+          Bool.not(List.is_empty(&2, U32, rt.name(n))) && rt.sym(c, 41)
+
+# an annotation read: its name's place and text, the operators its
+# parentheses hold, whether they open on a line before
+type Aw is Data:
+  Aw{+at: Nat, name: List<&2, U32>, ops: List<&2, List<&2, U32>>, +spans: Bool}
+
+# the walk's state: the parentheses open, innermost first, each with the
+# operators it holds; a colon just read; the annotations read
+type As is Data:
+  As{fr: List<&2, List<&2, List<&2, U32>>>, +colon: Bool, anns: List<&2, Aw>}
+
+def as.colon(s: As) -> Bool:
+  match s:
+    case As{fr, +colon, anns}:
+      colon
+
+def as.anns(s: As) -> List<&2, Aw>:
+  match s:
+    case As{fr, +colon, anns}:
+      anns
+
+def as.setc(+c: Bool, s: As) -> As:
+  match s:
+    case As{fr, +colon, anns}:
+      As{fr, c, anns}
+
+def as.push(s: As) -> As:
+  match s:
+    case As{fr, +colon, anns}:
+      As{Con{Nil{}, fr}, False{}, anns}
+
+# a parenthesis closed with no annotation: its operators the enclosing
+# one's, as Bend's inner parentheses inherit the annotation
+def as.pop(s: As) -> As:
+  match s:
+    case As{fr, +colon, anns}:
+      match fr:
+        case Nil{}:
+          As{Nil{}, False{}, anns}
+        case Con{f, rest}:
+          match rest:
+            case Nil{}:
+              As{Nil{}, False{}, anns}
+            case Con{g, rest2}:
+              As{Con{List.append(&2, List<&2, U32>, g, f), rest2}, False{}, anns}
+
+def as.op(+x: List<&2, U32>, s: As) -> As:
+  match s:
+    case As{fr, +colon, anns}:
+      match fr:
+        case Nil{}:
+          As{Nil{}, False{}, anns}
+        case Con{f, rest}:
+          As{Con{List.append(&2, List<&2, U32>, f, [x]), rest}, False{}, anns}
+
+# a parenthesis closed by an annotation, claiming its operators
+def as.ann(+at: Nat, +name: List<&2, U32>, s: As) -> As:
+  match s:
+    case As{fr, +colon, anns}:
+      match fr:
+        case Nil{}:
+          As{Nil{}, False{}, List.append(&2, Aw, anns, [Aw{at, name, Nil{}, True{}}])}
+        case Con{f, rest}:
+          As{rest, False{}, List.append(&2, Aw, anns, [Aw{at, name, f, False{}}])}
+
+# a word's brackets: `(` opening, `)` closing
+def as.mixed(ts: List<&2, Rt>, +s: As) -> As:
+  match ts:
+    case Nil{}:
+      as.setc(False{}, s)
+    case Con{+t, r}:
+      as.mixed(r, when(As, rt.sym(t, 40), u => as.push(s), u => when(As, rt.sym(t, 41), v => as.pop(s), v => s)))
+
+def an.word(w: Wd, +s: As) -> As:
+  match w:
+    case Wd{+at, +ts}:
+      when(As, wd.colon(ts), u => as.setc(True{}, s),
+        u => when(As, as.colon(s) && wd.ann(ts), v => as.mixed(List.drop(&2, Rt, ts, 2n), as.ann(at, rt.name(rt.or(List.head(&2, Rt, ts))), s)),
+          v => when(As, wd.op(ts), w2 => as.op(wd.bytes(ts), s), w2 => as.mixed(ts, s))))
+
+def an.walk(ws: List<&2, Wd>, s: As) -> As:
+  match ws:
+    case Nil{}:
+      s
+    case Con{w, t}:
+      an.walk(t, an.word(w, s))
+
+# an annotation's edit: the name at its place written anew
+type Ed is Data:
+  Ed{+at: Nat, t: Rt}
+
+# the annotations taken: their edits, uses and errors
+type Ae is Data:
+  Ae{eds: List<&2, Ed>, uses: List<&2, Rt>, ers: List<&2, Er>}
+
+def ae.join(a: Ae, b: Ae) -> Ae:
+  match a b:
+    case Ae{e1, u1, r1} Ae{e2, u2, r2}:
+      Ae{List.append(&2, Ed, e1, e2), List.append(&2, Rt, u1, u2), List.append(&2, Er, r1, r2)}
+
+def ae.eds(a: Ae) -> List<&2, Ed>:
+  match a:
+    case Ae{e, u, r}:
+      e
+
+def ae.uses(a: Ae) -> List<&2, Rt>:
+  match a:
+    case Ae{e, u, r}:
+      u
+
+def ae.ers(a: Ae) -> List<&2, Er>:
+  match a:
+    case Ae{e, u, r}:
+      r
+
+# the members an annotation's operators call, each once
+def op.ms(ops: List<&2, List<&2, U32>>, +acc: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
+  match ops:
+    case Nil{}:
+      acc
+    case Con{+x, t}:
+      op.ms(t, on.maybe(List<&2, U32>, List<&2, List<&2, U32>>, op.find(op.table(), x), u => acc,
+        +m => when(List<&2, List<&2, U32>>, names.has(acc, m), v => acc, v => List.append(&2, List<&2, U32>, acc, [m]))))
+
+def op.unknown(ops: List<&2, List<&2, U32>>, +lbl: String, +no: Loc) -> List<&2, Er>:
+  match ops:
+    case Nil{}:
+      Nil{}
+    case Con{+x, t}:
+      List.append(&2, Er, when(List<&2, Er>, Maybe.is_some(&2, List<&2, U32>, op.find(op.table(), x)) || op.neutral(x), u => Nil{},
+        u => [Er{no, lbl ++ ": " ++ text(x) ++ " is an operator Blend does not know, Bend perhaps new to it, so that Blend would neither bind nor write first the member it calls"}]),
+        op.unknown(t, lbl, no))
+
+def op.mers(ms: List<&2, List<&2, U32>>, +cx: Cx, +y: U32, +lbl: String, +no: Loc) -> List<&2, Er>:
+  match ms:
+    case Nil{}:
+      Nil{}
+    case Con{+m, t}:
+      List.append(&2, Er, do.er.m(do.share(cx, y, m), cx, y, m, lbl, "an operator over it", "use", no), op.mers(t, cx, y, lbl, no))
+
+def op.uses(ms: List<&2, List<&2, U32>>, +y: U32) -> List<&2, Rt>:
+  match ms:
+    case Nil{}:
+      Nil{}
+    case Con{m, t}:
+      Con{RR{0, Rf{y, m, False{}, y}}, op.uses(t, y)}
+
+def an.ers(+cx: Cx, +y: U32, +lbl: String, +spans: Bool, +ops: List<&2, List<&2, U32>>, +no: Loc) -> List<&2, Er>:
+  when(List<&2, Er>, is.root(cx.obs(cx), y),
+    u => [Er{no, lbl ++ ": self names the object a definition is copied into, and a module's own definitions have none, the module being no object"}],
+    u => when(List<&2, Er>, ob.abs(ob.at(cx.obs(cx), y)),
+      v => [Er{no, lbl ++ ": " ++ ob.name(cx.obs(cx), y) ++ " is abstract and emits nothing; in its own definitions, : self names the concrete object"}],
+      v => List.append(&2, Er, when(List<&2, Er>, spans,
+          w => [Er{no, lbl ++ ": its parentheses open on a line before, where Blend reads an annotation over an object it binds late on one line"}], w => Nil{}),
+        List.append(&2, Er, op.unknown(ops, lbl, no), op.mers(op.ms(ops, Nil{}), cx, y, lbl, no)))))
+
+def an.one(a: Aw, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> Ae:
+  match a:
+    case Aw{+at, +name, +ops, +spans}:
+      on.maybe(U32, Ae, sug.obj(cx, o, q, name), u => Ae{Nil{}, Nil{}, Nil{}},
+        +y => Ae{[Ed{at, RT{TName{dots(ob.path(ob.at(cx.obs(cx), y)))}}}], op.uses(op.ms(ops, Nil{}), y),
+          an.ers(cx, y, "(.. : " ++ text(name) ++ ")", spans, ops, no)})
+
+def an.res(as: List<&2, Aw>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> Ae:
+  match as:
+    case Nil{}:
+      Ae{Nil{}, Nil{}, Nil{}}
+    case Con{a, t}:
+      ae.join(an.one(a, cx, o, q, no), an.res(t, cx, o, q, no))
+
+def ed.find(eds: List<&2, Ed>, +i: Nat) -> Maybe<&2, Rt>:
+  match eds:
+    case Nil{}:
+      None{}
+    case Con{e, r}:
+      match e:
+        case Ed{+at, t}:
+          when(Maybe<&2, Rt>, Nat.is_eq(at, i), u => Some{t}, u => ed.find(r, i))
+
+def an.apply(ts: List<&2, Rt>, +i: Nat, +eds: List<&2, Ed>) -> List<&2, Rt>:
+  match ts:
+    case Nil{}:
+      Nil{}
+    case Con{t, r}:
+      Con{on.maybe(Rt, Rt, ed.find(eds, i), u => t, n => n), an.apply(r, 1n+i, eds)}
 
 def do.pick(c: Bool, +a: List<&2, Rt>, +b: List<&2, Rt>) -> List<&2, Rt>:
   match c:
@@ -4390,24 +4702,177 @@ def do.word(+x: List<&2, U32>) -> Bool:
     case Con{+h, +t}:
       do.word.k(h, Con{h, t})
 
-def rt.flag(t: Rt) -> Bool:
+def an.close.st(+c: Bool) -> U32:
+  match c:
+    case True{}:
+      4
+    case False{}:
+      0
+
+def an.sym.st(+c: U32, +st: U32) -> U32:
+  match c:
+    case 58:
+      1
+    case 41:
+      an.close.st(U32.is_eq(st, 3))
+    case _:
+      0
+
+def an.sp.st(+c: Bool) -> U32:
+  match c:
+    case True{}:
+      2
+    case False{}:
+      0
+
+def an.nm2.st(+c: Bool) -> U32:
+  match c:
+    case True{}:
+      3
+    case False{}:
+      0
+
+def an.nm.st(+w: Bool, +c: Bool) -> U32:
+  match w:
+    case True{}:
+      (8 + an.nm2.st(c) : U32)
+    case False{}:
+      an.nm2.st(c)
+
+def tok.st(+st: U32, tk: Tok) -> U32:
+  match tk:
+    case TSym{+c}:
+      an.sym.st(c, st)
+    case TSp{x}:
+      an.sp.st(U32.is_eq(st, 1))
+    case TName{+x}:
+      an.nm.st(do.word(x), U32.is_eq(st, 2))
+    case _:
+      0
+
+def rt.st(+st: U32, t: Rt) -> U32:
   match t:
     case RT{tk}:
-      match tk:
-        case TName{+x}:
-          do.word(x)
-        case _:
-          False{}
+      tok.st(st, tk)
     case _:
-      False{}
+      0
 
-# whether a line holds a `do` or a `self`, the lines the pass takes
+def an.kind.w(+w: Bool, +b: U32) -> U32:
+  match w:
+    case True{}:
+      (b .|. 2 : U32)
+    case False{}:
+      b
+
+# the progress of an annotation's close, `: NAME )`, after a token: 1 a
+# colon, 2 a space after it, 3 a name after that, 4 the `)` closing it,
+# 0 none; 8 added where the token is a name `do` or `self`. One match on
+# each token, nothing cloned, no closure: the screen reads every line
+# copied
+def an.kind.k(+a: Bool, +w: Bool) -> U32:
+  match a:
+    case True{}:
+      an.kind.w(w, 1)
+    case False{}:
+      an.kind.w(w, 0)
+
+def an.kind(+n: U32) -> U32:
+  an.kind.k(U32.is_eq((n .&. 7 : U32), 4), U32.is_ge(n, 8))
+
+def sc.if(+c: Bool, +a: U32, +b: U32) -> U32:
+  match c:
+    case True{}:
+      a
+    case False{}:
+      b
+
+# the screen's state after a token: an annotation's progress, 1 to 3, or
+# 9 once a `do`, a `self` or an annotation's close is read, kept to the
+# line's end; a switch and a match a token, no arithmetic
+def sc.sym(+c: U32, +st: U32) -> U32:
+  match c:
+    case 58:
+      1
+    case 41:
+      sc.if(U32.is_eq(st, 3), 9, 0)
+    case _:
+      0
+
+def sc.tok(+st: U32, tk: Tok) -> U32:
+  match tk:
+    case TSym{+c}:
+      sc.sym(c, st)
+    case TSp{x}:
+      sc.if(U32.is_eq(st, 1), 2, 0)
+    case TName{+x}:
+      sc.if(do.word(x), 9, sc.if(U32.is_eq(st, 2), 3, 0))
+    case _:
+      0
+
+def sc.rt(+st: U32, t: Rt) -> U32:
+  match st:
+    case 9:
+      9
+    case _:
+      match t:
+        case RT{tk}:
+          sc.tok(st, tk)
+        case _:
+          0
+
+def rts.fl(ts: List<&2, Rt>, +st: U32) -> Bool:
+  match ts:
+    case Nil{}:
+      U32.is_eq(st, 9)
+    case Con{t, r}:
+      rts.fl(r, sc.rt(st, t))
+
+def rts.kind(ts: List<&2, Rt>, +st: U32, +k: U32) -> U32:
+  match ts:
+    case Nil{}:
+      k
+    case Con{t, r}:
+      +n = rt.st(st, t)
+      rts.kind(r, (n .&. 7 : U32), (k .|. an.kind(n) : U32))
+
+# what a flagged line holds: 1 an annotation's close, 2 a name `do` or
+# `self`, both 3; so that each pass runs on the lines it reads alone
+# whether a line holds a `do`, a `self` or an operator annotation, the
+# lines the pass takes; one look at each token, none ahead
 def rts.flagged(ts: List<&2, Rt>) -> Bool:
   match ts:
     case Nil{}:
       False{}
     case Con{t, r}:
-      rt.flag(t) || rts.flagged(r)
+      rts.fl(Con{t, r}, 0)
+
+# a flagged line taken: its operator annotations' objects, then its do
+# headers', the uses of both at its end, the errors of both; marked by
+# an empty space before it, which writes nothing, so that the check at
+# emission (`sg.units`) finds the lines taken at a look
+def an.part(+c: Bool, +ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> Ae:
+  match c:
+    case False{}:
+      Ae{Nil{}, Nil{}, Nil{}}
+    case True{}:
+      an.res(as.anns(an.walk(an.words(ts, 0n, 0n, Nil{}), As{Nil{}, False{}, Nil{}})), cx, o, q, no)
+
+def do.part(+c: Bool, +ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> Dw:
+  match c:
+    case False{}:
+      Dw{ts, Nil{}, Nil{}}
+    case True{}:
+      do.ts(ts, 0, Nil{}, cx, o, q, no)
+
+def do.all(+ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> Dw:
+  +k = rts.kind(ts, 0, 0)
+  +ae = an.part(U32.is_eq((k .&. 1 : U32), 1), ts, cx, o, q, no)
+  +d = do.part(U32.is_eq((k .&. 2 : U32), 2), an.apply(ts, 0n, ae.eds(ae)), cx, o, q, no)
+  Dw{Con{RT{TSp{Nil{}}}, List.append(&2, Rt, dw.ts(d), do.comment(List.append(&2, Rt, ae.uses(ae), dw.uses(d))))}, Nil{}, List.append(&2, Er, ae.ers(ae), dw.ers(d))}
+
+# a line's tokens with its headers taken and their uses at its end
+def do.toks(+ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> List<&2, Rt>:
+  dw.ts(do.all(ts, cx, o, q, no))
 
 def do.keep.k(+c: Bool, +ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) -> List<&2, Rt>:
   match c:
@@ -4438,8 +4903,8 @@ def do.es.k(+c: Bool, +ts: List<&2, Rt>, +cx: Cx, +o: U32, +q: U32, +no: Loc) ->
     case False{}:
       Nil{}
     case True{}:
-      List.append(&2, Er, dw.ers(do.ts(ts, 0, Nil{}, cx, o, q, no)),
-        when(List<&2, Er>, rts.inline(do.toks(ts, cx, o, q, no)), u => Nil{}, u => [Er{no, "a do header's line taken with a newline in it, a fault of Blend's"}]))
+      +a = do.all(ts, cx, o, q, no)
+      List.append(&2, Er, dw.ers(a), when(List<&2, Er>, rts.inline(dw.ts(a)), u => Nil{}, u => [Er{no, "a do header's line taken with a newline in it, a fault of Blend's"}]))
 
 def do.es(ls: List<&2, Rl>, +cx: Cx, +o: U32, +q: U32) -> List<&2, Er>:
   match ls:
@@ -7591,6 +8056,148 @@ def proof.parts(+mode: U32, +files: List<&2, List<&2, U32>>, +cx: Cx, +all: List
 type Ce is Data:
   Ce{order: List<&2, U32>, wers: List<&2, Er>, mers: List<&2, Er>, e: Ec}
 
+# A sugar over a top-level object, a plain name Bend resolves as written
+# (`blend-do-self`): Blend writes the members it calls where its walk
+# puts them, reading no call; where one would be written below a unit
+# using it, or not at all, an error naming what to move, in place of
+# Bend's refusal of a name not yet filled (the maintainer, 2026-11-08)
+
+# each unit's place in the order written, the walk's reversed
+def sg.pos(xs: List<&2, U32>, +k: U32, t: Ht<Pk<U32>>) -> Ht<Pk<U32>>:
+  match xs:
+    case Nil{}:
+      t
+    case Con{+x, r}:
+      sg.pos(r, (k + 1 : U32), um.put(U32, t, x, k))
+
+# whether the tokens after a `do` are a header's: a space, a name, `<`
+def hd.next(r: List<&2, Rt>) -> Bool:
+  match r:
+    case Nil{}:
+      False{}
+    case Con{s, r2}:
+      match r2:
+        case Nil{}:
+          False{}
+        case Con{n, r3}:
+          match r3:
+            case Nil{}:
+              False{}
+            case Con{c, r4}:
+              rt.space(s) && Bool.not(List.is_empty(&2, U32, rt.name(n))) && rt.sym(c, 60)
+
+# the names a line's do headers give, as written
+def sg.dos(ts: List<&2, Rt>) -> List<&2, List<&2, U32>>:
+  match ts:
+    case Nil{}:
+      Nil{}
+    case Con{+t, +r}:
+      when(List<&2, List<&2, U32>>, same(rt.name(t), codes("do")) && hd.next(r),
+        u => Con{rt.name(rt.or(List.get(&2, Rt, r, 1n))), sg.dos(r)}, u => sg.dos(r))
+
+# a member a sugar calls by a name of the module's objects, with the
+# sugar as written, for its errors
+type St is Data:
+  St{lbl: String, +y: U32, m: List<&2, U32>}
+
+def sg.do.sts(ns: List<&2, List<&2, U32>>, +obs: List<&2, Ob>) -> List<&2, St>:
+  match ns:
+    case Nil{}:
+      Nil{}
+    case Con{+n, t}:
+      List.append(&2, St, on.maybe(U32, List<&2, St>, find.path(obs, 0, parts(n)), u => Nil{},
+        +y => [St{"do " ++ text(n), y, codes("bind")}, St{"do " ++ text(n), y, codes("pure")}]), sg.do.sts(t, obs))
+
+def sg.m.sts(ms: List<&2, List<&2, U32>>, +lbl: String, +y: U32) -> List<&2, St>:
+  match ms:
+    case Nil{}:
+      Nil{}
+    case Con{m, t}:
+      Con{St{lbl, y, m}, sg.m.sts(t, lbl, y)}
+
+def sg.an.sts(as: List<&2, Aw>, +obs: List<&2, Ob>) -> List<&2, St>:
+  match as:
+    case Nil{}:
+      Nil{}
+    case Con{a, t}:
+      match a:
+        case Aw{+at, +name, ops, +spans}:
+          List.append(&2, St, on.maybe(U32, List<&2, St>, find.path(obs, 0, parts(name)), u => Nil{},
+            +y => sg.m.sts(op.ms(ops, Nil{}), "(.. : " ++ text(name) ++ ")", y)), sg.an.sts(t, obs))
+
+def sg.do.part(+c: Bool, +ts: List<&2, Rt>, +obs: List<&2, Ob>) -> List<&2, St>:
+  match c:
+    case False{}:
+      Nil{}
+    case True{}:
+      sg.do.sts(sg.dos(ts), obs)
+
+def sg.an.part(+c: Bool, +ts: List<&2, Rt>, +obs: List<&2, Ob>) -> List<&2, St>:
+  match c:
+    case False{}:
+      Nil{}
+    case True{}:
+      sg.an.sts(as.anns(an.walk(an.words(ts, 0n, 0n, Nil{}), As{Nil{}, False{}, Nil{}})), obs)
+
+# the members a line's sugars call by a name of the module's objects
+def sg.line.k(+c: Bool, +ts: List<&2, Rt>, +obs: List<&2, Ob>) -> List<&2, St>:
+  match c:
+    case False{}:
+      Nil{}
+    case True{}:
+      +k = rts.kind(ts, 0, 0)
+      List.append(&2, St, sg.do.part(U32.is_eq((k .&. 2 : U32), 2), ts, obs), sg.an.part(U32.is_eq((k .&. 1 : U32), 1), ts, obs))
+
+def sg.sts(sts: List<&2, St>, +no: Loc, +pk: U32, +k: U32, +all: List<&2, Un>, +pos: Ht<Pk<U32>>, +ux: Ht<Xe>, +obs: List<&2, Ob>) -> List<&2, Er>:
+  match sts:
+    case Nil{}:
+      Nil{}
+    case Con{st, t}:
+      match st:
+        case St{+lbl, +y, +m}:
+          List.append(&2, Er, on.maybe(U32, List<&2, Er>, on.maybe(U32, Maybe<&2, U32>, ux.find(ux, Rf{y, m, False{}, y}), u => None{}, +x => um.get(U32, pos, x)),
+            u => [Er{no, lbl ++ ": " ++ ob.name(obs, y) ++ " writes no " ++ text(m) ++ ", which Bend's sugar calls there"}],
+            +pm => when(List<&2, Er>, U32.is_lt(pm, pk), v => Nil{},
+              v => [Er{no, lbl ++ ": " ++ ob.name(obs, y) ++ "." ++ text(m) ++ " is written below " ++ text(un.name(obs, all, k)) ++
+                ", which calls it through Bend's sugar by a top-level object's name, left as written: define " ++ ob.name(obs, y) ++
+                " above " ++ text(un.name(obs, all, k)) ++ ", or write self in " ++ ob.name(obs, y) ++ "'s own definitions"}])),
+            sg.sts(t, no, pk, k, all, pos, ux, obs))
+
+# whether a line was taken by the pass, its first token the empty space
+# it is marked by
+def rts.taken(ts: List<&2, Rt>) -> Bool:
+  match ts:
+    case Nil{}:
+      False{}
+    case Con{t, r}:
+      match t:
+        case RT{tk}:
+          match tk:
+            case TSp{x}:
+              List.is_empty(&2, U32, x)
+            case _:
+              False{}
+        case _:
+          False{}
+
+def sg.ls(ls: List<&2, Rl>, +pk: U32, +k: U32, +all: List<&2, Un>, +pos: Ht<Pk<U32>>, +ux: Ht<Xe>, +obs: List<&2, Ob>) -> List<&2, Er>:
+  match ls:
+    case Nil{}:
+      Nil{}
+    case Con{l, t}:
+      match l:
+        case Rl{+no, +ind, +ts}:
+          List.append(&2, Er, sg.sts(sg.line.k(rts.taken(ts), ts, obs), no, pk, k, all, pos, ux, obs), sg.ls(t, pk, k, all, pos, ux, obs))
+
+# each unit written, its sugars' members written above it
+def sg.units(us: List<&2, Un>, +k: U32, +all: List<&2, Un>, +pos: Ht<Pk<U32>>, +ux: Ht<Xe>, +obs: List<&2, Ob>) -> List<&2, Er>:
+  match us:
+    case Nil{}:
+      Nil{}
+    case Con{u, t}:
+      List.append(&2, Er, on.maybe(U32, List<&2, Er>, um.get(U32, pos, k), v => Nil{}, +pk => sg.ls(un.lines(u), pk, k, all, pos, ux, obs)),
+        sg.units(t, (k + 1 : U32), all, pos, ux, obs))
+
 def emit.code(files: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, Un>, als: List<&2, Al>, own: List<&2, Ci>, res: List<&2, List<&2, U32>>,
     paths: List<&2, List<&2, U32>>, +ux: Ht<Xe>, roots: List<&2, U32>) -> Ce:
   +ut = pt.of(Un, us)
@@ -7598,7 +8205,8 @@ def emit.code(files: List<&2, List<&2, U32>>, +obs: List<&2, Ob>, +us: List<&2, 
   +d = emit.walk(roots, rss, obs, us)
   +order = ds.order(d)
   +ms = emit.ms(order, rss, ut, obs, us)
-  Ce{order, ds.ers(d), ms.ers(ms), emit.ec(files, obs, us, als, own, res, paths, ux, ut, ms.ms(ms))}
+  Ce{order, List.append(&2, Er, ds.ers(d), sg.units(us, 0, us, sg.pos(List.reverse(&2, U32, order), 0, ht.for(Pk<U32>, List.length(&2, U32, order))), ux, obs)), ms.ers(ms),
+    emit.ec(files, obs, us, als, own, res, paths, ux, ut, ms.ms(ms))}
 
 def ce.order(c: Ce) -> List<&2, U32>:
   match c:

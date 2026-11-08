@@ -1,0 +1,5 @@
+Error: (.. : self): Vec has no sub, which an operator over it calls
+Location: op-missing.blend:9
+ 8 |   def diff(+a: U32, +b: U32) -> U32:
+ 9>|     (a - b : self)
+10 | 

@@ -1,0 +1,13 @@
+# An operator over an object calls its member by one name, wherever it
+# is used: the member is `shared`, and an affine one is refused at the
+# annotation's line (`blend-do-self`).
+import Base
+
+object Vec with
+  def add(+a: U32, +b: U32) -> U32:
+    (a + b + 1000 : U32)
+  def twice(+a: U32) -> U32:
+    (a + a : self)
+
+def main() -> IO(Unit):
+  IO.print(U32.show(Vec.twice(3)))

@@ -1,0 +1,24 @@
+# A top-level object's name in a `do` header or an operator annotation
+# is a plain name, left as written for Bend: Blend reads no call through
+# it, so that where the object's members would be written below the
+# definition using them, Blend refuses it, naming what to move, before
+# Bend would refuse a name not yet filled (`blend-do-self`).
+import Base
+
+def more(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  do Opt<U32>:
+    x : U32 <- a
+    return (x + 3 : U32)
+
+object Opt with
+  shared def pure(-A: Data, x: A) -> Maybe<&2, A>:
+    Some{x}
+  shared def bind(-A: Data, -B: Data, m: Maybe<&2, A>, f: A -> Maybe<&2, B>) -> Maybe<&2, B>:
+    match m:
+      case None{}:
+        None{}
+      case Some{x}:
+        f(x)
+
+def main() -> IO(Unit):
+  IO.print("")

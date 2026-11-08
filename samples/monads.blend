@@ -1,10 +1,10 @@
 # Objects as monads: `do self<R>:` binds a block's steps to the concrete
 # object's `bind` and `pure`, bound late, so that an abstract object
 # writes a `do` over the monad its families give, and a family updating
-# `pure` changes every block over it; `do Opt<R>:` names an object's,
-# bound early. Both are `shared`, Bend writing one name for every step;
-# a block's members may sit below it, Blend writing them first
-# (`blend-do-self`).
+# `pure` changes every block over it, the members `shared`, Bend writing
+# one name for every step, and written first where they sit below the
+# block. `do Opt<R>:`, a top-level object's name, is left as written for
+# Bend, Opt defined above its use (`blend-do-self`).
 import Base
 
 abstract object Monad with

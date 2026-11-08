@@ -1,5 +1,5 @@
 # Written by Blend from monads.blend; do not edit.
-# blend stamp: 763442a0527c 132b6b54f3aa8832
+# blend stamp: f6def9719dcd e6da5c5cca31f1b6
 import Base
 
 # blend: monads.blend:19
@@ -50,7 +50,7 @@ def say(m: Maybe<&2, U32>) -> String:
 
 # blend: monads.blend:39
 def more(a: Maybe<&2, U32>) -> Maybe<&2, U32>:
-  do Opt<U32>:  # Opt.bind Opt.pure
+  do Opt<U32>:
     x : U32 <- a
     return (x + 3 : U32)
 

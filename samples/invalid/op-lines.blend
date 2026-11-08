@@ -1,0 +1,14 @@
+# An operator annotation over an object Blend binds late is read on one
+# line: one whose parentheses open on a line before is refused, its
+# operators there unseen (`blend-do-self`).
+import Base
+
+object Vec with
+  shared def add(+a: U32, +b: U32) -> U32:
+    (a + b + 1000 : U32)
+  def three(+a: U32) -> U32:
+    (a + a
+      + a : self)
+
+def main() -> IO(Unit):
+  IO.print(U32.show(Vec.three(3)))

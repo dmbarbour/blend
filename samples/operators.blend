@@ -1,0 +1,44 @@
+# Bend's operator sugar over objects: inside `(.. : T)`, `+` calls
+# `T.add`, `*` `T.mul`, `<` `T.is_lt`, by name. `: self` names the
+# concrete object, bound late, and a nested object's name binds late
+# too, so that an abstract object writes arithmetic its families give;
+# a top-level object's name, as a Bend type's, is Bend's. The members an
+# operator reaches are `shared`, Bend writing one name for every use
+# (`blend-do-self`).
+import Base
+
+abstract object Num with
+  declare add, mul, is_lt
+  def poly(+x: U32) -> U32:
+    (x * x + x : self)
+  def less(+a: U32, +b: U32) -> Bool:
+    (a < b : self)
+
+object Plain extends Num with
+  shared def add(+a: U32, +b: U32) -> U32:
+    (a + b : U32)
+  shared def mul(+a: U32, +b: U32) -> U32:
+    (a * b : U32)
+  shared def is_lt(+a: U32, +b: U32) -> Bool:
+    (a < b : U32)
+
+object Mod7 extends Plain with
+  shared upd add(+a: U32, +b: U32) -> U32:
+    ((a + b : U32) % 7 : U32)
+  shared upd mul(+a: U32, +b: U32) -> U32:
+    ((a * b : U32) % 7 : U32)
+
+object Grid with
+  object Cell with
+    shared def add(+a: U32, +b: U32) -> U32:
+      (a + b : U32)
+  def two(+a: U32) -> U32:
+    (a + a : Cell)
+
+object Grid2 extends Grid with
+  extend Cell with
+    shared upd add(+a: U32, +b: U32) -> U32:
+      (a + b + 100 : U32)
+
+def main() -> IO(Unit):
+  IO.print(U32.show(Plain.poly(5)) ++ " " ++ U32.show(Mod7.poly(5)) ++ " " ++ Bool.show(Mod7.less(2, 3)) ++ " " ++ U32.show(Grid.two(1)) ++ " " ++ U32.show(Grid2.two(1)))

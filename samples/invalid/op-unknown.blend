@@ -1,0 +1,13 @@
+# An operator Blend does not know, over an object it binds late, is
+# refused: Bend may have added it, calling a member Blend would not bind
+# nor write first (`blend-do-self`).
+import Base
+
+object Vec with
+  shared def add(+a: U32, +b: U32) -> U32:
+    (a + b + 1000 : U32)
+  def odd(+a: U32, +b: U32) -> U32:
+    (a <+> b : self)
+
+def main() -> IO(Unit):
+  IO.print(U32.show(Vec.odd(3, 1)))
