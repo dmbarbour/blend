@@ -79,7 +79,16 @@ it alone taught. Add to this file what a new proof teaches.
   the proof file (`X_MUTANTS.txt` beside `X_PROOF.bend`), each naming the
   laws it should fail: the gate tries each against them
   (`scripts/one_law.py`, below), its pass kept while its inputs are
-  unchanged. A mutation the law survives may be equivalent, not a gap:
+  unchanged. A run that ends with no verdict, the checker out of stack
+  or memory or the run's cap reached, catches nothing, and
+  `scripts/one_law.py` reports it as a crash, not caught (below, "A
+  mutation that runs the checker out of memory"). Where the crash cannot
+  be moved into a lemma, give the mutation a witness: the law's
+  statement at a small instance, proved by `{==}`, which must check
+  unmutated (so the instance meets the premises it leaves out) and be
+  refuted mutated; it shows the statement excludes the fault, however
+  the proof is built (glam-in-bend's `raise_*` laws carry such
+  witnesses). A mutation the law survives may be equivalent, not a gap:
   a walk whose end on fuel returns what its natural end does (`hosts.go`,
   `Nil{}` either way) runs as well on one turn fewer, so cut two, or
   break the check its premise names, to make the law false.
