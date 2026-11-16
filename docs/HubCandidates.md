@@ -1,6 +1,7 @@
 # Hub candidates
 
-Lemmas Blend's proofs needed that the hub's package
+Lemmas Blend's proofs needed, and glam-in-bend's (marked with their
+file), that the hub's package
 `0x8ae61ec3a6615abd35f196c07232ad28` (bend-mathlib) lacks, stated over
 Bend's own types, kept to offer upstream when the maintainer chooses
 (the maintainer, 2026-11-06; upstream is commented on only when the
@@ -42,6 +43,11 @@ Left out, as the hub has them under other names: `and_intro`
 - `uq_nsub`: `Nat.is_lt(y, x) == True` gives `Nat.is_eq(Nat.sub(x, y),
   0n) == False`, a positive difference as a test a match can use. The
   hub's `lt_sub_iff_add_lt` (with 0) has it as `Nat.is_lt(0n, x - y)`.
+- `lt0` (glam-in-bend's `glam/PROOF.bend`): `Nat.is_lt(h, 0n) ==
+  False`, for a variable `h`: a test such as `Nat.is_lt(1n + g, 1n)`
+  stays stuck without it.
+- `lt_ne` (glam-in-bend's `glam/PROOF.bend`): `h < m + 1` and
+  `Nat.is_eq(h, m) == False` give `h < m`, as tests.
 
 ## Bool
 
@@ -50,6 +56,8 @@ Left out, as the hub has them under other names: `and_intro`
 - `not_false`: `b == False` gives `Bool.not(b) == True`.
 - `or_false_l`, `or_false_r`: `Bool.or(a, b) == False` gives each side
   false.
+- `or_ff` (glam-in-bend's `glam/PROOF.bend`): `a == False` and `b ==
+  False` give `Bool.or(a, b) == False`, the converse.
 - `or_drop`: an or true with one side false has the other true.
 - `or_cases`, `or_map`: a case split on an or that is true.
 - `nope`: `False == True` gives any `P == True`.
@@ -66,3 +74,18 @@ Left out, as the hub has them under other names: `and_intro`
   Nil` gives `a == Nil` and `b == Nil`, an empty append's sides each
   empty; with `er_cons`, a `Con` is no `Nil`. The hub has `append_nil`
   and `nil_append`, the converse direction.
+
+## Lists of Nat
+
+- `ph` (glam-in-bend's `glam/PROOF.bend`), the pigeonhole: a list of
+  `Nat`s pairwise distinct (`nodupN`) and each below `n` (`allLt`) is
+  no longer than `n`. Needed to bound a ring's members by the heap's
+  words, each member's link word in a slot of its own, so that a walk
+  fuelled by the heap's size finishes; the free list's exactness will
+  want it too. With its parts: `memN`, `nodupN`, `allLt`, `removeN`
+  (the list without a value); `rm_len` (removing from a list without
+  duplicates shortens it by one at most), `rm_nodup` (and keeps it
+  without), `rm_lt` (all below `m + 1`, `m` removed, all below `m`).
+  The hub has no membership, no duplicate-freedom and no removal over
+  lists; stated over any type with a test of equality, it would serve
+  more.

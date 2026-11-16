@@ -83,12 +83,17 @@ it alone taught. Add to this file what a new proof teaches.
   or memory or the run's cap reached, catches nothing, and
   `scripts/one_law.py` reports it as a crash, not caught (below, "A
   mutation that runs the checker out of memory"). Where the crash cannot
-  be moved into a lemma, give the mutation a witness: the law's
-  statement at a small instance, proved by `{==}`, which must check
-  unmutated (so the instance meets the premises it leaves out) and be
-  refuted mutated; it shows the statement excludes the fault, however
-  the proof is built (glam-in-bend's `raise_*` laws carry such
-  witnesses). A mutation the law survives may be equivalent, not a gap:
+  be moved into a lemma, give the mutation a witness: the law at a
+  small instance, a term for each of its binders (`NAME = TERM`, a
+  premise left out proved by `{==}`), from which `scripts/one_law.py`
+  writes the premises and the conclusion out of the law's own text, so
+  that the premises checked are the law's, to check unmutated and,
+  mutated, to hold up to the conclusion and fail there; it shows the
+  statement excludes the fault, however the proof is built
+  (glam-in-bend's `raise_*` laws carry such witnesses). A mutation
+  with a witness is caught by it alone, the tool running every witness:
+  a broken proof beside a witness that holds is a mutation the law may
+  survive. A mutation the law survives may be equivalent, not a gap:
   a walk whose end on fuel returns what its natural end does (`hosts.go`,
   `Nil{}` either way) runs as well on one turn fewer, so cut two, or
   break the check its premise names, to make the law false.
@@ -371,4 +376,7 @@ it alone taught. Add to this file what a new proof teaches.
   `python3 -I scripts/one_law.py PROOF LAW` checks a copy cut to the law,
   its proof and the defs it reaches; with `--mutants FILE`, the copy
   unmutated and then each mutation naming the law, each expected to fail
-  it, and where.
+  it, and where, and each witness both ways. The runs go in parallel,
+  as many as the available memory holds at the cap (1500 MB, the
+  largest run near 380 MB), at most half the processors (`--jobs N`
+  to choose), reported in order.
